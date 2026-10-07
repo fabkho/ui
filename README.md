@@ -38,8 +38,10 @@ layers/ui/
 3. **Decorations are theme properties.** Whether a cover lights the room (`UiAmbient`, the cover's
    halo and pool) is the theme's `--opacity-glow` / `--opacity-halo`, never a component's choice.
    Bookretreats sets both to 0 in Papier and Blau; Libellus keeps its values.
-4. **No Reka, no vaul inside the layer** for now: these are Libellus' own components, which have
-   none. (Bookretreats' member sheet keeps vaul in the app; step 3.)
+4. **No Reka, no vaul inside the layer**: these are Libellus' own components, which have none.
+   (Bookretreats' member sheet, with its two detents and its fixed footer, is the one sheet that
+   stays on vaul, in the app; it sits just under the layer's sheets, `z-35` / `z-36` against the
+   layer's `z-40` / `z-50`, so a menu or a report rises over it.)
 5. **Only colours change between themes, never layout.** Themes are `html[data-theme='<name>']`
    (the generated CSS); a component never asks which theme is on.
 
@@ -77,6 +79,10 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
   gesture, the browser's Back) closes the top sheet or dialog instead of leaving the page
   (`useBackDismiss`). Nuxt merges it with the app's own `router.options.ts`; an app that sets its
   own `history` must wrap it the same way (`listenForBack(); return keepsForeignLayers(createWebHistory(base))`).
+  Nuxt only looks for it in `<layer>/app/router.options.ts`, and this layer has no `app/` folder, so
+  the layer's `nuxt.config.ts` adds the file with the `pages:routerOptions` hook. Without it the
+  listener is added late, after the router's own, and a change of page made while a layer closes
+  navigates back to the page it left.
 - **Types** from the layer: `import type { IconName } from '#ui/components/ui/Icon.vue'`
   (`UiTab` from `TabBar.vue`, `SheetRestore` from `Sheet.vue`).
 
@@ -184,7 +190,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   `composables/useSheetRestore.ts` imports it from there.
 - [ ] **History state key** of `useBackDismiss`: `uiLayer` (was `libellusLayer`); `e2e/support.ts`
   reads `history.state.uiLayer`.
-- [ ] **Router**: the layer's `router.options.ts` installs `listenForBack` + `keepsForeignLayers`;
+- [ ] **Router**: the layer's `router.options.ts` (added by the hook in its `nuxt.config.ts`) installs `listenForBack` + `keepsForeignLayers`;
   Libellus' own `history` option in `app/router.options.ts` goes (its scroll behaviour stays).
 - [ ] **`main.css`**: the layer's `ui.css` replaces Libellus' safe-area variables, the utilities,
   the base layer (minus `color-scheme`, which the generated tokens set per theme), the scroll bars,
