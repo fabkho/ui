@@ -211,7 +211,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
-- `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back).
+- `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
   press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.

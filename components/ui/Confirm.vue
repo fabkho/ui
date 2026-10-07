@@ -10,6 +10,8 @@
 // "Offline" (UiButton); Cancel still closes it. `alternative`: a safe way out
 // offered above the destructive action (Sign out with changes waiting to sync:
 // "Sync first", #93), `<testid>.alternative`.
+// The default slot (added for Bookretreats): more under the sentence, such as
+// a field for a reason (the Orga's ban).
 const open = defineModel<boolean>('open', { required: true })
 
 const props = withDefaults(
@@ -79,6 +81,8 @@ const textId = useId()
         <div class="mb-sm rounded-xl bg-surface-sheet px-ml pt-ml pb-ml shadow-sheet edge">
           <h2 :id="titleId" class="book-title text-headline text-balance" :data-testid="`${testid}.title`">{{ title }}</h2>
           <p v-if="text" :id="textId" class="mt-sm text-subhead text-ink-muted" :data-testid="`${testid}.text`">{{ text }}</p>
+          <!-- Added for Bookretreats: what the question needs besides its sentence (a ban's reason). -->
+          <div v-if="$slots.default" class="mt-ms flex flex-col gap-ms"><slot /></div>
           <p v-if="error" class="mt-ms text-caption text-error" role="alert" :data-testid="`${testid}.error`">{{ error }}</p>
           <div class="mt-lg flex flex-col gap-sm">
             <UiButton
