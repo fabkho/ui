@@ -4,9 +4,12 @@
 // while the field has the keyboard (the error colour when it is wrong). The
 // error line sits right under it. Attributes (type, autocomplete, inputmode,
 // data-testid, …) go to the <input>.
+//
+// `hint` (added for Bookretreats): a quiet line under the rule that says what
+// the field is for; the error takes its place while there is one.
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{ id: string; label: string; error?: string | null; errorTestid?: string }>()
+const props = defineProps<{ id: string; label: string; error?: string | null; errorTestid?: string; hint?: string }>()
 const value = defineModel<string>({ required: true })
 
 const focused = ref(false)
@@ -23,12 +26,13 @@ const ruleClass = computed(() =>
       v-model="value"
       v-bind="$attrs"
       :aria-invalid="error ? true : undefined"
-      :aria-describedby="error ? `${id}-error` : undefined"
+      :aria-describedby="error ? `${id}-error` : hint ? `${id}-hint` : undefined"
       class="min-h-(--size-touch) w-full border-b-(length:--stroke-rule) bg-transparent pb-xs text-input text-ink caret-accent outline-none transition-colors duration-(--duration-quick) ease-standard placeholder:text-ink-faint"
       :class="ruleClass"
       @focus="focused = true"
       @blur="focused = false"
     />
     <p v-if="error" :id="`${id}-error`" class="text-footnote text-error" :data-testid="errorTestid">{{ error }}</p>
+    <p v-else-if="hint" :id="`${id}-hint`" class="text-footnote text-ink-faint">{{ hint }}</p>
   </div>
 </template>

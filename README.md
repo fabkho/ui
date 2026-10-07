@@ -202,6 +202,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiCover`: `kind` (`book`, the default, or `screen`: a series' or film's poster, without the spine crease).
 - `UiEmptyState`: an `art` slot for an illustration of the app's own (the lamp is the default).
 - `UiRowGroup`: `as` (`div`, the default, or `ul`).
+- `UiField`: `hint`, a quiet line under the rule (described-by), which the error replaces while there is one.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
   `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
