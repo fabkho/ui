@@ -94,6 +94,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
 | `UiSegmented` | A segmented control. |
+| `UiCheckbox` | A ticked consent or choice: Libellus' round check over the native checkbox, the words in its slot (added for Bookretreats). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
 | `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
 | `UiConfirm` | A confirmation dialog over a scrim. |
@@ -154,7 +155,7 @@ reads a variable the generated file lacks.
 - **Radius** (`rounded-*`): `cover-sm`, `cover`, `cover-lg`, `sm`, `md`, `xl`, `sheet`, `pill`.
 - **Size** (`--size-*`): `touch`, `max-content`, `avatar`, `tab`, `tab-bar`, `tab-icon`, `button`,
   `button-md`, `button-sm`, `row`, `menu`, `switch`, `switch-thumb`, `grabber`, `grabber-height`,
-  `empty-art`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`.
+  `empty-art`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox).
 - **Stroke** (`--stroke-*`): `hairline`, `rule`, `focus`, `icon`, `icon-bold`.
 - **Type**: `--font-sans`, `--font-mono`, `--font-serif`; `--font-weight-medium`,
   `--font-weight-semibold`; the text styles (`text-*`, each with `--line-height`,
@@ -208,6 +209,10 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
   `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
+- `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
+  with the tick) as a component over a native checkbox; the words in its slot.
+- `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back).
+- `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
   press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.
 - `UiSkeleton`: the `skeleton wave` placeholder as a component (`wave` offset, `as`).

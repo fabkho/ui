@@ -21,9 +21,11 @@ const props = withDefaults(
     error?: string | null
     offline?: boolean
     alternative?: string
+    /** `primary` (added for Bookretreats): an action that can be taken back (Freigeben) in ink, not red. */
+    tone?: 'danger' | 'primary'
     testid: string
   }>(),
-  { text: undefined, busy: false, error: null, offline: false, alternative: undefined },
+  { text: undefined, busy: false, error: null, offline: false, alternative: undefined, tone: 'danger' },
 )
 const emit = defineEmits<{ confirm: []; alternative: [] }>()
 
@@ -91,7 +93,7 @@ const textId = useId()
             </UiButton>
             <UiButton
               block
-              tone="danger"
+              :tone="tone"
               :disabled="busy"
               :offline="offline"
               :aria-busy="busy"

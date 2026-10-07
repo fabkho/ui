@@ -31,8 +31,16 @@ import { revealDelta, sheetLift } from '../../utils/keyboard'
 const open = defineModel<boolean>('open', { required: true })
 
 const props = withDefaults(
-  defineProps<{ title: string; testid: string; action?: string; actionDisabled?: boolean; restore?: SheetRestore | null }>(),
-  { action: undefined, actionDisabled: false, restore: null },
+  defineProps<{
+    title: string
+    testid: string
+    action?: string
+    actionDisabled?: boolean
+    restore?: SheetRestore | null
+    /** Added for Bookretreats: `false` leaves Cancel out, for a sheet only read (its action closes it). */
+    cancel?: boolean
+  }>(),
+  { action: undefined, actionDisabled: false, restore: null, cancel: true },
 )
 const emit = defineEmits<{ action: [] }>()
 
@@ -208,6 +216,7 @@ function onAfterLeave() {
           />
           <div class="grid justify-items-start">
             <button
+              v-if="cancel"
               type="button"
               class="col-start-1 row-start-1 -ml-sm min-h-(--size-touch) px-sm text-body text-ink-muted hover:text-ink"
               :data-testid="`${testid}.cancel`"
