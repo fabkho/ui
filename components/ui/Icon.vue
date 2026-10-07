@@ -69,6 +69,12 @@ export type IconName =
   | 'userPlus'
   | 'quote'
   | 'drop'
+  | 'share'
+  | 'clock'
+  | 'ban'
+  | 'unlock'
+  | 'checkCircle'
+  | 'calendarOff'
 </script>
 
 <script setup lang="ts">
@@ -301,5 +307,22 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     </template>
     <!-- A drop of colour: the theme. -->
     <template v-else-if="name === 'drop'"><path d="M12 3.5c3.6 4.1 5.6 7.3 5.6 9.9a5.6 5.6 0 0 1-11.2 0c0-2.6 2-5.8 5.6-9.9Z" /></template>
+    <!-- The platform's share mark (as in Libellus): a tray with an arrow leaving it. -->
+    <template v-else-if="name === 'share'"><path d="M12 14.5v-11M8.5 7 12 3.5 15.5 7" /><path d="M9 10H6.5v10h11V10H15" /></template>
+    <!-- When: a clock face. -->
+    <template v-else-if="name === 'clock'"><circle cx="12" cy="12" r="8.4" /><path d="M12 7.4V12l3 2" /></template>
+    <!-- Blocked: a ring struck through. -->
+    <template v-else-if="name === 'ban'"><circle cx="12" cy="12" r="8.4" /><path d="m6.1 6.1 11.8 11.8" /></template>
+    <!-- Free again: the lock with its shackle open. -->
+    <template v-else-if="name === 'unlock'">
+      <rect x="5.5" y="10.5" width="13" height="9.5" rx="2" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 6.8-1.2" />
+    </template>
+    <!-- Dealt with: a tick in a ring. -->
+    <template v-else-if="name === 'checkCircle'"><circle cx="12" cy="12" r="8.4" /><path d="m8.4 12.2 2.4 2.4 4.8-5" /></template>
+    <!-- A weekend taken off the calendar: the calendar struck through. -->
+    <template v-else-if="name === 'calendarOff'">
+      <path d="M6.4 5.4H17.6a2.4 2.4 0 0 1 2.4 2.4v9.8M18.6 19.6a2.4 2.4 0 0 1-1 .4H6.4A2.4 2.4 0 0 1 4 17.6V7.8c0-.4.1-.8.3-1.1" />
+      <path d="M8.4 3.6v1.8M15.6 3.6v3.4M4 10h6M14 10h6" /><path d="m4 4 16 16" />
+    </template>
   </svg>
 </template>

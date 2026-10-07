@@ -208,7 +208,8 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiRow`: a `lead` slot in the icon's place (a face or a mark the icon set lacks); `icon` stays its default.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
-  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
+  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`
+  (`share` is Libellus' own, newer than the snapshot the layer started from).
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
