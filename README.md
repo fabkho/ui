@@ -94,6 +94,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
 | `UiSegmented` | A segmented control. |
+| `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
 | `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
@@ -207,6 +208,8 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
   `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
+- `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
+  press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.
 - `UiSkeleton`: the `skeleton wave` placeholder as a component (`wave` offset, `as`).
 - `UiTabBar`: a generic tab bar (Libellus' `components/shell/TabBar.vue` carries its own tabs and
   the search morph, so it may keep it; the shared one takes tabs as `items` and extra controls in
