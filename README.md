@@ -89,7 +89,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiButton` | The pill: `tone` primary (ink, one per screen) · secondary · quiet · plain · danger; `size` lg · md · sm; `to` makes it a link; `offline` shows "Offline" and stays disabled. |
 | `UiRoundButton` | Round glass button for chrome over content (`icon` or slot, `label` for assistive tech). |
 | `UiTopBar` | A pushed screen's top: round back button, `trailing` slot, optional small title; pinned under the status bar. |
-| `UiRow` | A row in a group: icon, label, value or placeholder, chevron; `as="button"` or `to` (a link); `tone="danger"`; slots default (value) and `trailing`. |
+| `UiRow` | A row in a group: icon, label, value or placeholder, chevron; `as="button"` or `to` (a link); `tone="danger"`; slots default (value), `lead` (in the icon's place) and `trailing`. |
 | `UiRowGroup` | Inset grouped rows (iOS): quiet fill, hairline edge; rows draw their own dividers. |
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
@@ -203,6 +203,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiEmptyState`: an `art` slot for an illustration of the app's own (the lamp is the default).
 - `UiRowGroup`: `as` (`div`, the default, or `ul`).
 - `UiField`: `hint`, a quiet line under the rule (described-by), which the error replaces while there is one.
+- `UiRow`: a `lead` slot in the icon's place (a face or a mark the icon set lacks); `icon` stays its default.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
   `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`.
