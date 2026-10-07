@@ -43,8 +43,8 @@ layers/ui/
 5. **Only colours change between themes, never layout.** Themes are `html[data-theme='<name>']`
    (the generated CSS); a component never asks which theme is on.
 
-Both the layer and its users follow Libellus' motion rules (`docs/MOTION.md` there; Bookretreats'
-own MOTION.md is rewritten on it in step 3): durations and curves are tokens
+Both the layer and its users follow Libellus' motion rules (`docs/MOTION.md` there and, for
+Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and curves are tokens
 (`--duration-*`, `--ease-*`), read in JavaScript through `durationToken` / `easingToken`.
 
 ## Using it in an app
