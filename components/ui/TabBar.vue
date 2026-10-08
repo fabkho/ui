@@ -31,7 +31,9 @@ export type UiTab = {
 //
 // It slides away while the member reads down and comes back on a short scroll
 // up, at the top and at the end of the page (useHideOnScroll, `hideOnScroll`),
-// never while a sheet or a dialog is open, nor once focus is in the bar. The
+// never on a page that is only a little longer than the screen (`MIN_END_PX`: a
+// few px of reading are not worth a bar that goes and comes back), never while
+// a sheet or a dialog is open, nor once focus is in the bar. The
 // tab already showing, tapped again, scrolls its page back to the top, as iOS
 // does, and says so (`reselect`). The default slot comes after the tabs (a tab
 // that is not a page, Libellus' Search).

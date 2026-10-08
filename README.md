@@ -238,6 +238,12 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 
 - `UiAvatar`'s photo fade used `duration-standard`, which is no Tailwind utility (durations have no
   theme namespace), so a new photo appeared without the fade; now `duration-(--duration-standard)`.
+- `barAfterScroll` (`utils/hideOnScroll.ts`) hid the tab bar on any page that scrolled at all: on a
+  page only a little longer than the screen it went after a few pixels and came back before she was
+  done reading. It now keeps the bar while `end` (what the page scrolls past the screen) stays
+  under `MIN_END_PX` (640, about one screen of a phone), and hides as before from there on;
+  `useHideOnScroll` and `UiTabBar` are unchanged. Libellus has the same rule to take
+  (issue #82).
 
 **Generator (`design/build.mjs`)** — Libellus' with one change: themes are named in `THEMES`
 (Bookretreats: `papier` and `blau`) instead of light/dark/sepia; a themed value has
