@@ -121,7 +121,10 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
   scroll, moves focus in and back. `useBackDismiss` (+ `listenForBack`, `keepsForeignLayers`): the
   system Back closes it.
 - `useSwipeDown`: follow the finger down, dismiss past a distance or a flick.
-- `useKeyboardInset` / `useKeyboardViewport`: how much of the window the on-screen keyboard covers.
+- `useKeyboardInset` / `useKeyboardViewport`: how much of the window the on-screen keyboard covers,
+  what it leaves in view (`room`) and whether one is up (`shown`); one shared reader for all users,
+  which also sets `--keyboard-inset` on the root while any is active. `{ pin: true }` holds the page
+  still while the layer is open (see [the keyboard](#the-keyboard)).
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
@@ -130,6 +133,29 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 - `utils/keyboard.ts`: the keyboard arithmetic (`sheetLift`, `revealDelta`, …).
 - `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl`, `CoverColors`.
 - `plugins/touch-active.client.ts`: one passive touch listener, so `:active` (press feedback) works on iOS.
+- `plugins/no-focus-zoom.client.ts`: on iOS only, `maximum-scale=1` on the viewport, so a field under 16 px does not zoom the page in when it takes the keyboard (pinch zoom stays).
+
+### The keyboard
+
+What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat screen) uses
+`useKeyboardViewport`, and the app's viewport meta has to say
+`interactive-widget=resizes-content`:
+
+- **Chrome on Android** then shrinks the page to what the keyboard leaves: fixed things at the
+  bottom stand on the keyboard by themselves, `100dvh` shrinks, the inset reads 0. Without the
+  directive Chrome lays the keyboard over the page and pans to the field, and a sheet's header goes
+  off the top (Libellus measured this before its #58).
+- **iOS** ignores the directive and lays the keyboard over the page; the inset is how much of the
+  window it covers, and the layer lifts itself by it (`sheetLift`, `paletteLift`) and never grows
+  past `room`. With `pin`, iOS's own pan to the field is stopped: a tap on a field that does not have
+  the focus yet is focused with `preventScroll` (the caret lands at the end of its text for that
+  tap), a pan that still happens is put back (at once, or once a finger's pan has settled), and the
+  visual viewport counts as not panned, so a late `offsetTop` (WebKit bug 237851) moves nothing.
+- A field under 16 px makes iOS zoom the page in on focus and keep it zoomed (`no-focus-zoom`
+  prevents that; the layer's own fields are larger).
+
+Measured in the iOS Simulator (Safari tab and Home Screen app) and Chrome on the Android emulator
+for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and the action in view.
 
 ### CSS (`assets/css/ui.css`)
 
@@ -220,6 +246,14 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
+- `useKeyboardViewport` / `useKeyboardInset`: an `options` argument with `pin` (the page holds still under
+  a layer on the keyboard, [the keyboard](#the-keyboard)), `shown` (a keyboard is up, also where it resized
+  the page), one shared reader for all users, and `--keyboard-inset` on the root while any is active;
+  `keyboardShown` in `utils/keyboard.ts`. `UiSheet`, `UiConfirm` and Bookretreats' palette and chat pin.
+- `UiConfirm`: stands on the keyboard as a sheet does (lift, `room` cap, the card scrolls and keeps the
+  focused field in view), for a field in its slot.
+- `plugins/no-focus-zoom.client.ts`: no zoom on focus on iOS. Libellus' fields are 16 px or larger, so it
+  has not needed it; it does as soon as one is smaller.
 - `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
   press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.
 - `UiSkeleton`: the `skeleton wave` placeholder as a component (`wave` offset, `as`).
