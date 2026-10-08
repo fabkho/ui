@@ -18,8 +18,9 @@ export interface SheetRestore {
 // does not scroll under it, and focus is inside it — on the panel, or on the
 // field marked `data-autofocus`, focused in the tap that opened the sheet so
 // iOS raises the keyboard with it. Closing gives focus back to what opened it
-// (composables/useModalLayer.ts). With the keyboard up the sheet rides on it
-// and the focused field scrolls into view (composables/useKeyboardInset.ts).
+// (composables/useModalLayer.ts). With the keyboard up the sheet rides on it,
+// the page holds still under it (iOS would pan it to the field; `pin`) and the
+// focused field scrolls into view (composables/useKeyboardInset.ts).
 //
 // A sheet that leads to a Book page comes back when the member returns from
 // that page (composables/useSheetRestore.ts), and `restore` says so: opened
@@ -81,7 +82,7 @@ onUnmounted(() => import.meta.client && window.removeEventListener('keydown', on
 
 // ------------------------------------------------------------- the keyboard
 
-const { inset: keyboard, room } = useKeyboardViewport(() => open.value)
+const { inset: keyboard, room } = useKeyboardViewport(() => open.value, { pin: true })
 /** How far the sheet sits up to clear the keyboard (its home-indicator padding may go behind it). */
 const lift = computed(() => {
   if (!keyboard.value || !panel.value) return 0

@@ -50,6 +50,16 @@ export function keyboardRoomOf(
 }
 
 /**
+ * Whether an on-screen keyboard is up (added for Bookretreats): it covers part of the
+ * window (iOS), or it made the layout viewport shorter than the tallest seen at
+ * this width (Chrome on Android with `resizes-content`, where the inset reads 0).
+ * A browser toolbar coming and going moves less than `threshold`.
+ */
+export function keyboardShown(inset: number, layoutHeight: number, tallestHeight: number, threshold = 120): boolean {
+  return inset > threshold || tallestHeight - layoutHeight > threshold
+}
+
+/**
  * How far a bottom sheet goes up to sit on the keyboard. The sheet's own
  * bottom padding is for the home indicator, which the keyboard covers too, so
  * that part may go behind it.
