@@ -11,7 +11,13 @@
 // offered above the destructive action (Sign out with changes waiting to sync:
 // "Sync first", #93), `<testid>.alternative`.
 // The default slot (added for Bookretreats): more under the sentence, such as
-// a field for a reason (the Orga's ban).
+// a field for a reason (the Orga's ban). With such a field's keyboard up
+// (added for Bookretreats) the dialog stands on the keyboard as a sheet does,
+// never taller than what the keyboard leaves in view (its card scrolls, the
+// field kept in view), and the page holds still under it
+// (composables/useKeyboardInset.ts, `pin`).
+import { revealDelta, sheetLift } from '../../utils/keyboard'
+
 const open = defineModel<boolean>('open', { required: true })
 
 const props = withDefaults(
@@ -57,6 +63,38 @@ watch(open, (isOpen) => {
 })
 onUnmounted(() => import.meta.client && window.removeEventListener('keydown', onKeydown, true))
 
+// ------------------------------------------------------------- the keyboard
+
+const card = useTemplateRef<HTMLElement>('card')
+const { inset: keyboard, room } = useKeyboardViewport(() => open.value, { pin: true })
+/** How far the dialog sits up to clear the keyboard (its home-indicator padding may go behind it). */
+const lift = computed(() => {
+  if (!keyboard.value || !panel.value) return 0
+  return sheetLift(keyboard.value, Number.parseFloat(getComputedStyle(panel.value).paddingBottom) || 0)
+})
+/** Scrolls the card (and only it) so the focused field shows whole above the keyboard. */
+function revealFocused() {
+  const scroller = card.value
+  const field = document.activeElement
+  if (!scroller || !(field instanceof HTMLElement) || !scroller.contains(field)) return
+  const margin = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--spacing-md')) || 0
+  const delta = revealDelta(scroller.getBoundingClientRect(), field.getBoundingClientRect(), margin)
+  if (delta) scroller.scrollTop += delta
+}
+watch(lift, async () => {
+  await nextTick()
+  revealFocused()
+})
+function onFocusin() {
+  if (lift.value) revealFocused()
+}
+// `translate`, not `transform`: the way in and out is the transform.
+const panelStyle = computed(() => ({
+  translate: lift.value ? `0 ${-lift.value}px` : undefined,
+  '--dialog-lift': `${lift.value}px`,
+  '--dialog-room': room.value === null ? undefined : `${room.value}px`,
+}))
+
 const titleId = useId()
 const textId = useId()
 </script>
@@ -75,10 +113,12 @@ const textId = useId()
         :aria-labelledby="titleId"
         :aria-describedby="text ? textId : undefined"
         tabindex="-1"
-        class="dialog safe-bottom fixed inset-x-0 bottom-0 z-70 mx-auto w-full max-w-(--size-max-content) px-ml outline-none"
+        class="dialog safe-bottom fixed inset-x-0 bottom-0 z-70 mx-auto flex w-full max-w-(--size-max-content) flex-col px-ml outline-none"
+        :style="panelStyle"
         :data-testid="testid"
+        @focusin="onFocusin"
       >
-        <div class="mb-sm rounded-xl bg-surface-sheet px-ml pt-ml pb-ml shadow-sheet edge">
+        <div ref="card" class="mb-sm min-h-0 overflow-y-auto overscroll-contain rounded-xl bg-surface-sheet px-ml pt-ml pb-ml shadow-sheet edge">
           <h2 :id="titleId" class="book-title text-headline text-balance" :data-testid="`${testid}.title`">{{ title }}</h2>
           <p v-if="text" :id="textId" class="mt-sm text-subhead text-ink-muted" :data-testid="`${testid}.text`">{{ text }}</p>
           <!-- Added for Bookretreats: what the question needs besides its sentence (a ban's reason). -->
@@ -117,6 +157,16 @@ const textId = useId()
 </template>
 
 <style scoped>
+/* Never above the screen's top: no taller than the page (less the keyboard it
+   stands on), nor than what the keyboard leaves in view. Rides up and down with
+   the keyboard on its curve. */
+.dialog {
+  max-height: min(
+    calc(100dvh - var(--bar-top) - var(--spacing-sm) - var(--dialog-lift, 0px)),
+    calc(var(--dialog-room, 100dvh) - var(--bar-top) - var(--spacing-sm))
+  );
+  transition: translate var(--duration-keyboard) var(--ease-keyboard);
+}
 .dialog-enter-active {
   transition: transform var(--duration-sheet) var(--ease-sheet);
 }
