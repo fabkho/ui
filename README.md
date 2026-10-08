@@ -99,7 +99,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiRowGroup` | Inset grouped rows (iOS): quiet fill, hairline edge; rows draw their own dividers. |
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
-| `UiSegmented` | A segmented control. |
+| `UiSegmented` | A segmented control; `compact` is the small one at a row's end (Libellus' Glass setting), `disabled` dims it while something is under way. |
 | `UiCheckbox` | A ticked consent or choice: Libellus' round check over the native checkbox, the words in its slot (added for Bookretreats). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
 | `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
@@ -113,7 +113,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiAmbient` | The light a cover throws into a card or page (off where the theme says so). |
 | `UiSkeleton` | A placeholder swelling with the loading wave. |
 | `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen. |
-| `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top. |
+| `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place. |
 
 ### Composables and utils (auto-imported)
 
@@ -226,6 +226,12 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiTabBar`: a generic tab bar (Libellus' `components/shell/TabBar.vue` carries its own tabs and
   the search morph, so it may keep it; the shared one takes tabs as `items` and extra controls in
   its slot).
+- `UiTabBar`: a slot `icon-<key>` (`{ active }`) for a tab that draws something of its own instead of its icon
+  (Bookretreats' Profil tab shows her face, Instagram's way: the active state is the face's own ring, so the
+  accent dot under such a tab is left out).
+- `UiSegmented`: `compact` (ported from Libellus, where it is the Profile's Glass setting: 32 high, footnote
+  size, `sm` corners, options 44 high to touch), `disabled`, and an option's own `testid`, for a control whose
+  options keep test ids they had as buttons.
 - `useUiText`, `app.config.ts` (`ui.text`).
 
 **Fixed**
