@@ -240,9 +240,10 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   theme namespace), so a new photo appeared without the fade; now `duration-(--duration-standard)`.
 
 **Generator (`design/build.mjs`)** — Libellus' with one change: themes are named in `THEMES`
-(Bookretreats: `papier`, the default, and `blau`) instead of light/dark/sepia; a themed value has
-one entry per theme, every theme gets `[data-theme='<name>']`, the Swift output takes the default
-theme. Also: `letterSpacing` maps to Tailwind's `tracking` namespace, a `spring` group is unitless
+(Bookretreats: `papier` and `blau`) instead of light/dark/sepia; a themed value has
+one entry per theme, every theme gets `[data-theme='<name>']`, the default (`DEFAULT_THEME`: Blau)
+sits on `:root`, and the Swift output takes it. Also: `letterSpacing` maps to Tailwind's `tracking`
+namespace, a `spring` group is unitless
 (like `opacity`), and Swift keywords as token names are escaped. Libellus may keep its own generator.
 
 ## Adding to the layer
