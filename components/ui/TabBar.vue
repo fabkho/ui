@@ -38,6 +38,10 @@ export type UiTab = {
 //
 // Added for Bookretreats; generic: the tabs come in as `items`, the copy with
 // them. Root attributes (`data-testid`) land on the <nav>.
+//
+// A tab can draw something of its own in place of its icon: the slot `icon-<key>`
+// ({ active }), Instagram's own face for the profile. The slot brings its own
+// active state (a ring), so the accent dot under the tab is left out for it.
 const props = withDefaults(
   defineProps<{
     items: readonly UiTab[]
@@ -50,6 +54,8 @@ const props = withDefaults(
   { exact: false, hideOnScroll: true },
 )
 const emit = defineEmits<{ reselect: [key: string] }>()
+const slots = useSlots()
+const drawn = (tab: UiTab) => !!slots[`icon-${tab.key}`]
 
 const route = useRoute()
 const modal = useModalShown()
@@ -85,7 +91,9 @@ function tapped(event: MouseEvent, tab: UiTab) {
       @click="tapped($event, tab)"
     >
       <span class="relative flex">
-        <UiIcon class="tab-icon" :name="tab.icon" :bold="current(tab.to)" />
+        <slot :name="`icon-${tab.key}`" :active="current(tab.to)">
+          <UiIcon class="tab-icon" :name="tab.icon" :bold="current(tab.to)" />
+        </slot>
         <span v-if="tab.dot && !tab.locked" class="news" :data-testid="tab.testid && `${tab.testid}Dot`" aria-hidden="true" />
         <span
           v-if="tab.locked"
@@ -96,7 +104,7 @@ function tapped(event: MouseEvent, tab: UiTab) {
           <UiIcon name="lock" :size="12" bold />
         </span>
       </span>
-      <span class="dot" :class="current(tab.to) ? 'opacity-100' : 'opacity-0'" aria-hidden="true" />
+      <span v-if="!drawn(tab)" class="dot" :class="current(tab.to) ? 'opacity-100' : 'opacity-0'" aria-hidden="true" />
     </NuxtLink>
     <slot />
   </nav>
