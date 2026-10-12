@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // One row in a RowGroup: an optional icon, the label, the value on the right
 // (or a placeholder), an optional chevron. 48 px tall, a hairline divider
-// inset under the text from the second row on. `as` makes it a button or a
-// link (`to`); interactive rows need a data-testid from the caller.
+// inset under the text from the second row on. `as` makes it a button, an `a` (a link
+// out of the app: `href`, `target`, `rel` fall through) or, with `to`, an in-app link;
+// interactive rows need a data-testid from the caller.
 // Slot `lead` (added for Bookretreats) stands in the icon's place (a face, a mark of the app's own).
 import type { RouteLocationRaw } from 'vue-router'
 import type { IconName } from './Icon.vue'
@@ -17,7 +18,7 @@ const props = withDefaults(
     mono?: boolean
     tone?: 'default' | 'danger'
     to?: RouteLocationRaw
-    as?: 'div' | 'button'
+    as?: 'div' | 'button' | 'a'
   }>(),
   { value: undefined, placeholder: undefined, icon: undefined, chevron: false, mono: false, tone: 'default', to: undefined, as: 'div' },
 )
@@ -32,7 +33,7 @@ const tag = computed(() => (props.to ? NuxtLink : props.as))
     :to="to"
     :type="as === 'button' && !to ? 'button' : undefined"
     class="ui-row relative flex min-h-(--size-row) w-full items-center gap-ms px-inset text-left text-body"
-    :class="[tone === 'danger' ? 'text-error' : 'text-ink', (as === 'button' || to) && 'not-disabled:hover:bg-fill active:bg-fill-strong']"
+    :class="[tone === 'danger' ? 'text-error' : 'text-ink', (as === 'button' || as === 'a' || to) && 'not-disabled:hover:bg-fill active:bg-fill-strong']"
   >
     <slot name="lead"><UiIcon v-if="icon" :name="icon" :size="18" :class="tone === 'danger' ? '' : 'text-ink-faint'" /></slot>
     <span class="shrink-0" :class="value !== undefined || placeholder ? 'text-ink-muted' : ''">{{ label }}</span>

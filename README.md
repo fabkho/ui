@@ -236,12 +236,13 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   and `solid` (the fill laid on the room colour, opaque over a cover).
 - `UiCover`: `kind` (`book`, the default, or `screen`: a series' or film's poster, without the spine crease).
 - `UiEmptyState`: an `art` slot for an illustration of the app's own (the lamp is the default).
+- `UiRow`: `as="a"`, a row that is a link out of the app (`href`, `target`, `rel` pass through to the anchor).
 - `UiRowGroup`: `as` (`div`, the default, or `ul`).
 - `UiField`: `hint`, a quiet line under the rule (described-by), which the error replaces while there is one.
 - `UiRow`: a `lead` slot in the icon's place (a face or a mark the icon set lacks); `icon` stays its default.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
-  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`
+  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`, `external` (↗, a link that leaves the app)
   (`share` is Libellus' own, newer than the snapshot the layer started from).
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.

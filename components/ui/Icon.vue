@@ -75,6 +75,7 @@ export type IconName =
   | 'unlock'
   | 'checkCircle'
   | 'calendarOff'
+  | 'external'
 </script>
 
 <script setup lang="ts">
@@ -320,6 +321,8 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     <!-- Dealt with: a tick in a ring. -->
     <template v-else-if="name === 'checkCircle'"><circle cx="12" cy="12" r="8.4" /><path d="m8.4 12.2 2.4 2.4 4.8-5" /></template>
     <!-- A weekend taken off the calendar: the calendar struck through. -->
+    <!-- A link that leaves the app: an arrow going up and to the right out of a corner. -->
+    <template v-else-if="name === 'external'"><path d="M8 16 16.5 7.5M9.5 7.5h7v7" /></template>
     <template v-else-if="name === 'calendarOff'">
       <path d="M6.4 5.4H17.6a2.4 2.4 0 0 1 2.4 2.4v9.8M18.6 19.6a2.4 2.4 0 0 1-1 .4H6.4A2.4 2.4 0 0 1 4 17.6V7.8c0-.4.1-.8.3-1.1" />
       <path d="M8.4 3.6v1.8M15.6 3.6v3.4M4 10h6M14 10h6" /><path d="m4 4 16 16" />
