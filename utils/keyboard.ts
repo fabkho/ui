@@ -15,7 +15,10 @@
  * `clientHeight`. Usually they agree; where a browser takes `innerHeight` from
  * the visual viewport (Chromium does while pinch-zoomed, and has done for the
  * keyboard), `clientHeight` still is the layout viewport, and where Safari has
- * collapsed its toolbar `innerHeight` is the taller, current one.
+ * collapsed its toolbar `innerHeight` is the taller, current one. In the installed iOS 26 app (Tamagui's
+ * Sheet measured it on a device: visualViewport 714 → 404, innerHeight 714 → 561 and wobbling) only
+ * `clientHeight` holds still at 714; the larger of the two is then `clientHeight` itself, which is what
+ * Tamagui's `getStableLayoutViewportHeight` reads. Taking the larger also covers the toolbar case above.
  */
 export function layoutHeightOf(innerHeight: number, clientHeight: number): number {
   return Math.max(innerHeight, clientHeight)
@@ -29,8 +32,16 @@ export function layoutHeightOf(innerHeight: number, clientHeight: number): numbe
  */
 export function keyboardInsetOf(windowHeight: number, viewport: { height: number; offsetTop: number } | null): number {
   if (!viewport) return 0
-  return Math.max(0, Math.round(windowHeight - viewport.height - viewport.offsetTop))
+  const covered = Math.max(0, Math.round(windowHeight - viewport.height - viewport.offsetTop))
+  return covered < MIN_KEYBOARD_HEIGHT ? 0 : covered
 }
+
+/**
+ * The least that counts as a keyboard (added for Bookretreats, after Tamagui's Sheet, which ignores changes
+ * under 80 px "so URL bar collapses and accessory bars do not read as a keyboard"): iOS 26's form accessory bar
+ * alone over a hardware keyboard covers about 50.
+ */
+export const MIN_KEYBOARD_HEIGHT = 80
 
 /**
  * How tall the part of the page the member still sees is while the keyboard is

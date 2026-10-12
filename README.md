@@ -152,6 +152,16 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   the focus yet is focused with `preventScroll` (the caret lands at the end of its text for that
   tap), a pan that still happens is put back (at once, or once a finger's pan has settled), and the
   visual viewport counts as not panned, so a late `offsetTop` (WebKit bug 237851) moves nothing.
+- **iOS 26's form accessory bar** (‹ › ✓, the floating pill over the keyboard) cannot be hidden by a page. It is
+  outside the visual viewport (counted as keyboard, so what stands on `--keyboard-inset` sits above it) and it draws a
+  snapshot of whatever page content lies under it; no CSS (`backdrop-filter`, `z-index`, `opacity`) reaches it, only
+  content does (1ar.io, "The iOS keyboard gap"). So a layer that stands on the keyboard continues its own plain surface
+  below its bottom edge: `UiSheet` (`data-keyboard`, an `::after` of three touch targets in `surface-sheet`) and the chat
+  screen (`::after` in `surface`). Nothing but that colour is under the pill.
+- The keyboard is measured as Tamagui's Sheet does (verified on iOS 26: `visualViewport` 714 → 404, `innerHeight`
+  714 → 561 and wobbling, `documentElement.clientHeight` steady): `clientHeight − (offsetTop + height)`, and a change
+  under `MIN_KEYBOARD_HEIGHT` (80) is no keyboard. `layoutHeightOf` takes the larger of `innerHeight` and `clientHeight`,
+  which is `clientHeight` wherever `innerHeight` shrinks.
 - A field under 16 px makes iOS zoom the page in on focus and keep it zoomed (`no-focus-zoom`
   prevents that; the layer's own fields are larger).
 
@@ -248,6 +258,9 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
+- `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form
+  accessory bar shows plain sheet colour ([the keyboard](#the-keyboard)). Libellus has no such handling.
+- `utils/keyboard.ts`: `keyboardInsetOf` ignores a covered height under `MIN_KEYBOARD_HEIGHT` (80), after Tamagui's Sheet.
 - `useKeyboardViewport` / `useKeyboardInset`: an `options` argument with `pin` (the page holds still under
   a layer on the keyboard, [the keyboard](#the-keyboard)), `shown` (a keyboard is up, also where it resized
   the page), one shared reader for all users, and `--keyboard-inset` on the root while any is active;

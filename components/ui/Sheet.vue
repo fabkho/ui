@@ -199,6 +199,7 @@ function onAfterLeave() {
         :style="panelStyle"
         :data-testid="testid"
         :data-moving="moving || undefined"
+        :data-keyboard="keyboard > 0 || undefined"
         v-on="handlers"
         @focusin="onFocusin"
       >
@@ -265,6 +266,21 @@ function onAfterLeave() {
     calc(var(--sheet-room, 100dvh) - var(--bar-top) - var(--spacing-sm))
   );
   transition: transform var(--duration-sheet) var(--ease-sheet);
+}
+
+/* iOS 26's form accessory bar (‹ › ✓, a pill over the keyboard) is outside the visual viewport and
+   draws a snapshot of the page lying under it, which no CSS reaches: only content shows there. The
+   body ends at the viewport's bottom (the keyboard's edge); under it the sheet's own plain surface
+   goes on for three touch targets, so the pill shows calm sheet colour and not a list row behind. */
+.sheet[data-keyboard]::after {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: calc(var(--size-touch) * 3);
+  background-color: var(--color-surface-sheet);
+  content: '';
+  pointer-events: none;
 }
 
 /* Riding up and down with the iOS keyboard, on its curve (as the search palette does). */
