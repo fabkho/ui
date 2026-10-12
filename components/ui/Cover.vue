@@ -10,7 +10,7 @@
 // author set in type, a thin inset rule (CONTEXT.md, Placeholder cover). The
 // type is clamped to what fits (a long title steps down in size and ends in an
 // ellipsis, the author in two lines), and under `md` there is no type at all:
-// at 30–40 px it is noise, so the cloth, the rule and the mark carry it. The
+// at 24–40 px it is noise, so the cloth, the rule and the mark carry it. The
 // title stays in the accessible name. `fallback` tells the parent when the
 // Placeholder is showing (the page's glow then takes the cloth's colour).
 // The sheet (`data-cover`: image or cloth, without the glow) is what flies
@@ -34,7 +34,7 @@ const props = withDefaults(
     fallbacks?: readonly string[]
     thumbhash?: string | null
     colors?: CoverColors | null
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
     glow?: boolean
     /** For the first covers on screen: load now instead of when scrolled near. */
     eager?: boolean
@@ -62,6 +62,7 @@ const emit = defineEmits<{ fallback: [value: boolean] }>()
 const uiText = useUiText()
 
 const WIDTHS = {
+  xxs: 'w-(--size-cover-xxs)',
   xs: 'w-(--size-cover-xs)',
   sm: 'w-(--size-cover-sm)',
   md: 'w-(--size-cover-md)',
@@ -69,7 +70,7 @@ const WIDTHS = {
   xl: 'w-(--size-cover-xl)',
 } as const
 // Small covers get small corners; a big one a printed book's softer edge.
-const RADII = { xs: 'rounded-cover-sm', sm: 'rounded-cover-sm', md: 'rounded-cover', lg: 'rounded-cover', xl: 'rounded-cover-lg' } as const
+const RADII = { xxs: 'rounded-cover-sm', xs: 'rounded-cover-sm', sm: 'rounded-cover-sm', md: 'rounded-cover', lg: 'rounded-cover', xl: 'rounded-cover-lg' } as const
 
 const loaded = ref(false)
 /** The showing image is of another shape than 2:3 and `whole`: fitted, not cropped. */
@@ -111,7 +112,7 @@ function onLoad(event: Event) {
 }
 
 /** Under `md` the Placeholder is cloth, rule and mark only. */
-const compact = computed(() => props.size === 'xs' || props.size === 'sm')
+const compact = computed(() => props.size === 'xxs' || props.size === 'xs' || props.size === 'sm')
 /** A longer title is set smaller (and clamped to more lines), so it fits whole where it can. */
 const titleTier = computed(() => (props.title.length <= 36 ? 'short' : props.title.length <= 70 ? 'medium' : 'long'))
 

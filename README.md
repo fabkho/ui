@@ -188,7 +188,7 @@ reads a variable the generated file lacks.
 - **Radius** (`rounded-*`): `cover-sm`, `cover`, `cover-lg`, `sm`, `md`, `xl`, `sheet`, `pill`.
 - **Size** (`--size-*`): `touch`, `max-content`, `avatar`, `tab`, `tab-bar`, `tab-icon`, `button`,
   `button-md`, `button-sm`, `row`, `menu`, `switch`, `switch-thumb`, `grabber`, `grabber-height`,
-  `empty-art`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox).
+  `empty-art`, `cover-xxs`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox).
 - **Stroke** (`--stroke-*`): `hairline`, `rule`, `focus`, `icon`, `icon-bold`.
 - **Type**: `--font-sans`, `--font-mono`, `--font-serif`; `--font-weight-medium`,
   `--font-weight-semibold`; the text styles (`text-*`, each with `--line-height`,
@@ -234,7 +234,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 
 - `UiAvatar`: `size` (xs 30 · sm 32, the default and Libellus' only size · md 40 · lg 40 · xl 72)
   and `solid` (the fill laid on the room colour, opaque over a cover).
-- `UiCover`: `kind` (`book`, the default, or `screen`: a series' or film's poster, without the spine crease).
+- `UiCover`: `kind` (`book`, the default, or `screen`: a series' or film's poster, without the spine crease); `size` `xxs` (24 px wide, 36 px tall: a strip of covers in a 48 px row, 6 px of air above and below; the cloth has no type, as under `xs`).
 - `UiEmptyState`: an `art` slot for an illustration of the app's own (the lamp is the default).
 - `UiRow`: `as="a"`, a row that is a link out of the app (`href`, `target`, `rel` pass through to the anchor).
 - `UiRowGroup`: `as` (`div`, the default, or `ul`).
