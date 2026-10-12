@@ -17,6 +17,7 @@
 // option's touch target 44 high.
 // `disabled` (added for Bookretreats): the whole group is dimmed and takes no taps, while
 // something it started is under way.
+// A `v-model` that matches no option (added for Bookretreats) lights none: a choice not made yet.
 export interface SegmentedOption<V> {
   value: V
   /** What assistive tech says, and the face without a slot. */
@@ -35,7 +36,9 @@ const props = defineProps<{
 }>()
 defineSlots<{ option?: (props: { option: SegmentedOption<T>; selected: boolean }) => unknown }>()
 
-const index = computed(() => Math.max(0, props.options.findIndex((o) => o.value === model.value)))
+/** The chosen option, -1 when `model` matches none (a choice not made yet: nothing is lit). */
+const chosen = computed(() => props.options.findIndex((o) => o.value === model.value))
+const index = computed(() => Math.max(0, chosen.value))
 const buttons = useTemplateRef<HTMLButtonElement[]>('buttons')
 
 function onKeydown(event: KeyboardEvent) {
@@ -63,23 +66,23 @@ function onKeydown(event: KeyboardEvent) {
     :style="{ '--count': options.length, '--index': index }"
     @keydown="onKeydown"
   >
-    <span class="indicator pointer-events-none absolute" aria-hidden="true" />
+    <span v-show="chosen >= 0" class="indicator pointer-events-none absolute" aria-hidden="true" />
     <button
       v-for="(option, i) in options"
       :key="String(option.value)"
       ref="buttons"
       type="button"
       role="radio"
-      :aria-checked="i === index"
+      :aria-checked="i === chosen"
       :aria-label="$slots.option ? option.label : undefined"
       :tabindex="i === index ? 0 : -1"
       :disabled="disabled"
       class="option relative flex flex-1 items-center justify-center gap-sm"
-      :class="[compact ? 'px-ms text-footnote' : 'text-caption', i === index ? 'text-ink' : 'text-ink-muted']"
+      :class="[compact ? 'px-ms text-footnote' : 'text-caption', i === chosen ? 'text-ink' : 'text-ink-muted']"
       :data-testid="option.testid ?? (testid ? `${testid}.${option.value}` : undefined)"
       @click="model = option.value"
     >
-      <slot name="option" :option="option" :selected="i === index">{{ option.label }}</slot>
+      <slot name="option" :option="option" :selected="i === chosen">{{ option.label }}</slot>
     </button>
   </div>
 </template>

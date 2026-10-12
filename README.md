@@ -100,6 +100,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
 | `UiSegmented` | A segmented control; `compact` is the small one at a row's end (Libellus' Glass setting), `disabled` dims it while something is under way. |
+| `UiDateRow` | A day in a row group: the platform's own date picker laid over the row (`v-model` `YYYY-MM-DD`, `text` the day in words, `icon`, `min`, `max`). |
 | `UiCheckbox` | A ticked consent or choice: Libellus' round check over the native checkbox, the words in its slot (added for Bookretreats). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
 | `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
@@ -256,6 +257,13 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   has not needed it; it does as soon as one is smaller.
 - `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
   press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.
+- `UiDateRow`: Libellus' `components/ui/DateRow.vue` (a day in a RowGroup: the native date picker laid invisibly over
+  the whole row), ported without Libellus' i18n and `useDays` (the layer has no copy): `text` is the day in words as
+  the app formats it (the ISO day without), `icon` the mark (default `calendar`; Bookretreats' Geburtstag row takes
+  `cake`), `placeholder` what an empty day says (none by default). Same `v-model` (`YYYY-MM-DD` or ''), `min`, `max`,
+  `invalid`, `testid` on the input.
+- `UiSegmented`: a `model` that matches none of the options lights none of them (nothing chosen yet: Lesesprache
+  before she has set one); the first option stays the one tab stop.
 - `UiSkeleton`: the `skeleton wave` placeholder as a component (`wave` offset, `as`).
 - `UiTabBar`: a generic tab bar (Libellus' `components/shell/TabBar.vue` carries its own tabs and
   the search morph, so it may keep it; the shared one takes tabs as `items` and extra controls in
