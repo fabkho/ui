@@ -76,6 +76,9 @@ export type IconName =
   | 'checkCircle'
   | 'calendarOff'
   | 'external'
+  | 'mic'
+  | 'play'
+  | 'pause'
 </script>
 
 <script setup lang="ts">
@@ -323,6 +326,13 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     <!-- A weekend taken off the calendar: the calendar struck through. -->
     <!-- A link that leaves the app: an arrow going up and to the right out of a corner. -->
     <template v-else-if="name === 'external'"><path d="M8 16 16.5 7.5M9.5 7.5h7v7" /></template>
+    <!-- A voice message: the microphone, its capsule and the stand. -->
+    <template v-else-if="name === 'mic'">
+      <rect x="9" y="3.5" width="6" height="11" rx="3" /><path d="M5.8 11.5a6.2 6.2 0 0 0 12.4 0M12 17.7v2.8M9 20.5h6" />
+    </template>
+    <!-- Playing a voice message: the triangle (filled, as the small glyphs are) and the two bars. -->
+    <template v-else-if="name === 'play'"><path d="M8.5 5.8v12.4a.6.6 0 0 0 .9.5l9.7-6.2a.6.6 0 0 0 0-1L9.4 5.3a.6.6 0 0 0-.9.5z" fill="currentColor" /></template>
+    <template v-else-if="name === 'pause'"><path d="M8.5 5.5v13M15.5 5.5v13" :style="{ strokeWidth: 'calc(var(--stroke-icon-bold) * 1.6)' }" /></template>
     <template v-else-if="name === 'calendarOff'">
       <path d="M6.4 5.4H17.6a2.4 2.4 0 0 1 2.4 2.4v9.8M18.6 19.6a2.4 2.4 0 0 1-1 .4H6.4A2.4 2.4 0 0 1 4 17.6V7.8c0-.4.1-.8.3-1.1" />
       <path d="M8.4 3.6v1.8M15.6 3.6v3.4M4 10h6M14 10h6" /><path d="m4 4 16 16" />
