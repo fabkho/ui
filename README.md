@@ -107,7 +107,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. |
-| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; grows out of `origin` (FLIP, a cross-fade under Reduce Motion). Added for Bookretreats. |
+| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; the round `origin` grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
 | `UiIcon` | The icon set on the 24 grid (`IconName`). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
@@ -280,7 +280,19 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
-- `UiMediaViewer` and `utils/flip.ts` (`flipTransform`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the element it was opened from.
+- `UiMediaViewer` and `utils/flip.ts` (`flipTransform`, `coverCrop`, `morphFrames`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the round face it was opened from and shrinks back into it.
+  `useSwipeDown`'s `dismiss` now gets the distance the drag had gone, by mouse and by finger alike (additive; the viewer's leave starts from there; its swipe-down takes `useSheetTouch` like the sheets).
+  *Why `clip-path` + transform on the real image and not the View Transitions API* (evaluated, `view-transitions-vue`):
+  a view transition shows bitmap snapshots of the whole page, so the picture could only be *scaled* (the crop-to-fill → full-frame
+  and circle → rounded-corner change would be a keyframed `clip-path` on pseudo-elements of a blurry bitmap); it
+  freezes the page behind (the vaul sheet under it stops taking input and its own transform animations would be
+  captured mid-flight), can only be started once at a time (a close in the middle of the opening, or following the finger of a
+  swipe and then morphing home, is not possible), and needs Safari 18+ (installed iOS PWAs on older iOS and
+  Android WebViews fall back to nothing). FLIP on the real element works everywhere, stays interruptible (a close in the middle
+  reverses the opening animation) and keeps the image crisp. The geometry is pure (`morphFrames`: the avatar's cover crop of
+  the photo → `inset()` + `round` for the start frame, `inset(0 round r)` for the end, one even scale + translate; Vitest in
+  `tests/ui-flip.test.ts`). The image box is the photo's own (`max-width/height: 100%`, its natural aspect), so contain and the full
+  frame are one box. Also fixed: a leaving element's template refs are already cleared, the old close animation never found its image.
 - `UiSheet` (via `useSwipeDown`): a downward drag that starts in scrolling content scrolls it while it is not at its top and moves the sheet once it is (iOS). Libellus' `useSwipeDown` takes a drag in content only from `scrollTop` 0 and with pointer events, which the browser cancels as soon as it pans, so there only the header ever moved the sheet. New: `useSheetTouch`, `utils/sheetDrag.ts`.
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form

@@ -10,11 +10,11 @@ import { dismisses } from '../utils/sheetDrag'
  *
  * A finger (touch events, `useSheetTouch`) does it the iOS way: a drag that starts
  * in scrolling content scrolls it while it is not at the top, and moves the
- * element once it is — the same gesture can pass from one to the other. A mouse or
+ * element once it is — the same gesture can pass from one to the other. `dismiss` gets how far it was pulled (px), for a leave that starts from there. A mouse or
  * a pen (pointer events) drags from anywhere that is not scrolled down. Drags that
  * start in a field are left alone, so typing still works; a mouse's on a button too.
  */
-export function useSwipeDown(dismiss: () => void) {
+export function useSwipeDown(dismiss: (distance: number) => void) {
   const offset = ref(0)
   const dragging = ref(false)
   let start: { y: number; time: number; id: number } | null = null
@@ -46,7 +46,7 @@ export function useSwipeDown(dismiss: () => void) {
     start = null
     dragging.value = false
     offset.value = 0
-    if (dismisses(distance, velocity)) dismiss()
+    if (dismisses(distance, velocity)) dismiss(distance)
   }
 
   // The finger: the offset is the position, and a release is the same decision as the mouse's.
@@ -57,7 +57,7 @@ export function useSwipeDown(dismiss: () => void) {
     release: (position, velocity) => {
       dragging.value = false
       offset.value = 0
-      if (dismisses(position, velocity)) dismiss()
+      if (dismisses(position, velocity)) dismiss(position)
     },
   })
 
