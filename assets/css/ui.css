@@ -67,8 +67,10 @@
   bottom: calc(var(--float-bottom) - var(--viewport-pan, 0px));
 }
 
-/* A sheet's bottom edge on the screen's, also where iOS left the visual viewport panned (`--viewport-pan`). */
-@utility bottom-screen {
+/* A sheet's bottom edge on the screen's, also where iOS left the visual viewport panned (`--viewport-pan`).
+   Not named `bottom-screen`: Tailwind reads that as `bottom-<spacing>` and `--spacing-screen` (20px) beat this
+   utility, so every sheet stood 20px short of the screen's bottom (1.16.0, r10). */
+@utility screen-bottom {
   bottom: calc(0px - var(--viewport-pan, 0px));
 }
 

@@ -194,7 +194,7 @@ function onAfterLeave() {
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1"
-        class="sheet safe-bottom bottom-screen fixed inset-x-0 z-50 mx-auto flex w-full max-w-(--size-max-content) flex-col rounded-t-sheet bg-surface-sheet shadow-sheet outline-none"
+        class="sheet safe-bottom screen-bottom fixed inset-x-0 z-50 mx-auto flex w-full max-w-(--size-max-content) flex-col rounded-t-sheet bg-surface-sheet shadow-sheet outline-none"
         :class="followsKeyboard && 'follows-keyboard'"
         :style="panelStyle"
         :data-testid="testid"

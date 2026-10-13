@@ -183,7 +183,7 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   the screen (the tab bar ~330 pt up). `plugins/stranded-viewport.client.ts` starts `watchStrandedViewport`
   (WebKit on an iPhone only): 300 ms after things are still it tries a scroll nudge, then subtracts what pan
   is left from the floating chrome's and the sheets' bottom (`--viewport-pan`, read by `float-bottom` and
-  `bottom-screen`), and flips the page's display to have a shrunk viewport measured again
+  `screen-bottom`), and flips the page's display to have a shrunk viewport measured again
   (`strandedViewport` in utils/keyboard.ts decides).
 - A field under 16 px makes iOS zoom the page in on focus and keep it zoomed (`no-focus-zoom`
   prevents that; the layer's own fields are larger).
@@ -195,7 +195,7 @@ for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and 
 
 - The device's insets, read once: `--safe-area-top|bottom|left|right`, `--bar-top`, `--float-bottom`
   (iOS: floating chrome sits `tabBarDrop` into the home-indicator inset).
-- Utilities: `screen-inset`, `bar-top`, `safe-bottom`, `safe-x`, `float-bottom`, `bottom-screen` (added for Bookretreats: `bottom: 0` less a stranded pan), `clear-tab-bar`,
+- Utilities: `screen-inset`, `bar-top`, `safe-bottom`, `safe-x`, `float-bottom`, `screen-bottom` (added for Bookretreats: `bottom: 0` less a stranded pan; never name a utility `<property>-<token>` after a spacing token — `bottom-screen` was read as `bottom-<spacing-screen>` and left sheets 20 px short, r10), `clear-tab-bar`,
   `edge`, `edge-faint`, `glass`, `figures`, `eyebrow`, `book-title`, `title-wrap`, `scrollbar-none`,
   `skeleton`, `wave`, `arrive`.
 - Keyframes: `placeholder-wave`, `arrive`, `page-fade-in`, `page-fade-out`, `page-rise`, `page-sink`.
