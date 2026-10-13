@@ -1,18 +1,18 @@
 import type { Ref } from 'vue'
-
-/** How far a sheet or the search palette has to travel down before it lets go. */
-const DISMISS_DISTANCE = 80
-/** …or how fast a short flick has to be (px per ms). */
-const DISMISS_VELOCITY = 0.5
+import { dismisses } from '../utils/sheetDrag'
 
 /**
  * Swipe down to dismiss, for anything that rises from the bottom (UiSheet, the
  * search palette). Follows the finger while dragging (`offset`, px, only
  * downwards) and calls `dismiss` when the drag went far or fast enough;
- * otherwise the element springs back. Pointer events, so touch, pen and a
- * mouse drag all work. Bind `handlers` on the element that starts the drag.
- * Drags that start in an input or on a button are left alone, so typing and
- * tapping still work.
+ * otherwise the element springs back. Bind `handlers` on the element that
+ * starts the drag.
+ *
+ * A finger (touch events, `useSheetTouch`) does it the iOS way: a drag that starts
+ * in scrolling content scrolls it while it is not at the top, and moves the
+ * element once it is — the same gesture can pass from one to the other. A mouse or
+ * a pen (pointer events) drags from anywhere that is not scrolled down. Drags that
+ * start in a field are left alone, so typing still works; a mouse's on a button too.
  */
 export function useSwipeDown(dismiss: () => void) {
   const offset = ref(0)
@@ -20,6 +20,8 @@ export function useSwipeDown(dismiss: () => void) {
   let start: { y: number; time: number; id: number } | null = null
 
   function onPointerdown(event: PointerEvent) {
+    // A finger is `useSheetTouch`'s: the browser would cancel its pointer as soon as it pans.
+    if (event.pointerType === 'touch') return
     const target = event.target as HTMLElement | null
     if (target?.closest('input, textarea, button, a, [data-no-swipe]')) return
     // Content scrolled down inside the element (a tall sheet): a downward drag
@@ -44,14 +46,27 @@ export function useSwipeDown(dismiss: () => void) {
     start = null
     dragging.value = false
     offset.value = 0
-    if (distance > DISMISS_DISTANCE || (distance > 12 && velocity > DISMISS_VELOCITY)) dismiss()
+    if (dismisses(distance, velocity)) dismiss()
   }
+
+  // The finger: the offset is the position, and a release is the same decision as the mouse's.
+  const touch = useSheetTouch({
+    position: () => offset.value,
+    move: (position) => (offset.value = position),
+    claim: () => (dragging.value = true),
+    release: (position, velocity) => {
+      dragging.value = false
+      offset.value = 0
+      if (dismisses(position, velocity)) dismiss()
+    },
+  })
 
   const handlers = {
     pointerdown: onPointerdown,
     pointermove: onPointermove,
     pointerup: end,
     pointercancel: end,
+    ...touch.handlers,
   }
 
   /** Inline style for the dragged element: follows the finger, no transition while dragging. */

@@ -122,7 +122,13 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 - `useModalLayer` (+ `useModalShown`): a sheet or dialog makes the rest of the app inert, locks the
   scroll, moves focus in and back. `useBackDismiss` (+ `listenForBack`, `keepsForeignLayers`): the
   system Back closes it.
-- `useSwipeDown`: follow the finger down, dismiss past a distance or a flick.
+- `useSwipeDown`: follow the finger down, dismiss past a distance or a flick. A finger does it the iOS way
+  (`useSheetTouch`, decisions in `utils/sheetDrag.ts`): content scrolled down scrolls under a downward drag,
+  at its top the same drag moves the sheet, and one gesture can pass from one to the other.
+- `useSheetTouch`: touch events (a pan on a scroller cancels the pointer, so pointer events never see a drag
+  that starts in content) that decide per move between scrolling the content and moving the sheet
+  (`routeMove`); for a sheet with its own detents too (the member sheet). Left alone: fields, `data-no-swipe`,
+  a second finger, a gesture that goes sideways first.
 - `useKeyboardInset` / `useKeyboardViewport`: how much of the window the on-screen keyboard covers,
   what it leaves in view (`room`) and whether one is up (`shown`); one shared reader for all users,
   which also sets `--keyboard-inset` on the root while any is active. `{ pin: true }` holds the page
@@ -275,6 +281,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiMediaViewer` and `utils/flip.ts` (`flipTransform`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the element it was opened from.
+- `UiSheet` (via `useSwipeDown`): a downward drag that starts in scrolling content scrolls it while it is not at its top and moves the sheet once it is (iOS). Libellus' `useSwipeDown` takes a drag in content only from `scrollTop` 0 and with pointer events, which the browser cancels as soon as it pans, so there only the header ever moved the sheet. New: `useSheetTouch`, `utils/sheetDrag.ts`.
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form
   accessory bar shows plain sheet colour ([the keyboard](#the-keyboard)). Libellus has no such handling.
