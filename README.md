@@ -107,6 +107,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. |
+| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; grows out of `origin` (FLIP, a cross-fade under Reduce Motion). Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
 | `UiIcon` | The icon set on the 24 grid (`IconName`). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
@@ -257,6 +258,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
+- `UiMediaViewer` and `utils/flip.ts` (`flipTransform`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the element it was opened from.
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form
   accessory bar shows plain sheet colour ([the keyboard](#the-keyboard)). Libellus has no such handling.
