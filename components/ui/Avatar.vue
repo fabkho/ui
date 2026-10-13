@@ -10,9 +10,11 @@
 // size), md 40, lg 40 at `coverSm`, xl 72 (a hero's ring, `coverMd`).
 // `solid` (added for Bookretreats): the quiet fill laid on the room colour, so
 // the circle is opaque where it overlaps something (a face on a cover).
+// `lazy` (added for Bookretreats): the photo loads lazily (`loading="lazy"`), for photos from a third party in
+// lists. A photo that fails to load (a 404) is dropped: the initials stay, nothing jumps.
 const props = withDefaults(
-  defineProps<{ initials: string; photo?: string | null; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; solid?: boolean }>(),
-  { photo: null, size: 'sm', solid: false },
+  defineProps<{ initials: string; photo?: string | null; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; solid?: boolean; lazy?: boolean }>(),
+  { photo: null, size: 'sm', solid: false, lazy: false },
 )
 
 const SIZES = {
@@ -26,11 +28,13 @@ const SIZES = {
 /** The photo changed while on screen: it waits for its decode, then fades in. */
 const arriving = ref(false)
 const decoded = ref(false)
+const failed = ref(false)
 watch(
   () => props.photo,
   () => {
     arriving.value = true
     decoded.value = false
+    failed.value = false
   },
 )
 </script>
@@ -43,15 +47,18 @@ watch(
   >
     {{ initials }}
     <img
-      v-if="photo"
+      v-if="photo && !failed"
       :key="photo"
       :src="photo"
       alt=""
       draggable="false"
+      :loading="lazy ? 'lazy' : undefined"
+      :decoding="lazy ? 'async' : undefined"
       class="absolute inset-0 size-full object-cover"
       :class="arriving && ['transition-opacity duration-(--duration-standard) ease-standard', decoded ? 'opacity-100' : 'opacity-0']"
       data-avatar-photo
       @load="decoded = true"
+      @error="failed = true"
     />
     <!-- The hairline ring over the photo too. -->
     <span class="pointer-events-none absolute inset-0 rounded-pill edge" />
