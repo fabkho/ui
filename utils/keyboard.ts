@@ -105,3 +105,96 @@ export function revealDelta(
 export function paletteLift(keyboard: number, gap: number, resting: number): number {
   return keyboard > 0 ? Math.max(0, keyboard + gap - resting) : 0
 }
+
+/** One look at the window, as the shared reader (composables/useKeyboardInset.ts) takes it. */
+export interface ViewportSample {
+  innerHeight: number
+  clientHeight: number
+  viewport: { height: number; offsetTop: number; scale?: number } | null
+}
+
+/** What the reader makes of a sample: the keyboard inset, the room left in view, and the pan it went by. */
+export interface ViewportReading {
+  inset: number
+  room: number | null
+  /** The layout viewport's height the inset is measured against (`layoutHeightOf`). */
+  layout: number
+  /** How far the visual viewport is taken to be panned down (its `offsetTop`, once that can be trusted). */
+  pan: number
+}
+
+/**
+ * The one measurement of the keyboard (added for Bookretreats), for every layer that stands on it: UiSheet,
+ * UiConfirm, the search palettes, the chat. Everything fixed is laid out in the layout viewport, and what the
+ * member sees of it starts `offsetTop` down: a layer stands on the keyboard when its bottom is at
+ * `offsetTop + height` of the visual viewport, so the inset is `layout − height − offsetTop` (Libellus' and
+ * Tamagui's formula).
+ *
+ * The pan is where iOS is unreliable. In the installed app the visual viewport's `offsetTop` reads 0 inside its own
+ * `resize` event while it is really panned (WebKit bug 237851: right 50 ms later, or two frames on), and on iOS 26 it
+ * can stay panned after the keyboard went (Apple Developer Forums 800125). So a reading taken in the event
+ * (`settled` false) keeps the pan it had (`pan`), and one taken a frame or more later (`settled`) takes `offsetTop`
+ * as it is. A pinned layer used to take the pan as 0 always, trusting the pin to undo it — but iOS also pans the
+ * visual viewport where the window cannot scroll (the root is `overflow: hidden` under a modal layer), the pin then
+ * has nothing to put back, and the layer went up by the keyboard and the pan together (r10: the palette ~155 pt
+ * over the keyboard on an iPhone, its top off the screen).
+ *
+ * Pinch-zoomed or not pinned, the pan is `offsetTop` as it is (Libellus).
+ */
+export function readViewport(sample: ViewportSample, options: { pinned: boolean; settled: boolean; pan: number }): ViewportReading {
+  const layout = layoutHeightOf(sample.innerHeight, sample.clientHeight)
+  const viewport = sample.viewport
+  if (!viewport) return { inset: 0, room: null, layout, pan: 0 }
+  const zoomed = Math.abs((viewport.scale ?? 1) - 1) > 0.01
+  const offsetTop = Math.max(0, viewport.offsetTop)
+  const pan = !options.pinned || zoomed || options.settled ? offsetTop : options.pan
+  // With the keyboard down the pan moves nothing; the next keyboard starts from none (its event reads 0 anyway).
+  const down = viewport.height >= layout - MIN_KEYBOARD_HEIGHT
+  return {
+    inset: keyboardInsetOf(layout, { height: viewport.height, offsetTop: pan }),
+    room: keyboardRoomOf(layout, viewport),
+    layout,
+    pan: down ? 0 : pan,
+  }
+}
+
+/**
+ * Where a layer standing on the keyboard has its bottom edge on the screen (px from the top of what the member
+ * sees), given the reading it was lifted by and where the visual viewport really is: for the tests' model of iOS
+ * (web/tests/ui-keyboard.test.ts) and for anyone checking a placement by hand.
+ */
+export function paletteBottomOnScreen(reading: Pick<ViewportReading, 'inset' | 'layout'>, actualOffsetTop: number, gap: number, resting: number): number {
+  return reading.layout - resting - paletteLift(reading.inset, gap, resting) - actualOffsetTop
+}
+
+/**
+ * What to do about a viewport iOS left behind once the keyboard has gone (added for Bookretreats, r10: the tab bar
+ * stood ~330 pt up the screen on Friends, no keyboard in sight). Two iOS 26 faults leave fixed chrome too high:
+ *
+ * - the visual viewport stays panned (`offsetTop` > 0 with the keyboard down; Apple Developer Forums 800125). A
+ *   pinned sheet's field takes the keyboard, iOS pans the visual viewport to it (the window cannot scroll under the
+ *   modal layer), the sheet closes, the keyboard goes — and the pan stays: everything fixed stands `offsetTop` up
+ *   the screen. First a scroll nudge (`nudge`: a scroll of the window and back, which makes WebKit place the
+ *   viewports again); if the pan is still there afterwards (`nudged`), the bottom chrome is moved down by it
+ *   (`pan`, the root's `--viewport-pan`);
+ * - in the installed app on iOS 26.0 the layout viewport itself shrinks and stays short (WebKit bug 301857, fixed in
+ *   26.1; dev.to, cederhook): `innerHeight`, `clientHeight` and the visual viewport all read less than the tallest seen
+ *   at this width. Then `reflow`: a display flip of the page, which makes WebKit measure the viewport again.
+ *
+ * Nothing while a text field has the focus (the keyboard is the reader's, `readViewport`), pinch-zoomed, or with the
+ * keyboard up.
+ */
+export function strandedViewport(
+  sample: ViewportSample,
+  options: { tallest: number; typing: boolean; nudged: boolean; standalone: boolean },
+): { nudge: boolean; pan: number; reflow: boolean } {
+  const none = { nudge: false, pan: 0, reflow: false }
+  const viewport = sample.viewport
+  if (!viewport || options.typing || Math.abs((viewport.scale ?? 1) - 1) > 0.01) return none
+  const layout = layoutHeightOf(sample.innerHeight, sample.clientHeight)
+  if (viewport.height < layout - MIN_KEYBOARD_HEIGHT) return none
+  const offsetTop = Math.round(Math.max(0, viewport.offsetTop))
+  const shrunk = options.standalone && options.tallest - layout > MIN_KEYBOARD_HEIGHT
+  if (offsetTop < 1) return { ...none, reflow: shrunk }
+  return options.nudged ? { nudge: false, pan: offsetTop, reflow: shrunk } : { nudge: true, pan: 0, reflow: false }
+}

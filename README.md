@@ -127,14 +127,18 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
   what it leaves in view (`room`) and whether one is up (`shown`); one shared reader for all users,
   which also sets `--keyboard-inset` on the root while any is active. `{ pin: true }` holds the page
   still while the layer is open (see [the keyboard](#the-keyboard)).
+- `usePaletteKeyboard` (added for Bookretreats): a search palette on the keyboard — its lift and
+  its height within the room left in view, on the same reading as `UiSheet`; the book, Serien &
+  Filme and author palettes use it.
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
 - `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`.
 - `utils/haptics.ts`: `tick`, `stepTick`, `hapticsKind`.
-- `utils/keyboard.ts`: the keyboard arithmetic (`sheetLift`, `revealDelta`, …).
+- `utils/keyboard.ts`: the keyboard arithmetic (`readViewport`, the one measurement; `sheetLift`, `paletteLift`, `revealDelta`, …).
 - `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl`, `CoverColors`.
 - `plugins/touch-active.client.ts`: one passive touch listener, so `:active` (press feedback) works on iOS.
+- `plugins/stranded-viewport.client.ts` (added for Bookretreats): fixed chrome back in place after the keyboard (see [the keyboard](#the-keyboard)).
 - `plugins/no-focus-zoom.client.ts`: on iOS only, `maximum-scale=1` on the viewport, so a field under 16 px does not zoom the page in when it takes the keyboard (pinch zoom stays).
 
 ### The keyboard
@@ -151,8 +155,13 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   window it covers, and the layer lifts itself by it (`sheetLift`, `paletteLift`) and never grows
   past `room`. With `pin`, iOS's own pan to the field is stopped: a tap on a field that does not have
   the focus yet is focused with `preventScroll` (the caret lands at the end of its text for that
-  tap), a pan that still happens is put back (at once, or once a finger's pan has settled), and the
-  visual viewport counts as not panned, so a late `offsetTop` (WebKit bug 237851) moves nothing.
+  tap), and a pan that still happens is put back (at once, or once a finger's pan has settled).
+  A pan the pin cannot put back is counted: iOS also pans the visual viewport where the window
+  cannot scroll (the root is `overflow: hidden` under a modal layer), and a layer that took it as 0
+  went up by the keyboard and the pan together (r10: the book palette ~155 pt over the keyboard, its
+  top off the screen). Only inside the event that reports it is `offsetTop` not trusted (in the
+  installed app it reads 0 there, WebKit bug 237851); the reader keeps the pan it had for that one
+  reading and looks again every frame until nothing has moved for 300 ms (`readViewport`).
 - **iOS 26's form accessory bar** (‹ › ✓, the floating pill over the keyboard) cannot be hidden by a page. It is
   outside the visual viewport (counted as keyboard, so what stands on `--keyboard-inset` sits above it) and it draws a
   snapshot of whatever page content lies under it; no CSS (`backdrop-filter`, `z-index`, `opacity`) reaches it, only
@@ -163,6 +172,13 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   714 → 561 and wobbling, `documentElement.clientHeight` steady): `clientHeight − (offsetTop + height)`, and a change
   under `MIN_KEYBOARD_HEIGHT` (80) is no keyboard. `layoutHeightOf` takes the larger of `innerHeight` and `clientHeight`,
   which is `clientHeight` wherever `innerHeight` shrinks.
+- **What the keyboard leaves behind** (r10): iOS 26 can leave the visual viewport panned once the keyboard
+  has gone, and the installed app on 26.0 can keep a shrunk layout viewport; fixed chrome then stands far up
+  the screen (the tab bar ~330 pt up). `plugins/stranded-viewport.client.ts` starts `watchStrandedViewport`
+  (WebKit on an iPhone only): 300 ms after things are still it tries a scroll nudge, then subtracts what pan
+  is left from the floating chrome's and the sheets' bottom (`--viewport-pan`, read by `float-bottom` and
+  `bottom-screen`), and flips the page's display to have a shrunk viewport measured again
+  (`strandedViewport` in utils/keyboard.ts decides).
 - A field under 16 px makes iOS zoom the page in on focus and keep it zoomed (`no-focus-zoom`
   prevents that; the layer's own fields are larger).
 
@@ -173,7 +189,7 @@ for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and 
 
 - The device's insets, read once: `--safe-area-top|bottom|left|right`, `--bar-top`, `--float-bottom`
   (iOS: floating chrome sits `tabBarDrop` into the home-indicator inset).
-- Utilities: `screen-inset`, `bar-top`, `safe-bottom`, `safe-x`, `float-bottom`, `clear-tab-bar`,
+- Utilities: `screen-inset`, `bar-top`, `safe-bottom`, `safe-x`, `float-bottom`, `bottom-screen` (added for Bookretreats: `bottom: 0` less a stranded pan), `clear-tab-bar`,
   `edge`, `edge-faint`, `glass`, `figures`, `eyebrow`, `book-title`, `title-wrap`, `scrollbar-none`,
   `skeleton`, `wave`, `arrive`.
 - Keyframes: `placeholder-wave`, `arrive`, `page-fade-in`, `page-fade-out`, `page-rise`, `page-sink`.

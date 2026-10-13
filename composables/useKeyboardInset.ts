@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { keyboardInsetOf, keyboardRoomOf, keyboardShown, layoutHeightOf } from '../utils/keyboard'
+import { keyboardShown, layoutHeightOf, readViewport, strandedViewport } from '../utils/keyboard'
 
 /**
  * How much of the layout viewport the on-screen keyboard covers, in px (0
@@ -42,8 +42,10 @@ export interface KeyboardViewportOptions {
    *   pinned user became active (a pan that still happens: a drag on the
    *   chrome with the keyboard up, a keyboard switching to emoji) — at once,
    *   or once a pan under a finger has settled;
-   * - the visual viewport is taken as not panned (`offsetTop` 0) while not
-   *   pinch-zoomed, so a stale `offsetTop` never moves anything.
+   * - a pan the pin cannot put back (iOS also pans the visual viewport where
+   *   the window cannot scroll: the root is `overflow: hidden` under a modal
+   *   layer) is counted, once `offsetTop` can be trusted: not inside the event
+   *   that reports it, a frame or more later (utils/keyboard.ts, readViewport).
    */
   pin?: boolean
 }
@@ -106,9 +108,14 @@ function join(delta: 1 | -1, pin: boolean) {
   }
   if (before === 0 && users > 0) listen(true)
   else if (before > 0 && users === 0) listen(false)
-  if (users > 0) measure()
-  else {
+  if (users > 0) {
+    measure(true)
+    look()
+  } else {
+    // The last layer on the keyboard closed: whatever the keyboard left behind is the watcher's now.
+    lookAfterViewport()
     reading.inset = 0
+    pan = 0
     reading.room = null
     reading.shown = false
     document.documentElement.style.removeProperty('--keyboard-inset')
@@ -121,6 +128,8 @@ function listen(start: boolean) {
   window.visualViewport?.[method]('scroll', onScroll)
   window[method]('scroll', onScroll, { passive: true })
   if (iosWebKit()) document[method]('mousedown', onMousedown, true)
+  document[method]('focusin', onFocusChange)
+  document[method]('focusout', onFocusChange)
   for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) document[method](type, onTouch, { capture: true, passive: true })
   if (!start) {
     cancelAnimationFrame(later)
@@ -152,10 +161,10 @@ function isTextField(element: EventTarget | null): element is HTMLElement {
   return element instanceof HTMLElement && element.isContentEditable
 }
 
-/** The keyboard moved: follow it at once (its curve starts now), and look again once WebKit has settled. */
+/** The keyboard moved: follow it at once (its curve starts now; the pan as it was), and keep looking while WebKit settles. */
 function onResize() {
-  measure()
-  measureLater()
+  measure(false)
+  look()
 }
 
 /**
@@ -172,7 +181,7 @@ function onScroll() {
     if (touching || performance.now() - lastTouch < SETTLE_MS) restoreWhenSettled()
     else restore()
   }
-  measureLater()
+  look()
 }
 
 /** How long after a finger left a pan still counts as its momentum, and how long a pan must be still. */
@@ -202,29 +211,158 @@ function onTouch(event: TouchEvent) {
 }
 
 /**
- * Two frames on: in the installed iOS app the visual viewport's `offsetTop` can
- * still be the old one inside its own resize event (WebKit bug 237851).
+ * How long the reader keeps looking after the last thing that can move the keyboard (a viewport `resize` or
+ * `scroll`, a window scroll, a field taking or losing the focus): every frame, until nothing has happened for this
+ * long. iOS gives no event for the end of the keyboard's animation, reports the pan late (WebKit bug 237851, see
+ * readViewport) and changes the accessory bar's height (QuickType coming and going) on its own schedule, so one
+ * look in the event and one two frames later was not enough. 300 ms is about the keyboard's own animation.
  */
-function measureLater() {
-  if (later) return
-  later = requestAnimationFrame(() => {
-    later = requestAnimationFrame(() => {
-      later = 0
-      if (users > 0) measure()
-    })
-  })
+const LOOK_MS = 300
+let lookUntil = 0
+/** Frames since the last event: the one right after it may still read the old `offsetTop`, the second on is trusted. */
+let framesSince = 0
+
+function look() {
+  lookUntil = performance.now() + LOOK_MS
+  framesSince = 0
+  if (!later) later = requestAnimationFrame(frame)
 }
 
-function measure() {
+function frame() {
+  later = 0
+  if (users === 0) return
+  framesSince += 1
+  if (framesSince >= 2) measure(true)
+  if (framesSince < 2 || performance.now() < lookUntil) later = requestAnimationFrame(frame)
+}
+
+function onFocusChange() {
+  look()
+}
+
+/** The pan the last reading went by (readViewport): kept while `offsetTop` cannot be trusted. */
+let pan = 0
+
+function measure(settled: boolean) {
   const visual = window.visualViewport ?? null
-  // Pinned and not pinch-zoomed: the page is held where it was, so the visual viewport is not panned.
-  const viewport = visual && pins > 0 && Math.abs(visual.scale - 1) <= 0.01 ? { height: visual.height, offsetTop: 0, scale: visual.scale } : visual
+  const next = readViewport(
+    {
+      innerHeight: window.innerHeight,
+      clientHeight: document.documentElement.clientHeight,
+      viewport: visual && { height: visual.height, offsetTop: visual.offsetTop, scale: visual.scale },
+    },
+    { pinned: pins > 0, settled, pan },
+  )
+  pan = next.pan
+  const width = window.innerWidth
+  if (width !== tallest.width) tallest = { width, height: next.layout }
+  else tallest.height = Math.max(tallest.height, next.layout)
+  const changed = reading.inset !== next.inset || !document.documentElement.style.getPropertyValue('--keyboard-inset')
+  reading.inset = next.inset
+  reading.room = next.room
+  reading.shown = keyboardShown(next.inset, next.layout, tallest.height)
+  if (changed) document.documentElement.style.setProperty('--keyboard-inset', `${next.inset}px`)
+}
+
+// ------------------------------------------------------- the viewport left behind
+
+/**
+ * Puts right what iOS 26 leaves behind once the keyboard has gone (added for Bookretreats, r10): a visual viewport
+ * still panned, or a layout viewport shrunk for good — fixed chrome (the tab bar) then stands far up the screen
+ * (utils/keyboard.ts, strandedViewport, has the cases and the sources). Always on in WebKit on an iPhone or iPad
+ * (plugins/stranded-viewport.client.ts), not only while a layer stands on the keyboard: the tab bar has no reader of
+ * its own. It looks once things have been still for `LOOK_MS` after a viewport resize or scroll, a field taking or
+ * losing the focus, a layer on the keyboard closing, the app coming back (`pageshow`, `visibilitychange`), never under a
+ * finger. What it cannot put right by a scroll nudge it compensates: `--viewport-pan` on the root, which the
+ * floating chrome (`float-bottom`) and the sheets subtract from their `bottom`.
+ */
+export function watchStrandedViewport(): void {
+  if (watching || !window.visualViewport || !iosWebKit()) return
+  watching = true
+  window.visualViewport.addEventListener('resize', lookAfterViewport)
+  window.visualViewport.addEventListener('scroll', lookAfterViewport)
+  document.addEventListener('focusin', lookAfterViewport)
+  document.addEventListener('focusout', lookAfterViewport)
+  window.addEventListener('pageshow', lookAfterViewport)
+  document.addEventListener('visibilitychange', lookAfterViewport)
+  for (const type of ['touchstart', 'touchend', 'touchcancel'] as const) document.addEventListener(type, onWatchedTouch, { capture: true, passive: true })
+  noteTallest()
+  lookAfterViewport()
+}
+
+let watching = false
+/** Its own listener: the reader's (`onTouch`) is removed when the last layer on the keyboard closes. */
+const onWatchedTouch = (event: TouchEvent) => onTouch(event)
+let healTimer = 0
+let nudged = false
+let viewportPan = 0
+
+function noteTallest(): number {
   const layout = layoutHeightOf(window.innerHeight, document.documentElement.clientHeight)
   const width = window.innerWidth
   if (width !== tallest.width) tallest = { width, height: layout }
   else tallest.height = Math.max(tallest.height, layout)
-  reading.inset = keyboardInsetOf(layout, viewport)
-  reading.room = keyboardRoomOf(layout, viewport)
-  reading.shown = keyboardShown(reading.inset, layout, tallest.height)
-  document.documentElement.style.setProperty('--keyboard-inset', `${reading.inset}px`)
+  return tallest.height
+}
+
+/** Looks again once nothing has happened for `LOOK_MS` (and no finger is on the screen). */
+export function lookAfterViewport(): void {
+  if (!watching) return
+  clearTimeout(healTimer)
+  healTimer = window.setTimeout(() => requestAnimationFrame(heal), LOOK_MS)
+}
+
+function heal() {
+  if (touching || performance.now() - lastTouch < LOOK_MS) return lookAfterViewport()
+  const visual = window.visualViewport
+  if (!visual) return
+  const height = noteTallest()
+  const verdict = strandedViewport(
+    {
+      innerHeight: window.innerHeight,
+      clientHeight: document.documentElement.clientHeight,
+      viewport: { height: visual.height, offsetTop: visual.offsetTop, scale: visual.scale },
+    },
+    {
+      tallest: height,
+      typing: isTextField(document.activeElement),
+      nudged,
+      standalone: window.matchMedia?.('(display-mode: standalone)').matches ?? false,
+    },
+  )
+  if (verdict.nudge) {
+    nudged = true
+    const { scrollX: x, scrollY: y } = window
+    window.scrollTo({ left: x, top: y > 0 ? y - 1 : y + 1, behavior: 'instant' })
+    window.scrollTo({ left: x, top: y, behavior: 'instant' })
+    return lookAfterViewport()
+  }
+  if (!verdict.pan) nudged = false
+  setViewportPan(verdict.pan)
+  if (verdict.reflow) reflow()
+}
+
+function setViewportPan(value: number) {
+  if (value === viewportPan) return
+  viewportPan = value
+  if (value) document.documentElement.style.setProperty('--viewport-pan', `${value}px`)
+  else document.documentElement.style.removeProperty('--viewport-pan')
+}
+
+/**
+ * The installed app's shrunk layout viewport, measured again: a display flip of the page with a synchronous layout in
+ * between (no paint), its scroll put back (dev.to, cederhook: the only thing that brought the height back without
+ * quitting the app). Once per shrink: if it did not help, the next look finds the same and the tallest is forgotten.
+ */
+function reflow() {
+  const body = document.body
+  const { scrollX: x, scrollY: y } = window
+  body.style.display = 'none'
+  void body.offsetHeight
+  body.style.display = ''
+  window.scrollTo({ left: x, top: y, behavior: 'instant' })
+  requestAnimationFrame(() => {
+    const layout = layoutHeightOf(window.innerHeight, document.documentElement.clientHeight)
+    if (tallest.height - layout > 0) tallest.height = layout
+  })
 }

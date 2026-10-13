@@ -61,9 +61,15 @@
   padding-right: var(--safe-area-right);
 }
 
-/* Floating chrome at the bottom (the tab bar, the search palette). */
+/* Floating chrome at the bottom (the tab bar, the search palette). `--viewport-pan`: how far iOS left the visual
+   viewport panned after the keyboard (watchStrandedViewport, composables/useKeyboardInset.ts), unset otherwise. */
 @utility float-bottom {
-  bottom: var(--float-bottom);
+  bottom: calc(var(--float-bottom) - var(--viewport-pan, 0px));
+}
+
+/* A sheet's bottom edge on the screen's, also where iOS left the visual viewport panned (`--viewport-pan`). */
+@utility bottom-screen {
+  bottom: calc(0px - var(--viewport-pan, 0px));
 }
 
 /* Room under a tab's content so its end scrolls clear of the floating tab bar:
