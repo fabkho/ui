@@ -79,6 +79,7 @@ export type IconName =
   | 'mic'
   | 'play'
   | 'pause'
+  | 'paw'
 </script>
 
 <script setup lang="ts">
@@ -336,6 +337,11 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     <template v-else-if="name === 'calendarOff'">
       <path d="M6.4 5.4H17.6a2.4 2.4 0 0 1 2.4 2.4v9.8M18.6 19.6a2.4 2.4 0 0 1-1 .4H6.4A2.4 2.4 0 0 1 4 17.6V7.8c0-.4.1-.8.3-1.1" />
       <path d="M8.4 3.6v1.8M15.6 3.6v3.4M4 10h6M14 10h6" /><path d="m4 4 16 16" />
+    </template>
+    <template v-else-if="name === 'paw'">
+      <path d="M12 11.6c2.6 0 5 3.1 5 5.2 0 1.5-1.1 2.2-2.4 2.2-1 0-1.6-.5-2.6-.5s-1.6.5-2.6.5C8.1 19 7 18.3 7 16.8c0-2.1 2.4-5.2 5-5.2z" />
+      <ellipse cx="5.8" cy="10.2" rx="1.6" ry="2" /><ellipse cx="9.5" cy="6.2" rx="1.6" ry="2.1" />
+      <ellipse cx="14.5" cy="6.2" rx="1.6" ry="2.1" /><ellipse cx="18.2" cy="10.2" rx="1.6" ry="2" />
     </template>
   </svg>
 </template>
