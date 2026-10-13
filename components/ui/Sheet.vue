@@ -173,7 +173,7 @@ function onAfterLeave() {
 <template>
   <Teleport to="body">
     <Transition name="scrim" :css="!resting">
-      <div v-if="open" ref="scrim" class="fixed inset-0 z-40 touch-none bg-scrim" aria-hidden="true" :data-testid="`${testid}.scrim`" @click="close" />
+      <div v-if="open" ref="scrim" class="pointer-events-auto fixed inset-0 z-40 touch-none bg-scrim" aria-hidden="true" :data-testid="`${testid}.scrim`" @click="close" />
     </Transition>
     <Transition
       v-if="rendered"
@@ -194,7 +194,7 @@ function onAfterLeave() {
         aria-modal="true"
         :aria-labelledby="titleId"
         tabindex="-1"
-        class="sheet safe-bottom screen-bottom fixed inset-x-0 z-50 mx-auto flex w-full max-w-(--size-max-content) flex-col rounded-t-sheet bg-surface-sheet shadow-sheet outline-none"
+        class="sheet safe-bottom screen-bottom pointer-events-auto fixed inset-x-0 z-50 mx-auto flex w-full max-w-(--size-max-content) flex-col rounded-t-sheet bg-surface-sheet shadow-sheet outline-none"
         :class="followsKeyboard && 'follows-keyboard'"
         :style="panelStyle"
         :data-testid="testid"

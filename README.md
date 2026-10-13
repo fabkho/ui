@@ -295,6 +295,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   frame are one box. Also fixed: a leaving element's template refs are already cleared, the old close animation never found its image.
 - `UiSheet` (via `useSwipeDown`): a downward drag that starts in scrolling content scrolls it while it is not at its top and moves the sheet once it is (iOS). Libellus' `useSwipeDown` takes a drag in content only from `scrollTop` 0 and with pointer events, which the browser cancels as soon as it pans, so there only the header ever moved the sheet. New: `useSheetTouch`, `utils/sheetDrag.ts`.
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
+- `UiSheet`: scrim and panel are `pointer-events-auto`. A sheet that rises over a Reka/vaul dialog (Bookretreats' member sheet) is teleported to `body`, where the dialog's lock has set `pointer-events: none`; without it the sheet could be seen but not tapped.
 - `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form
   accessory bar shows plain sheet colour ([the keyboard](#the-keyboard)). Libellus has no such handling.
 - `utils/keyboard.ts`: `keyboardInsetOf` ignores a covered height under `MIN_KEYBOARD_HEIGHT` (80), after Tamagui's Sheet.
