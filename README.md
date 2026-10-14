@@ -115,6 +115,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). |
 | `UiSkeleton` | A placeholder swelling with the loading wave. |
 | `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen. |
+| `UiSearchPalette` | A search palette over the page (Libellus' search, without the morph out of the tab bar): veil, raised card on the keyboard, query row (glyph, field, clear, Cancel) at its bottom, the answers in the default slot above it; `v-model:open`, `v-model:query`, `label`, `placeholder`, `clear`, `cancel`, `status`, `testid`; everything else goes to the `<input>`; `cleared`. Focuses the query first, then rises and fades in (iOS: a field focused in a transparent layer leaves its list dead under the finger). Added for Bookretreats. |
 | `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place. |
 
 ### Composables and utils (auto-imported)
@@ -134,8 +135,8 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
   which also sets `--keyboard-inset` on the root while any is active. `{ pin: true }` holds the page
   still while the layer is open (see [the keyboard](#the-keyboard)).
 - `usePaletteKeyboard` (added for Bookretreats): a search palette on the keyboard — its lift and
-  its height within the room left in view, on the same reading as `UiSheet`; the book, Serien &
-  Filme and author palettes use it.
+  its height within the room left in view, on the same reading as `UiSheet`; `UiSearchPalette` (the book,
+  Serien & Filme and author palettes) uses it.
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
@@ -284,6 +285,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
+- `UiSearchPalette`: new in the layer. Libellus' search palette is its app's (`components/shell/SearchOverlay.vue`, with the morph out of the tab bar and the palette room); this is its frame without the morph, opened in Libellus' order (focus first, the animation after). Libellus can build its overlay on it once the morph is a variant of it.
 - `UiMediaViewer` and `utils/flip.ts` (`flipTransform`, `coverCrop`, `morphFrames`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the round face it was opened from and shrinks back into it.
   `useSwipeDown`'s `dismiss` now gets the distance the drag had gone, by mouse and by finger alike (additive; the viewer's leave starts from there; its swipe-down takes `useSheetTouch` like the sheets).
   *Why `clip-path` + transform on the real image and not the View Transitions API* (evaluated, `view-transitions-vue`):
