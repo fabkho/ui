@@ -273,8 +273,8 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 
 **Added (nothing to do; available to Libellus)**
 
-- `UiAvatar`: `lazy` (the photo loads with `loading="lazy"`; a photo that fails to load is dropped, the initials stay), `size` (xs 30 · sm 32, the default and Libellus' only size · md 40 · lg 40 · xl 72)
-  and `solid` (the fill laid on the room colour, opaque over a cover).
+- `UiAvatar`: `lazy` (the photo loads with `loading="lazy"`; a photo that fails to load is dropped, the initials stay), `size` (xs 30 · sm 32, the default and Libellus' only size · md 40 · lg 40 · xl 72),
+  `solid` (the fill laid on the room colour, opaque over a cover) and `fallback` (a second URL to draw when `photo` is refused: Bookretreats draws the 256 px face of a member's photo and falls back to the stored 1024 px one, `data/avatarFace.ts`; when that fails too the initials stay).
 - `UiCover`: `kind` (`book`, the default, or `screen`: a series' or film's poster, without the spine crease); `size` `xxs` (24 px wide, 36 px tall: a strip of covers in a 48 px row, 6 px of air above and below; the cloth has no type, as under `xs`).
 - `UiEmptyState`: an `art` slot for an illustration of the app's own (the lamp is the default).
 - `UiRow`: `as="a"`, a row that is a link out of the app (`href`, `target`, `rel` pass through to the anchor).

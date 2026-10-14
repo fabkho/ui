@@ -11,10 +11,20 @@
 // `solid` (added for Bookretreats): the quiet fill laid on the room colour, so
 // the circle is opaque where it overlaps something (a face on a cover).
 // `lazy` (added for Bookretreats): the photo loads lazily (`loading="lazy"`), for photos from a third party in
-// lists. A photo that fails to load (a 404) is dropped: the initials stay, nothing jumps.
+// lists.
+// `fallback` (added for Bookretreats): the URL to draw when `photo` fails — her stored 1024 px picture
+// behind the 256 px face a member's avatar is drawn from (`data/avatarFace.ts`). Only when that fails
+// too (a 404) is the photo dropped: the initials stay, nothing jumps.
 const props = withDefaults(
-  defineProps<{ initials: string; photo?: string | null; size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; solid?: boolean; lazy?: boolean }>(),
-  { photo: null, size: 'sm', solid: false, lazy: false },
+  defineProps<{
+    initials: string
+    photo?: string | null
+    fallback?: string | null
+    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    solid?: boolean
+    lazy?: boolean
+  }>(),
+  { photo: null, fallback: null, size: 'sm', solid: false, lazy: false },
 )
 
 const SIZES = {
@@ -25,18 +35,32 @@ const SIZES = {
   xl: 'size-(--size-cover-md) text-title',
 } as const
 
+/** What is being drawn: `photo`, or `fallback` once that one was refused. */
+const source = ref<string | null>(null)
 /** The photo changed while on screen: it waits for its decode, then fades in. */
 const arriving = ref(false)
 const decoded = ref(false)
 const failed = ref(false)
 watch(
-  () => props.photo,
+  () => [props.photo, props.fallback] as const,
   () => {
+    source.value = props.photo
     arriving.value = true
     decoded.value = false
     failed.value = false
   },
+  { immediate: true },
 )
+
+/** A refused photo: the fallback, once; then the initials. */
+function onError() {
+  if (source.value !== props.fallback && props.fallback) {
+    source.value = props.fallback
+    decoded.value = false
+    return
+  }
+  failed.value = true
+}
 </script>
 
 <template>
@@ -47,9 +71,9 @@ watch(
   >
     {{ initials }}
     <img
-      v-if="photo && !failed"
-      :key="photo"
-      :src="photo"
+      v-if="source && !failed"
+      :key="source"
+      :src="source"
       alt=""
       draggable="false"
       :loading="lazy ? 'lazy' : undefined"
@@ -58,7 +82,7 @@ watch(
       :class="arriving && ['transition-opacity duration-(--duration-standard) ease-standard', decoded ? 'opacity-100' : 'opacity-0']"
       data-avatar-photo
       @load="decoded = true"
-      @error="failed = true"
+      @error="onError"
     />
     <!-- The hairline ring over the photo too. -->
     <span class="pointer-events-none absolute inset-0 rounded-pill edge" />
