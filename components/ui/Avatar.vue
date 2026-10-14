@@ -15,6 +15,8 @@
 // `fallback` (added for Bookretreats): the URL to draw when `photo` fails — her stored 1024 px picture
 // behind the 256 px face a member's avatar is drawn from (`data/avatarFace.ts`). Only when that fails
 // too (a 404) is the photo dropped: the initials stay, nothing jumps.
+// `fallback` event (added for Bookretreats): emitted when `photo` was refused and `fallback` is drawn instead, so the
+// caller can remember a face is missing and not ask for it again (`MemberAvatar`, `faceToDraw`).
 const props = withDefaults(
   defineProps<{
     initials: string
@@ -26,6 +28,8 @@ const props = withDefaults(
   }>(),
   { photo: null, fallback: null, size: 'sm', solid: false, lazy: false },
 )
+
+const emit = defineEmits<{ fallback: [] }>()
 
 const SIZES = {
   xs: 'size-(--size-cover-xs) text-meta',
@@ -57,6 +61,7 @@ function onError() {
   if (source.value !== props.fallback && props.fallback) {
     source.value = props.fallback
     decoded.value = false
+    emit('fallback')
     return
   }
   failed.value = true
