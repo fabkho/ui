@@ -21,13 +21,17 @@ export interface SheetTouchOptions {
 /** Touches that belong to the field or the control under the finger, not to the sheet. */
 const OWN_TOUCH = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [data-no-swipe]'
 
-/** The element's own scroll as the pure rules read it. */
-function metricsOf(el: HTMLElement): ScrollMetrics {
+/**
+ * The element's own scroll as the pure rules read it. `reversed` can be handed in: a gesture reads it
+ * once at its start, so a move reads layout only, not the computed style (which the sheet's own
+ * transform, written a move earlier, would make the browser recompute on every move).
+ */
+function metricsOf(el: HTMLElement, reversed = getComputedStyle(el).flexDirection === 'column-reverse'): ScrollMetrics {
   return {
     scrollTop: el.scrollTop,
     scrollHeight: el.scrollHeight,
     clientHeight: el.clientHeight,
-    reversed: getComputedStyle(el).flexDirection === 'column-reverse',
+    reversed,
   }
 }
 
@@ -69,6 +73,8 @@ export function useSheetTouch(options: SheetTouchOptions) {
     axis: 'vertical' | 'horizontal' | null
     claimed: boolean
     scrollers: HTMLElement[]
+    /** Per scroller, read once: whether it is laid out in reverse (`metricsOf`). */
+    reversed: boolean[]
     samples: Sample[]
     ignored: boolean
   } | null = null
@@ -95,6 +101,7 @@ export function useSheetTouch(options: SheetTouchOptions) {
       axis: null,
       claimed: false,
       scrollers,
+      reversed: scrollers.map((el) => getComputedStyle(el).flexDirection === 'column-reverse'),
       samples: [{ y: touch.clientY, time: event.timeStamp }],
       ignored: Boolean(target.closest(OWN_TOUCH)),
     }
@@ -118,7 +125,7 @@ export function useSheetTouch(options: SheetTouchOptions) {
     if (gesture.samples.length > 12) gesture.samples.shift()
     if (!delta) return
 
-    const atTop = gesture.scrollers.every((el) => atScrollTop(metricsOf(el)))
+    const atTop = gesture.scrollers.every((el, i) => atScrollTop(metricsOf(el, gesture!.reversed[i])))
     const position = options.position()
     if (routeMove(delta, atTop, position) === 'sheet') {
       if (event.cancelable) event.preventDefault()
