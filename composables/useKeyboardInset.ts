@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { keyboardShown, layoutHeightOf, readViewport, strandedViewport } from '../utils/keyboard'
+import { keyboardShown, layoutHeightOf, pinHold, readViewport, strandedViewport } from '../utils/keyboard'
 
 /**
  * How much of the layout viewport the on-screen keyboard covers, in px (0
@@ -38,9 +38,10 @@ export interface KeyboardViewportOptions {
    *   is the focus without the pan; programmatic focus in the layer already
    *   passes `preventScroll` (useModalLayer, the palette). The caret goes to
    *   the end of what is there instead of under the finger, for that first tap.
-   * - every scroll of the window is put back to where it was when the first
-   *   pinned user became active (a pan that still happens: a drag on the
-   *   chrome with the keyboard up, a keyboard switching to emoji) — at once,
+   * - every scroll of the window is put back to where it was when a field
+   *   last took the keyboard (before that: when the first pinned user became
+   *   active; utils/keyboard.ts, pinHold) — a pan that still happens: a drag on
+   *   the chrome with the keyboard up, a keyboard switching to emoji — at once,
    *   or once a pan under a finger has settled;
    * - a pan the pin cannot put back (iOS also pans the visual viewport where
    *   the window cannot scroll: the root is `overflow: hidden` under a modal
@@ -236,7 +237,11 @@ function frame() {
   if (framesSince < 2 || performance.now() < lookUntil) later = requestAnimationFrame(frame)
 }
 
-function onFocusChange() {
+function onFocusChange(event: FocusEvent) {
+  // A field takes the keyboard: a pinned page holds where it is now, not where it was when the pin began (pinHold).
+  if (pins > 0 && event.type === 'focusin' && isTextField(event.target)) {
+    pinned = pinHold(pinned, { x: window.scrollX, y: window.scrollY }, reading.shown)
+  }
   look()
 }
 

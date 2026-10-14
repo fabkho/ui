@@ -162,7 +162,10 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   window it covers, and the layer lifts itself by it (`sheetLift`, `paletteLift`) and never grows
   past `room`. With `pin`, iOS's own pan to the field is stopped: a tap on a field that does not have
   the focus yet is focused with `preventScroll` (the caret lands at the end of its text for that
-  tap), and a pan that still happens is put back (at once, or once a finger's pan has settled).
+  tap), and a pan that still happens is put back (at once, or once a finger's pan has settled) to
+  where the window was when a field took the keyboard (`pinHold`; r10: a screen pinned from the start
+  held the scroll of the page it was opened from, and the Feed post's comment bar went behind the
+  keyboard's accessory pill for any post below the fold).
   A pan the pin cannot put back is counted: iOS also pans the visual viewport where the window
   cannot scroll (the root is `overflow: hidden` under a modal layer), and a layer that took it as 0
   went up by the keyboard and the pan together (r10: the book palette ~155 pt over the keyboard, its
@@ -309,7 +312,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `useKeyboardViewport` / `useKeyboardInset`: an `options` argument with `pin` (the page holds still under
   a layer on the keyboard, [the keyboard](#the-keyboard)), `shown` (a keyboard is up, also where it resized
   the page), one shared reader for all users, and `--keyboard-inset` on the root while any is active;
-  `keyboardShown` in `utils/keyboard.ts`. `UiSheet`, `UiConfirm` and Bookretreats' palette and chat pin.
+  `keyboardShown` and `pinHold` in `utils/keyboard.ts`. `UiSheet`, `UiConfirm` and Bookretreats' palette, chat and Feed post pin.
 - `UiConfirm`: stands on the keyboard as a sheet does (lift, `room` cap, the card scrolls and keeps the
   focused field in view), for a field in its slot.
 - `plugins/no-focus-zoom.client.ts`: no zoom on focus on iOS. Libellus' fields are 16 px or larger, so it

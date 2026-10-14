@@ -167,6 +167,27 @@ export function paletteBottomOnScreen(reading: Pick<ViewportReading, 'inset' | '
   return reading.layout - resting - paletteLift(reading.inset, gap, resting) - actualOffsetTop
 }
 
+/** A scroll position of the window. */
+export interface ScrollPoint {
+  x: number
+  y: number
+}
+
+/**
+ * Where a pinned layer holds the window once a text field takes the focus (added for Bookretreats, r10). The pin
+ * (useKeyboardViewport) puts every scroll back to this point while it is active. A screen that is pinned from the
+ * start (the chat, a Feed post) becomes active while the router still has the page it came from on the window: the
+ * Feed list scrolled down to its third post is thousands of px down, the post's own screen is fixed and can only be at 0, and
+ * with the keyboard up iOS lets the window scroll by the keyboard's height — so the pin dragged it there as soon as
+ * the keyboard had come up, and the comment bar went down behind the keyboard's accessory pill (r10, iPhone, iOS 26.6:
+ * the first two posts of the Feed were fine, the third not). So the hold is taken again when a field takes the
+ * keyboard with the keyboard down: the page is at rest then, where it is is where it belongs. With the keyboard
+ * already up (the focus moving from one field to the next) the hold stays.
+ */
+export function pinHold(held: ScrollPoint, now: ScrollPoint, keyboardUp: boolean): ScrollPoint {
+  return keyboardUp ? held : now
+}
+
 /**
  * What to do about a viewport iOS left behind once the keyboard has gone (added for Bookretreats, r10: the tab bar
  * stood ~330 pt up the screen on Friends, no keyboard in sight). Two iOS 26 faults leave fixed chrome too high:
