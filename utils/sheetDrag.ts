@@ -13,14 +13,23 @@ export type Route = 'sheet' | 'scroll'
 
 /**
  * The iOS rule, move by move:
- * - a downward move scrolls the content while it is not at its top, and moves
- *   the sheet down once it is (so a drag that scrolled up to the top and goes on
- *   pulling takes the sheet along: one gesture, the hand-off included);
+ * - a downward move scrolls the content while it is not at its top, and moves the
+ *   sheet down once it is — but only in a gesture that came down on content which
+ *   was already at its top (`startedAtTop`): a gesture that found the content
+ *   scrolled is that content's to the end, however far it runs past the top;
  * - an upward move brings a sheet that stands below its tallest place up first
  *   (a lower detent grows, a dragged sheet comes back) and scrolls once it is up.
+ *
+ * `startedAtTop` is the content's place when the finger came down. iOS hands a live
+ * scroll to nobody else: a gesture that scrolled the content to its top and goes on
+ * pulling keeps scrolling it (its rubber band) and leaves the sheet where it stands.
+ * The hand-off the sheet is meant to do — pull it down from the content's own top —
+ * is a gesture that begins there. Taking the sheet over half way through a scroll is
+ * what cost the content its momentum and let a flick that ran up to the top drag the
+ * sheet down to medium instead of bouncing there (r10).
  */
-export function routeMove(delta: number, atTop: boolean, position: number): Route {
-  if (delta > 0) return atTop ? 'sheet' : 'scroll'
+export function routeMove(delta: number, atTop: boolean, position: number, startedAtTop: boolean): Route {
+  if (delta > 0) return atTop && startedAtTop ? 'sheet' : 'scroll'
   if (delta < 0) return position > 0 ? 'sheet' : 'scroll'
   return 'scroll'
 }

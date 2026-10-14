@@ -75,6 +75,11 @@ export function useSheetTouch(options: SheetTouchOptions) {
     scrollers: HTMLElement[]
     /** Per scroller, read once: whether it is laid out in reverse (`metricsOf`). */
     reversed: boolean[]
+    /**
+     * Whether the content stood at its top when the finger came down: the route's
+     * `startedAtTop`, read once (`routeMove` says what it is for).
+     */
+    startedAtTop: boolean
     samples: Sample[]
     ignored: boolean
   } | null = null
@@ -94,6 +99,9 @@ export function useSheetTouch(options: SheetTouchOptions) {
       if (isVerticalScroller(el)) scrollers.push(el)
       if (el === event.currentTarget) break
     }
+    // Read once per gesture, not per move: the style of a move would be recomputed after the
+    // sheet's transform was written a move earlier.
+    const reversed = scrollers.map((el) => getComputedStyle(el).flexDirection === 'column-reverse')
     gesture = {
       x: touch.clientX,
       y: touch.clientY,
@@ -101,7 +109,8 @@ export function useSheetTouch(options: SheetTouchOptions) {
       axis: null,
       claimed: false,
       scrollers,
-      reversed: scrollers.map((el) => getComputedStyle(el).flexDirection === 'column-reverse'),
+      reversed,
+      startedAtTop: scrollers.every((el, i) => atScrollTop(metricsOf(el, reversed[i]))),
       samples: [{ y: touch.clientY, time: event.timeStamp }],
       ignored: Boolean(target.closest(OWN_TOUCH)),
     }
@@ -127,7 +136,7 @@ export function useSheetTouch(options: SheetTouchOptions) {
 
     const atTop = gesture.scrollers.every((el, i) => atScrollTop(metricsOf(el, gesture!.reversed[i])))
     const position = options.position()
-    if (routeMove(delta, atTop, position) === 'sheet') {
+    if (routeMove(delta, atTop, position, gesture.startedAtTop) === 'sheet') {
       if (event.cancelable) event.preventDefault()
       if (!gesture.claimed) {
         gesture.claimed = true

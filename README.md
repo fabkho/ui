@@ -125,11 +125,15 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
   system Back closes it.
 - `useSwipeDown`: follow the finger down, dismiss past a distance or a flick. A finger does it the iOS way
   (`useSheetTouch`, decisions in `utils/sheetDrag.ts`): content scrolled down scrolls under a downward drag,
-  at its top the same drag moves the sheet, and one gesture can pass from one to the other.
+  at its top the same drag moves the sheet, and a gesture that began on the sheet's own detent moves the
+  sheet up first and scrolls once it is up.
 - `useSheetTouch`: touch events (a pan on a scroller cancels the pointer, so pointer events never see a drag
   that starts in content) that decide per move between scrolling the content and moving the sheet
-  (`routeMove`); for a sheet with its own detents too (the member sheet). Left alone: fields, `data-no-swipe`,
-  a second finger, a gesture that goes sideways first.
+  (`routeMove`); for a sheet with its own detents too (the member sheet). Which one a gesture is, is settled
+  where it begins: `routeMove`'s `startedAtTop` (the content's place as the finger came down) keeps a gesture
+  that found the content scrolled the content's to the end — it scrolls to the top and rubber-bands there
+  while the sheet stands still, instead of the sheet taking the live scroll over and losing its momentum (r10).
+  Left alone: fields, `data-no-swipe`, a second finger, a gesture that goes sideways first.
 - `useKeyboardInset` / `useKeyboardViewport`: how much of the window the on-screen keyboard covers,
   what it leaves in view (`room`) and whether one is up (`shown`); one shared reader for all users,
   which also sets `--keyboard-inset` on the root while any is active. `{ pin: true }` holds the page
@@ -303,7 +307,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   the photo → `inset()` + `round` for the start frame, `inset(0 round r)` for the end, one even scale + translate; Vitest in
   `tests/ui-flip.test.ts`). The image box is the photo's own (`max-width/height: 100%`, its natural aspect), so contain and the full
   frame are one box. Also fixed: a leaving element's template refs are already cleared, the old close animation never found its image.
-- `UiSheet` (via `useSwipeDown`): a downward drag that starts in scrolling content scrolls it while it is not at its top and moves the sheet once it is (iOS). Libellus' `useSwipeDown` takes a drag in content only from `scrollTop` 0 and with pointer events, which the browser cancels as soon as it pans, so there only the header ever moved the sheet. New: `useSheetTouch`, `utils/sheetDrag.ts`.
+- `UiSheet` (via `useSwipeDown`): a downward drag that starts in scrolling content scrolls it while it is not at its top and moves the sheet once it is — in a gesture that came down on content already at its top; one that found the content scrolled stays the content's (iOS's rubber band, r10). Libellus' `useSwipeDown` takes a drag in content only from `scrollTop` 0 and with pointer events, which the browser cancels as soon as it pans, so there only the header ever moved the sheet. New: `useSheetTouch`, `utils/sheetDrag.ts`.
 - `UiSheet`: `cancel` (`false` leaves Cancel out, for a sheet that is only read and closed by its action).
 - `UiSheet`: scrim and panel are `pointer-events-auto`. A sheet that rises over a Reka/vaul dialog (Bookretreats' member sheet) is teleported to `body`, where the dialog's lock has set `pointer-events: none`; without it the sheet could be seen but not tapped.
 - `UiSheet`: with the keyboard up (iOS), its surface goes on below the bottom edge (`data-keyboard`), so iOS 26's form
