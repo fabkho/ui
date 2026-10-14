@@ -83,6 +83,7 @@ export type IconName =
   | 'link'
   | 'feed'
   | 'pin'
+  | 'poll'
   | 'reply'
 </script>
 
@@ -226,6 +227,9 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     </template>
     <template v-else-if="name === 'pin'">
       <path d="M9.5 4.5h5l-.8 4.6 2.8 2.9v1.5h-9V12l2.8-2.9z" /><path d="M12 13.5v6" />
+    </template>
+    <template v-else-if="name === 'poll'">
+      <path d="M5.5 7h9M5.5 12h13M5.5 17h6" />
     </template>
     <template v-else-if="name === 'people'">
       <circle cx="9.3" cy="8.8" r="3.3" />
