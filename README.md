@@ -107,7 +107,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. |
-| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; the round `origin` grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
+| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; the `origin` (a round face, or a rounded tile such as a photo in the Feed card: it starts with the origin's own corner radius) grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
 | `UiIcon` | The icon set on the 24 grid (`IconName`). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
@@ -287,6 +287,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiSearchPalette`: new in the layer. Libellus' search palette is its app's (`components/shell/SearchOverlay.vue`, with the morph out of the tab bar and the palette room); this is its frame without the morph, opened in Libellus' order (focus first, the animation after). Libellus can build its overlay on it once the morph is a variant of it.
 - `UiMediaViewer` and `utils/flip.ts` (`flipTransform`, `coverCrop`, `morphFrames`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the round face it was opened from and shrinks back into it.
+  `morphFrames` takes the face's own corner radius (`faceRadius`, px; additive): a rounded tile starts as that tile, never rounder than the circle, so avatars are unchanged; the viewer reads it from the origin's computed `border-top-left-radius`. Added with the Feed's photo posts.
   `useSwipeDown`'s `dismiss` now gets the distance the drag had gone, by mouse and by finger alike (additive; the viewer's leave starts from there; its swipe-down takes `useSheetTouch` like the sheets).
   *Why `clip-path` + transform on the real image and not the View Transitions API* (evaluated, `view-transitions-vue`):
   a view transition shows bitmap snapshots of the whole page, so the picture could only be *scaled* (the crop-to-fill → full-frame

@@ -55,12 +55,17 @@ const px = (value: number) => `${Math.round(value * 100) / 100}px`
  * up to the whole frame while the circle (rounding half the crop's side) opens to the corner
  * radius, the picture itself only ever scaled evenly: no stretch, no jump at the end.
  * A box with no size gives `null` (nothing to morph, the caller cross-fades).
+ *
+ * `faceRadius` is the face's own corner radius on screen (px). Without it the start frame is the circle (half the
+ * crop's short side), the avatar's; with it a rounded tile (a photo in a card, 12 px) starts as that tile: the radius
+ * counted in the picture's own scale, never more than the circle.
  */
 export function morphFrames(
   from: FlipBox,
   rest: FlipBox,
   radius: string,
   lift = 0,
+  faceRadius?: number,
 ): { start: MorphFrame; end: MorphFrame; lifted: MorphFrame } | null {
   if (!from.width || !from.height || !rest.width || !rest.height) return null
   const crop = coverCrop({ width: rest.width, height: rest.height }, from)
@@ -68,7 +73,8 @@ export function morphFrames(
   // The crop's middle lands on the face's middle.
   const x = from.left + from.width / 2 - (rest.left + (crop.left + crop.width / 2) * scale)
   const y = from.top + from.height / 2 - (rest.top + (crop.top + crop.height / 2) * scale)
-  const round = Math.min(crop.width, crop.height) / 2
+  const circle = Math.min(crop.width, crop.height) / 2
+  const round = faceRadius === undefined ? circle : Math.min(circle, Math.max(0, faceRadius) / scale)
   const insetRight = rest.width - crop.left - crop.width
   const insetBottom = rest.height - crop.top - crop.height
   const full = `inset(0px 0px 0px 0px round ${radius})`

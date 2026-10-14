@@ -7,7 +7,8 @@ import { morphFrames } from '../../utils/flip'
 // until it fills the screen: the circle opens up into the whole picture while the veil fades in
 // behind, and on close (or after a swipe, from where the finger let go) it shrinks back into the
 // circle where the face is *now* (measured again on close, so a sheet or page that scrolled meanwhile
-// is no problem). Played on the real image with `clip-path` and a transform, see `utils/flip.ts`
+// is no problem). A rounded tile, not a circle (a photo in the Feed), starts as that tile: the origin's own
+// corner radius. Played on the real image with `clip-path` and a transform, see `utils/flip.ts`
 // and the README for why not the View Transitions API. Reduce Motion, or no face to
 // grow from (gone, off screen), makes both a cross-fade. Copy comes in through props.
 // Added for Bookretreats (no Libellus counterpart).
@@ -19,7 +20,7 @@ const props = defineProps<{
   /** The dialog's name for assistive tech. */
   dialogLabel: string
   closeLabel: string
-  /** The round face it grows out of; read when it opens and again when it closes. */
+  /** The face it grows out of (a round avatar, or a rounded tile such as a photo in the Feed); read when it opens and again when it closes. */
   origin?: HTMLElement | null
   testid?: string
 }>()
@@ -92,6 +93,14 @@ function faceBox(): DOMRect | null {
   return inside ? box : null
 }
 
+/** The face's own corner radius in px (a round avatar reads as huge: `morphFrames` takes the circle then). */
+function faceRadius(): number | undefined {
+  const el = props.origin
+  if (!el) return undefined
+  const value = Number.parseFloat(getComputedStyle(el).borderTopLeftRadius)
+  return Number.isFinite(value) ? value : undefined
+}
+
 /** The enter animations still running: a close that comes in the middle plays them backwards. */
 let entering: Animation[] = []
 /** A close that came while the picture was still decoding. */
@@ -151,7 +160,7 @@ async function onEnter(el: Element, done: () => void) {
   img.style.opacity = ''
   let frames: Keyframe[]
   let timing: { duration: number; easing: string }
-  const set = face && !prefersReducedMotion() ? morphFrames(face, img.getBoundingClientRect(), FINAL_RADIUS) : null
+  const set = face && !prefersReducedMotion() ? morphFrames(face, img.getBoundingClientRect(), FINAL_RADIUS, 0, faceRadius()) : null
   if (set) {
     frames = [
       { transform: set.start.transform, clipPath: set.start.clipPath, transformOrigin: '0 0' },
@@ -185,7 +194,7 @@ function onLeave(el: Element, done: () => void) {
   img.style.transition = 'none'
   img.style.transform = 'none'
   const face = prefersReducedMotion() ? null : faceBox()
-  const set = face ? morphFrames(face, img.getBoundingClientRect(), FINAL_RADIUS, lift) : null
+  const set = face ? morphFrames(face, img.getBoundingClientRect(), FINAL_RADIUS, lift, faceRadius()) : null
   const chrome = fadeChrome(el, 'out', veilAt(lift))
   let grow: Animation
   if (set) {
