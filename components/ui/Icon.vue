@@ -83,6 +83,7 @@ export type IconName =
   | 'link'
   | 'feed'
   | 'pin'
+  | 'reply'
 </script>
 
 <script setup lang="ts">
@@ -318,6 +319,11 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     <!-- Her own words: the serif quotation mark, drawn. -->
     <template v-else-if="name === 'quote'">
       <path d="M9.4 6.5C6.9 7.8 5.5 9.9 5.5 12.6v4.9h5V12H8.1c0-1.9.7-3.3 2.3-4.2zM18.4 6.5c-2.5 1.3-3.9 3.4-3.9 6.1v4.9h5V12h-2.4c0-1.9.7-3.3 2.3-4.2z" />
+    </template>
+    <!-- Answering a message: the arrow that comes back (Bookretreats' chat, r10). -->
+    <template v-else-if="name === 'reply'">
+      <path d="M9.6 5.9 4.4 11.1l5.2 5.2" />
+      <path d="M4.4 11.1h8.2a6.1 6.1 0 0 1 6.1 6.1v1.1" />
     </template>
     <!-- A drop of colour: the theme. -->
     <template v-else-if="name === 'drop'"><path d="M12 3.5c3.6 4.1 5.6 7.3 5.6 9.9a5.6 5.6 0 0 1-11.2 0c0-2.6 2-5.8 5.6-9.9Z" /></template>

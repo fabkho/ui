@@ -276,7 +276,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiRow`: a `lead` slot in the icon's place (a face or a mark the icon set lacks); `icon` stays its default.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
-  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`, `external` (↗, a link that leaves the app), `mic`, `play`, `pause` (the voice message's), `paw` (Haustiere), `link` (verbunden: the Orga's connection counts), `feed` (a post card: the Feed's tab), `pin` (a pushpin: the pinned announcement)
+  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`, `external` (↗, a link that leaves the app), `mic`, `play`, `pause` (the voice message's), `paw` (Haustiere), `link` (verbunden: the Orga's connection counts), `feed` (a post card: the Feed's tab), `pin` (a pushpin: the pinned announcement), `reply` (the curved arrow that answers a message: Bookretreats' chat)
   (`share` is Libellus' own, newer than the snapshot the layer started from).
 - `UiAmbient`: `pool` (`{ a, b }`, two CSS colours) and `strength` (a CSS opacity, default `--opacity-glow`): the card is lit in
   colours the app names, at the strength it names. Bookretreats lights one card with them, the Feed's pinned announcement
