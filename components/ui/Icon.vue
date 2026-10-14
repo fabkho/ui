@@ -81,6 +81,8 @@ export type IconName =
   | 'pause'
   | 'paw'
   | 'link'
+  | 'feed'
+  | 'pin'
 </script>
 
 <script setup lang="ts">
@@ -218,6 +220,12 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
       <path d="M9 4.5v13.2M15 6.3v13.2" />
     </template>
     <!-- Friends: two faces, the nearer one whole. -->
+    <template v-else-if="name === 'feed'">
+      <rect x="4.5" y="4.5" width="15" height="15" rx="3" /><circle cx="9" cy="9" r="1.6" /><path d="M12.5 9h3.5M8 13h8M8 16h5" />
+    </template>
+    <template v-else-if="name === 'pin'">
+      <path d="M9.5 4.5h5l-.8 4.6 2.8 2.9v1.5h-9V12l2.8-2.9z" /><path d="M12 13.5v6" />
+    </template>
     <template v-else-if="name === 'people'">
       <circle cx="9.3" cy="8.8" r="3.3" />
       <path d="M3.8 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />

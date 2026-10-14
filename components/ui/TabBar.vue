@@ -77,7 +77,7 @@ function tapped(event: MouseEvent, tab: UiTab) {
   <nav
     :aria-label="label"
     class="bar float-bottom glass fixed left-1/2 z-20 flex -translate-x-1/2 rounded-pill px-xs edge shadow-float"
-    :class="away && 'away'"
+    :class="[away && 'away', items.length > 4 && 'compact']"
     :data-away="away || undefined"
     @focusin="reveal"
   >
@@ -121,6 +121,11 @@ function tapped(event: MouseEvent, tab: UiTab) {
   align-items: center;
   justify-content: center;
   transition: color var(--duration-quick) var(--ease-standard);
+}
+
+/* Five tabs (an admin's): narrower, so the capsule still fits a phone with its margins. Added for Bookretreats. */
+.compact .tab {
+  width: var(--size-tab-compact);
 }
 
 /* The tab's own icon, not the lock beside it. */

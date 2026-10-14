@@ -6,22 +6,35 @@
 // Full strength in the dark, half on paper (`--opacity-glow`). A Book whose
 // cover is the Placeholder has no colours worth lighting the room with: `cloth`
 // (the cloth's colour, as CSS) lights it instead, so the page matches what shows.
+//
+// Added for Bookretreats: `pool` (two CSS colours, `{ a, b }`) lights the card in
+// colours the app names instead of a cover's, and `strength` (a CSS opacity, e.g.
+// `var(--opacity-announce)`) replaces the theme's `--opacity-glow`: the pinned
+// announcement of the Feed is lit while every cover's glow is off.
 import type { CoverColors } from '../../utils/cloth'
 
-const props = withDefaults(defineProps<{ colors: CoverColors | null; cloth?: string | null; shape?: 'page' | 'card' }>(), {
-  cloth: null,
-  shape: 'page',
-})
+const props = withDefaults(
+  defineProps<{
+    colors: CoverColors | null
+    cloth?: string | null
+    shape?: 'page' | 'card'
+    pool?: { a: string; b: string } | null
+    strength?: string | null
+  }>(),
+  { cloth: null, shape: 'page', pool: null, strength: null },
+)
 
 // Two pool colours as whole colours, so a gradient can take them at any alpha.
 const style = computed(() => {
+  const strength = props.strength ? { opacity: props.strength } : {}
+  if (props.pool) return { '--pool-a': props.pool.a, '--pool-b': props.pool.b, ...strength }
   if (props.cloth) {
     // A cloth is dark: lifted towards white, keeping its hue, so it reads as light.
     const lit = `color-mix(in srgb, ${props.cloth} 55%, white)`
-    return { '--pool-a': lit, '--pool-b': props.cloth }
+    return { '--pool-a': lit, '--pool-b': props.cloth, ...strength }
   }
   const glow = glowOf(props.colors)
-  return { '--pool-a': `rgb(${glow.a})`, '--pool-b': `rgb(${glow.b})` }
+  return { '--pool-a': `rgb(${glow.a})`, '--pool-b': `rgb(${glow.b})`, ...strength }
 })
 </script>
 

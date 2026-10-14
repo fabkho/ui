@@ -112,7 +112,7 @@ Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and cu
 | `UiIcon` | The icon set on the 24 grid (`IconName`). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
 | `UiProgress` | A thin progress bar. |
-| `UiAmbient` | The light a cover throws into a card or page (off where the theme says so). |
+| `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). |
 | `UiSkeleton` | A placeholder swelling with the loading wave. |
 | `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen. |
 | `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place. |
@@ -219,7 +219,7 @@ reads a variable the generated file lacks.
 - **Spacing** (`--spacing-*`, `p-*`, `gap-*`, …): `xxs`, `xs`, `sm`, `ms`, `inset`, `md`, `ml`,
   `lg`, `xl`, `xxl`, `screen`, `bar-top`, `tab-bar-drop`, `float-above`, `grabber`.
 - **Radius** (`rounded-*`): `cover-sm`, `cover`, `cover-lg`, `sm`, `md`, `xl`, `sheet`, `pill`.
-- **Size** (`--size-*`): `touch`, `max-content`, `avatar`, `tab`, `tab-bar`, `tab-icon`, `button`,
+- **Size** (`--size-*`): `touch`, `max-content`, `avatar`, `tab`, `tab-compact`, `tab-bar`, `tab-icon`, `button`,
   `button-md`, `button-sm`, `row`, `menu`, `switch`, `switch-thumb`, `grabber`, `grabber-height`,
   `empty-art`, `cover-xxs`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox).
 - **Stroke** (`--stroke-*`): `hairline`, `rule`, `focus`, `icon`, `icon-bold`.
@@ -275,8 +275,12 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiRow`: a `lead` slot in the icon's place (a face or a mark the icon set lacks); `icon` stays its default.
 - `UiIcon`: Bookretreats' icons on the same grid — `map`, `people`, `chat`, `orga`, `person`,
   `gear`, `send`, `eyeOff`, `bell`, `heart`, `eye`, `download`, `doc`, `book`, `shield`, `star`,
-  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`, `external` (↗, a link that leaves the app), `mic`, `play`, `pause` (the voice message's), `paw` (Haustiere), `link` (verbunden: the Orga's connection counts)
+  `cake`, `ticket`, `history`, `userPlus`, `quote`, `drop`, `clock`, `ban`, `unlock`, `checkCircle`, `calendarOff`, `external` (↗, a link that leaves the app), `mic`, `play`, `pause` (the voice message's), `paw` (Haustiere), `link` (verbunden: the Orga's connection counts), `feed` (a post card: the Feed's tab), `pin` (a pushpin: the pinned announcement)
   (`share` is Libellus' own, newer than the snapshot the layer started from).
+- `UiAmbient`: `pool` (`{ a, b }`, two CSS colours) and `strength` (a CSS opacity, default `--opacity-glow`): the card is lit in
+  colours the app names, at the strength it names. Bookretreats lights one card with them, the Feed's pinned announcement
+  (`announcePoolA/B`, `--opacity-announce`; docs/DESIGN.md §11). Libellus does not need them.
+- `UiTabBar`: five tabs (an admin's) take `--size-tab-compact` (62) each instead of `--size-tab` (72), so the capsule fits a 390 pt phone.
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
