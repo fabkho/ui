@@ -1,0 +1,138 @@
+import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, waitFor, within } from 'storybook/test'
+import UiConfirm from './Confirm.vue'
+import UiButton from './Button.vue'
+import UiField from './Field.vue'
+
+// The dialog is a modal layer: while it is open the rest of the page is `inert` and focus is inside it. Every
+// story therefore shows a button that opens it, and the stories are drawn in an iframe in the docs page
+// (`inline: false`), so the page around them is not locked.
+const meta = {
+  title: 'Base/Confirm',
+  component: UiConfirm,
+  args: {
+    open: false,
+    title: 'Remove this book from your library?',
+    text: 'Your notes and highlights for it are deleted too. This cannot be undone.',
+    action: 'Remove book',
+    testid: 'removeBook',
+    busy: false,
+    error: null,
+    offline: false,
+    tone: 'danger',
+  },
+  argTypes: { tone: { control: 'inline-radio', options: ['danger', 'primary'] } },
+  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 560 } } },
+  render: args => ({
+    components: { UiConfirm, UiButton },
+    setup: () => ({ args, open: ref(false) }),
+    template: `
+      <div class="flex min-h-[520px] items-center justify-center bg-surface">
+        <UiButton tone="secondary" @click="open = true">Remove book</UiButton>
+        <UiConfirm v-bind="args" v-model:open="open" @confirm="open = false" @alternative="open = false" />
+      </div>`,
+  }),
+} satisfies Meta<typeof UiConfirm>
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** The default is the destructive one: the action in the danger tone, Cancel under it. */
+export const Destructive: Story = {}
+
+/** `tone: 'primary'`: an action that can be taken back (approving a request) is in ink, not red. */
+export const PrimaryTone: Story = {
+  args: {
+    tone: 'primary',
+    title: 'Approve this member?',
+    text: 'They can see your shelves and join your reading groups straight away.',
+    action: 'Approve',
+    testid: 'approveMember',
+  },
+}
+
+/** Without `text` the dialog is just the question and its two buttons. */
+export const WithoutText: Story = { args: { text: undefined, title: 'Sign out of this device?', action: 'Sign out', testid: 'signOut' } }
+
+/** `alternative`: a safe way out offered above the destructive action (here: sync first, then sign out). */
+export const WithAlternative: Story = {
+  args: {
+    title: 'Sign out with changes waiting?',
+    text: '3 changes have not been synced yet. If you sign out now, they are lost.',
+    action: 'Sign out anyway',
+    alternative: 'Sync first',
+    testid: 'signOut',
+  },
+}
+
+/**
+ * `busy`: the action runs. The buttons are disabled and the dialog cannot be closed (not by Cancel, the scrim,
+ * Escape or Back) until it is done.
+ */
+export const Busy: Story = { args: { busy: true } }
+
+/** `error`: a refusal stays in the dialog with its reason, and the same button tries again. */
+export const WithError: Story = { args: { error: 'The book could not be removed. Check your connection and try again.' } }
+
+/** `offline`: the action stays, disabled, and says “Offline” instead of what it does; Cancel still closes. */
+export const Offline: Story = { args: { offline: true } }
+
+/** A long title and text wrap (the title balanced); the card scrolls when the screen is too short for it. */
+export const LongText: Story = {
+  args: {
+    title: 'Remove “The Hitchhiker’s Guide to the Galaxy: The Complete Trilogy in Five Parts” from your library?',
+    text: 'This also removes the 214 highlights, 38 notes and 12 bookmarks you made while reading it, your reading progress, and the book from every shelf and reading group it is on. Your friends keep their own copies and notes. Once removed, none of this can be restored, not even by us.',
+  },
+}
+
+/** The same dialog in German, where the words are longer. */
+export const German: Story = {
+  args: {
+    title: 'Dieses Buch aus deiner Bibliothek entfernen?',
+    text: 'Deine Notizen und Markierungen dazu werden ebenfalls gelöscht. Das lässt sich nicht rückgängig machen.',
+    action: 'Buch entfernen',
+    alternative: 'Zuerst synchronisieren',
+  },
+  globals: { locale: 'de' },
+}
+
+/**
+ * The default slot adds more under the sentence, such as a field for a reason. With the keyboard up the dialog
+ * stands on it as a sheet does, and its card scrolls.
+ */
+export const WithField: Story = {
+  args: { title: 'Ban this member?', text: 'They are signed out and cannot sign in again.', action: 'Ban member', testid: 'banMember' },
+  render: args => ({
+    components: { UiConfirm, UiButton, UiField },
+    setup: () => ({ args, open: ref(false), reason: ref('') }),
+    template: `
+      <div class="flex min-h-[520px] items-center justify-center bg-surface">
+        <UiButton tone="secondary" @click="open = true">Ban member</UiButton>
+        <UiConfirm v-bind="args" v-model:open="open" @confirm="open = false">
+          <UiField id="banReason" v-model="reason" label="Reason (optional)" autocomplete="off" />
+        </UiConfirm>
+      </div>`,
+  }),
+}
+
+/** Starts open, for looking at the dialog at rest. */
+export const Open: Story = {
+  play: async () => {
+    await waitFor(() => expect(within(document.body).getByRole('alertdialog', { name: /Remove this book/ })).toBeVisible())
+  },
+  render: args => ({
+    components: { UiConfirm, UiButton },
+    setup: () => ({ args, open: ref(true) }),
+    template: `
+      <div class="flex min-h-[520px] items-center justify-center bg-surface">
+        <UiButton tone="secondary" @click="open = true">Remove book</UiButton>
+        <UiConfirm v-bind="args" v-model:open="open" @confirm="open = false" />
+      </div>`,
+  }),
+}
+
+/** The dark theme, open, with its error line and the alternative. */
+export const Night: Story = {
+  args: { error: 'The book could not be removed. Check your connection and try again.', alternative: 'Archive instead' },
+  globals: { theme: 'night' },
+  render: Open.render,
+}
