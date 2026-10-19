@@ -139,8 +139,8 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    | `chat.media.photoRemoved`, `.gifRemoved` | Photo removed, GIF removed | `quotePreview` |
    | `chat.voice.bubble.removed` | Voice message removed | `quotePreview` |
 
-   More keys arrive with the chat components (wave 4b). `useUiText().value.chat` can be passed as
-   the `DayWords` and `ReplyWords` the chat utils take.
+   The chat components add the rest of `ui.text.chat` (the list is under [Chat](#chat)).
+   `useUiText().value.chat` can be passed as the `DayWords` and `ReplyWords` the chat utils take.
 6. **The contract test** in the app: `testing/contract.mjs` is the contract as a function; it takes the
    app's token CSS and returns what breaks it (empty lists mean it holds). This repo runs it against a
    small fixture (`tests/fixtures/tokens.css`), each app against its own generated file:
@@ -267,7 +267,7 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. |
-| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`): dark veil, close button, Esc / tap / swipe down / Back close it; the `origin` (a round face, or a rounded tile such as a photo in the Feed card: it starts with the origin's own corner radius) grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
+| `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`; `failed` when the picture does not load, so an app can sign a short-lived URL anew): dark veil, close button, Esc / tap / swipe down / Back close it; the `origin` (a round face, or a rounded tile such as a photo in the Feed card: it starts with the origin's own corner radius) grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
 | `UiIcon` | The icon set on the 24 grid (`IconName`). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
@@ -277,6 +277,67 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen. |
 | `UiSearchPalette` | A search palette over the page (Libellus' search, without the morph out of the tab bar): veil, raised card on the keyboard, query row (glyph, field, clear, Cancel) at its bottom, the answers in the default slot above it; `v-model:open`, `v-model:query`, `label`, `placeholder`, `clear`, `cancel`, `status`, `testid`; everything else goes to the `<input>`; `cleared`. Focuses the query first, then rises and fades in (iOS: a field focused in a transparent layer leaves its list dead under the finger). Added for Bookretreats. |
 | `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place. |
+| `UiChatThread`, `UiBubble`, `UiDaySeparator`, `UiQuote`, `UiReactionBar`, `UiComposer`, `UiComposerChip`, `UiVoiceBubble`, `UiGifPicker` | The chat: see [Chat](#chat). |
+
+### Chat
+
+Bookretreats' 1:1 chat, moved into the base as it was (wave 4b: same look, motion, gestures and iOS
+keyboard behaviour; from `pages/friends/[id].vue`, `components/chat/*`, `components/ReactionBar.vue`
+and the voice composables). Role names, no domain words; copy from `ui.text.chat`, data and policy
+through props, domain parts through slots. Every test id starts with `testid` (default `chat`, so
+`chat.message`, `chat.bubble`, `chat.input`, … as before). Group chats and buddy reads build on it,
+additively (runs keyed by sender, unread marker, "seen by", spoiler veil).
+
+| Component | What it is | Props | Slots | Emits |
+|---|---|---|---|---|
+| `UiChatThread` | A conversation's screen, fixed on the keyboard (`useKeyboardViewport`, `pin`): the thread scrolls under the top bar's veil and the docked composer's floor; a drag or wheel on it closes the keyboard and the reaction bar; earlier messages load at the top (what was read stays put); it sticks to the newest (new messages, keyboard, composer and head growing); iOS 26's accessory bar shows the screen's colour; day separators from `timeline` ("Today" turns "Yesterday" at midnight); one reaction bar at a time (catcher, Escape, placement under the top bar); `jumpTo(id)` pages to a quoted message, scrolls to it and lights it up. Generic over the item type. | `items` (oldest first; `key`, `createdAt`, `id?`, `mine?`), `status` (`loading`, `ready`, else the `state` slot), `label`, `sameRun` (default: same `mine`), `hasMore`, `olderStatus`, `loadOlder` (`() => Promise<boolean>`), `offline`, `error` (a line over the composer), `notice` (a line in the composer's place: read-only), `headShown`, `testid` | `top` (the bar's row), `head` (the conversation's beginning), `message` (`item`, `index`, `follows`, `signed`, `endsRun`, `reacting`, `placement`, `highlight`, `openReactions`, `closeReactions`), `day` (`label`), `loading-head`, `state`, `composer`, default (overlays) | — ; exposes `scroller`, `stick()`, `toNewest()`, `jumpTo(id)`, `openReactions`, `closeReactions` |
+| `UiBubble` | One message: hers a raised paper card on the left, mine ink on the right, the tail on the last of a run; pending lighter, "Sending …" when slow; tap to retry a failed one; long press / right click opens UiReactionBar, swipe right to reply (arrow, tick past 60 px, never from the left 20 px), double tap likes (heart pop), a photo/GIF opens on a tap; "Copy", "Reply"; a pill of reactions on the inner corner; the "React" button for keyboards and VoiceOver; the time on a long press; arrive motion when `fresh`. | `item` (`BubbleMessage`), `read`, `fresh`, `signed`, `sender`, `endsRun`, `canReact`, `emojis`, `like` (❤️), `quote` (`BubbleQuote`), `highlight`, `reacting`, `placement`, `wide`, `testid` | `sender`, `body` (`item`, `tail`, `quote`, `tapQuote`: an app's own kinds), `quote` (`quote`, `mine`, `tap`), `reactions` (`reactions`, `label`, `open`), `meta` (`item`, `time`, `showTime`, `failed`, `sending`, `read`) | `retry`, `open`, `reactOpen`, `reactClose`, `react`, `reply`, `quoteTap`, `mediaFailed` |
+| `UiDaySeparator` | A day in the thread, mono eyebrow, centred. | `label`, `tag` (`li`), `testid` | — | — |
+| `UiQuote` | The answered message on top of a bubble: accent stripe, name, two lines; a button to the original, or "Message deleted". | `quote`, `mine`, `testid` | — | `tap` |
+| `UiReactionBar` | The glass capsule of reactions (APG toolbar: arrows, Home, End, Escape), plus "Reply" and "Copy". | `emojis`, `current`, `copyable`, `replyable`, `focusOnOpen`, `testid` | — | `pick`, `copy`, `reply`, `close` |
+| `UiComposer` | The glass capsule: the field (grows to five lines, Return sends on a desktop keyboard), send or the microphone; the chips float above and fold away while the field has the keyboard; the quote bar while answering; recording (✕, live bars, timer, send; stops itself at `voiceMaxMs`). `comment`: the Feed's comment bar (field and send, a `note` pill, the GIF chip). | `v-model`, `gifs`, `photoAccept`, `voiceMaxMs`, `comment`, `placeholder`, `label`, `max`, `note`, `noteLabel`, `quote`, `testid` | `actions` (the app's chips, UiComposerChip) | `send`, `photo`, `gif`, `voice` (`PreparedVoice`), `voiceError`, `cancelQuote`, `dismissNote`; exposes `focus`, `blur` |
+| `UiComposerChip` | A glass chip over the composer. | `label` (accessible name), `icon`, `mono` | default (the visible words), `icon` | `click` (native) |
+| `UiVoiceBubble` | A voice message: play button concentric with the bubble, the waveform as progress, the time; one voice at a time (`useVoicePlayer`); unplayable types say so. | `item`, `tail`, `testid` | `quote` | `press`; exposes `toggle` |
+| `UiGifPicker` | A tall sheet: search (400 ms debounce, newest request wins), topic chips, a two-column grid, "Load more", the provider's attribution. | `v-model:open`, `search` (`GifSearch`, the provider), `feeds` (`GifFeed[]`, opens on the first), `placeholder`, `attribution`, `testid` | `attribution` | `pick` (`gif`, the words that found it) |
+
+Composables: `useVoiceRecorder({ maxMs })` (`MediaRecorder` + an `AnalyserNode`: `state`, `elapsedMs`,
+`bars`, `problem`, `limitReached`, `supported`, `start`, `finish`, `cancel`) and `useVoicePlayer`
+(one `Audio` for the app: `current`, `toggle`, `stop`; `canPlayHere`). Utils (not auto-imported):
+`utils/chat/message.ts` (`BubbleMessage`, `BubbleMedia`, `BubbleReaction`, `BubbleQuote`, `Delivery`,
+`reactionsLabel`, `reactionName`, `mediaBox`), `utils/chat/gif.ts` (`GifItem`, `GifPage`, `GifResult`,
+`GifSearch`, `GifFeed`, `gifColumns`, `latestRequest`), `utils/chat/words.ts` (`fillWords`),
+`utils/chat/voice.ts` (+ `LIVE_BARS`, `liveRow`).
+
+**What an app supplies.** The messages (Bookretreats' `ChatItem` fits `BubbleMessage` as it is), the
+quotes it builds (`quoteName`, `quotePreview`), the store's actions on the emits (send, retry, react,
+reply, sign a picture again, load older), the reaction set (`emojis`), the limits (`max`, `photoAccept`,
+`voiceMaxMs`; `checkVoice` with its `VoiceLimits`), the GIF provider (`search`, `feeds`, `placeholder`,
+`attribution`), its own kinds in `UiBubble`'s `body` slot (`wide`) and its system lines in the thread's
+`message` slot, the top bar and the head in `UiChatThread`'s slots, its own chips in `UiComposer`'s
+`actions`, and the words of `ui.text.chat` (`app.config.ts` or `updateAppConfig`). Bookretreats keeps the
+phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, the repositories and
+`formatPhone`.
+
+**`ui.text.chat`** (English defaults in `app.config.ts`). A `{name}` is a blank the component fills in
+(`fillWords`); an app whose copy is functions hands one over filled with the placeholder:
+`pick: chat.reactions.pick('{name}')`.
+
+| Key | Default | Used by |
+| --- | --- | --- |
+| `loading` | Loading the conversation | UiChatThread (placeholder) |
+| `offline` | No connection. We will try again in a moment. | UiChatThread |
+| `olderLoading`, `olderFailed`, `olderRetry` | Loading earlier messages, Earlier messages could not be loaded., Try again | UiChatThread |
+| `read`, `sending`, `failed`, `retryHint` | Read, Sending …, Not sent. Tap to try again., Tap to try again. | UiBubble |
+| `composer.label`, `.placeholder`, `.send` | Message, Message, Send | UiComposer |
+| `composer.photo`, `.photoLabel`, `.gif`, `.gifLabel` | Photo, Send a photo from your gallery, GIF, Find and send a GIF | UiComposer's chips |
+| `reply.bar`, `.cancel`, `.deleted`, `.show` | Reply, Discard reply, Message deleted, `{name}: {preview}. Go to message` | UiReactionBar, UiComposer, UiQuote |
+| `media.photo`, `.photoMine`, `.gif`, `.gifMine`, `.open`, `.loading`, `.unavailable` | Photo, Your photo, GIF, Your GIF, View large, Loading picture, Picture not available right now | UiBubble |
+| `voice.record`, `.recording`, `.stopped`, `.timer`, `.cancel`, `.send`, `.limit` | Record a voice message, Recording, Recording stopped, `{elapsed} of {max}`, Discard recording, Send voice message, That is as long as a recording can be. You can send it now. | UiComposer |
+| `voice.problems.denied`, `.none`, `.busy`, `.unsupported`, `.failed` | (why the microphone did not start) | UiComposer (`voiceError`) |
+| `voice.bubble.mine`, `.hers`, `.play`, `.pause`, `.loading`, `.unplayable`, `.playFailed`, `.position` | Your voice message, Voice message, Play, Pause, Loading voice message, Your device cannot play this voice message., Playing did not work. Tap to try again., `{now} of {total}` | UiVoiceBubble |
+| `viewer.label`, `.close` | Picture, Close | the app's UiMediaViewer (`dialogLabel`, `closeLabel`) |
+| `gifPicker.title`, `.search`, `.feedsLabel`, `.results`, `.none`, `.more`, `.loading`, `.pick`, `.retry` | Send a GIF, Search GIFs, GIF topics, `For “{q}”`, `No GIF for “{q}”.`, Load more, Loading GIFs, Send, Try again | UiGifPicker |
+| `reactions.bar`, `.open`, `.names`, `.pick`, `.takeBack`, `.byYou`, `.byHer`, `.byBoth`, `.pill`, `.copy`, `.copied` | Choose a reaction, React, ❤️ Heart … 📚 Books, `React with {name}`, `Take back {name}`, `{name} from you`, `{name} from them`, `{name} from both of you`, `Reactions: {parts}`, Copy, Copied | UiReactionBar, UiBubble |
 
 ### Composables and utils (auto-imported)
 
@@ -394,23 +455,24 @@ reads a variable the generated file lacks.
 - **Colour** (`--color-*`, `bg-*` / `text-*` / `border-*`): `surface`, `surface-raised`,
   `surface-sheet`, `glass`, `fill`, `fill-strong`, `hairline`, `hairline-strong`, `ink`,
   `ink-muted`, `ink-faint`, `ink-ghost`, `on-ink`, `accent`, `accent-ink`, `accent-soft`,
-  `lamp-light`, `lamp-cone`, `error`, `scrim`, `cloth1` … `cloth6`, `cloth-ink`.
-- **Elevation** (`shadow-*`): `button`, `cover`, `float`, `sheet`.
+  `lamp-light`, `lamp-cone`, `error`, `error-soft` (UiGifPicker), `scrim`, `cloth1` … `cloth6`, `cloth-ink`.
+- **Elevation** (`shadow-*`): `button`, `cover`, `float`, `sheet`, `raised`, `palette` (the chat).
 - **Opacity**: `--opacity-glow`, `--opacity-halo` (the theme's decorations).
 - **Blur** (`--blur-*`): `glass`, `chrome`, `halo`.
 - **Spacing** (`--spacing-*`, `p-*`, `gap-*`, …): `xxs`, `xs`, `sm`, `ms`, `inset`, `md`, `ml`,
   `lg`, `xl`, `xxl`, `screen`, `bar-top`, `tab-bar-drop`, `float-above`, `grabber`.
-- **Radius** (`rounded-*`): `cover-sm`, `cover`, `cover-lg`, `sm`, `md`, `xl`, `sheet`, `pill`.
+- **Radius** (`rounded-*`): `cover-sm`, `cover`, `cover-lg`, `sm`, `md`, `lg`, `xl`, `sheet`, `pill`, `tail` (a bubble's small corner).
 - **Size** (`--size-*`): `touch`, `max-content`, `avatar`, `tab`, `tab-compact`, `tab-bar`, `tab-icon`, `button`,
   `button-md`, `button-sm`, `row`, `menu`, `switch`, `switch-thumb`, `grabber`, `grabber-height`,
-  `empty-art`, `cover-xxs`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox).
+  `empty-art`, `cover-xxs`, `cover-xs`, `cover-sm`, `cover-md`, `cover-lg`, `cover-xl`, `checkbox` (UiCheckbox),
+  `composer`, `reaction`, `field`, `avatar-xl` (the chat).
 - **Stroke** (`--stroke-*`): `hairline`, `rule`, `focus`, `icon`, `icon-bold`.
 - **Type**: `--font-sans`, `--font-mono`, `--font-serif`; `--font-weight-medium`,
   `--font-weight-semibold`; the text styles (`text-*`, each with `--line-height`,
   `--letter-spacing` and, where it has one, `--font-weight`): `title`, `headline`, `input`,
   `callout`, `body-large`, `body`, `subhead`, `caption`, `footnote`, `meta`, `eyebrow`.
 - **Motion**: `--duration-instant`, `quick`, `standard`, `exit`, `sheet`, `sheet-exit`,
-  `keyboard`, `wave`; `--ease-standard`, `exit`, `sheet`, `keyboard`, `wave`.
+  `keyboard`, `wave`, `gentle` (the chat); `--ease-standard`, `exit`, `sheet`, `keyboard`, `wave`.
 - **Theme scheme**: `color-scheme` per theme (the generated file sets it).
 
 ## Changes against Libellus
@@ -470,6 +532,10 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiMediaViewer` and `utils/flip.ts` (`flipTransform`, `coverCrop`, `morphFrames`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the round face it was opened from and shrinks back into it.
   `morphFrames` takes the face's own corner radius (`faceRadius`, px; additive): a rounded tile starts as that tile, never rounder than the circle, so avatars are unchanged; the viewer reads it from the origin's computed `border-top-left-radius`. Added with the Feed's photo posts.
   `useSwipeDown`'s `dismiss` now gets the distance the drag had gone, by mouse and by finger alike (additive; the viewer's leave starts from there; its swipe-down takes `useSheetTouch` like the sheets).
+  `failed` (additive): the picture did not load, so the app can sign a short-lived URL anew (the chat's pictures; the chat's own viewer is this one now).
+- The chat (`UiChatThread`, `UiBubble`, `UiDaySeparator`, `UiQuote`, `UiReactionBar`, `UiComposer`, `UiComposerChip`,
+  `UiVoiceBubble`, `UiGifPicker`, `useVoiceRecorder`, `useVoicePlayer`, `utils/chat/*`): new, no Libellus counterpart
+  (Bookretreats' chat, moved as it was; see [Chat](#chat)). BetterReads' buddy reads build on it.
   *Why `clip-path` + transform on the real image and not the View Transitions API* (evaluated, `view-transitions-vue`):
   a view transition shows bitmap snapshots of the whole page, so the picture could only be *scaled* (the crop-to-fill → full-frame
   and circle → rounded-corner change would be a keyframed `clip-path` on pseudo-elements of a blurry bitmap); it
@@ -537,8 +603,10 @@ namespace, a `spring` group is unitless
 ## Adding to the layer
 
 - Something goes into the layer only if another app could use it unchanged: no Bookretreats copy,
-  data or store. App-specific parts (the auth frame, the code input, the chat composer, profile and
-  member components) stay in the app.
+  data or store. App-specific parts (the auth frame, the code input, profile and member components)
+  stay in the app. The chat is in the base (plan decision 4: it moved as it was, and group chats and
+  buddy reads build on it): its domain parts — Bookretreats' phone card and sheet, its system lines,
+  its copy, its GIF provider, its store — stay in the app and fill the components' slots and props.
 - A new variable the layer reads goes into this README's list and into the app's tokens in the
   same bump (the contract test holds the two together).
 - Anything that differs from Libellus goes into [Changes against Libellus](#changes-against-libellus).
