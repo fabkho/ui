@@ -44,6 +44,114 @@ export const OWN_VARIABLES = [
 
 const read = (path) => readFileSync(path, 'utf8')
 
+/**
+ * Blanks the comments out of a source file, so the contract reads only code (a variable named
+ * in a comment is not a variable the layer uses). Strings are walked, not matched: `https://`
+ * in a string or an unquoted `url()` is not a comment.
+ *
+ * - JS (`.ts`, a `<script>`): `//` and `/* … *\/`. Quotes end at their line, template literals may span lines.
+ * - CSS (`.css`, a `<style>`): `/* … *\/` only; `//` is never a comment there.
+ * - Template (the rest of a `.vue`): `<!-- … -->` only.
+ *
+ * Newlines inside a comment are kept, so line numbers stay true.
+ *
+ * @param {string} source
+ * @param {'js' | 'css' | 'html'} kind
+ */
+export function stripComments(source, kind) {
+  if (kind === 'css') return stripCss(source)
+  if (kind === 'html') return source.replace(/<!--[\s\S]*?-->/g, blank)
+  if (kind === 'js') return stripJs(source)
+  throw new Error(`stripComments: unknown kind ${kind}`)
+}
+
+/** Blanks a comment, keeping its newlines. */
+const blank = (comment) => comment.replace(/[^\n]/g, '')
+
+function stripCss(source) {
+  let out = ''
+  let i = 0
+  while (i < source.length) {
+    const ch = source[i]
+    if (ch === '"' || ch === "'") {
+      const end = quoteEnd(source, i)
+      out += source.slice(i, end)
+      i = end
+    } else if (ch === '/' && source[i + 1] === '*') {
+      const close = source.indexOf('*/', i + 2)
+      const end = close === -1 ? source.length : close + 2
+      out += blank(source.slice(i, end))
+      i = end
+    } else {
+      out += ch
+      i++
+    }
+  }
+  return out
+}
+
+function stripJs(source) {
+  let out = ''
+  let i = 0
+  while (i < source.length) {
+    const ch = source[i]
+    if (ch === '"' || ch === "'") {
+      const end = quoteEnd(source, i)
+      out += source.slice(i, end)
+      i = end
+    } else if (ch === '`') {
+      const end = templateEnd(source, i)
+      out += source.slice(i, end)
+      i = end
+    } else if (ch === '/' && source[i + 1] === '/') {
+      const newline = source.indexOf('\n', i)
+      const end = newline === -1 ? source.length : newline
+      i = end
+    } else if (ch === '/' && source[i + 1] === '*') {
+      const close = source.indexOf('*/', i + 2)
+      const end = close === -1 ? source.length : close + 2
+      out += blank(source.slice(i, end))
+      i = end
+    } else {
+      out += ch
+      i++
+    }
+  }
+  return out
+}
+
+/** Index just past a '…' or "…" string starting at `start`; a string ends at its line (an apostrophe in prose stays harmless). */
+function quoteEnd(source, start) {
+  const quote = source[start]
+  let i = start + 1
+  while (i < source.length && source[i] !== quote && source[i] !== '\n') {
+    i += source[i] === '\\' ? 2 : 1
+  }
+  return source[i] === quote ? i + 1 : i
+}
+
+/** Index just past a `…` template literal starting at `start` (`${}` is not parsed: it is text here). */
+function templateEnd(source, start) {
+  let i = start + 1
+  while (i < source.length && source[i] !== '`') i += source[i] === '\\' ? 2 : 1
+  return Math.min(i + 1, source.length)
+}
+
+/**
+ * The layer's source with its comments blanked, per file type: `.vue` splits into its template,
+ * `<script>` (JS rules) and `<style>` (CSS rules); `.ts` is JS; `.css` is CSS.
+ */
+export function stripFileComments(file, source) {
+  if (file.endsWith('.css')) return stripComments(source, 'css')
+  if (file.endsWith('.vue')) {
+    const html = stripComments(source, 'html')
+    return html
+      .replace(/(<script\b[^>]*>)([\s\S]*?)(<\/script>)/g, (_, open, body, close) => open + stripComments(body, 'js') + close)
+      .replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (_, open, body, close) => open + stripComments(body, 'css') + close)
+  }
+  return stripComments(source, 'js')
+}
+
 function filesIn(dir) {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
@@ -72,6 +180,7 @@ export function layerFiles(root = LAYER_ROOT) {
  */
 export function layerContract({ tokensCss, root = LAYER_ROOT }) {
   const files = layerFiles(root)
+  const code = (file) => stripFileComments(file, read(file))
   const own = new Set(OWN_VARIABLES)
   const defined = new Set([...tokensCss.matchAll(/(--[a-z][a-z0-9-]*):/g)].map((m) => m[1]))
 
@@ -86,7 +195,7 @@ export function layerContract({ tokensCss, root = LAYER_ROOT }) {
   // 2. Reads only variables the app's tokens define, or sets itself.
   const missing = new Set()
   for (const file of files) {
-    for (const [name] of read(file).matchAll(/--[a-z][a-z0-9-]*[a-z0-9]/g)) {
+    for (const [name] of code(file).matchAll(/--[a-z][a-z0-9-]*[a-z0-9]/g)) {
       if (name.startsWith('--tw-') || own.has(name) || defined.has(name)) continue
       // Built from a prefix in code (`--duration-${name}`, `--color-cloth${n}`): checked below.
       if (/^--(duration|ease|color-cloth)$/.test(name)) continue
@@ -95,19 +204,18 @@ export function layerContract({ tokensCss, root = LAYER_ROOT }) {
   }
 
   // 3. Every cloth a generated cover can pick has its colour.
-  const count = Number(/CLOTH_COUNT\s*=\s*(\d+)/.exec(read(join(root, 'utils/cloth.ts')))?.[1])
+  const count = Number(/CLOTH_COUNT\s*=\s*(\d+)/.exec(code(join(root, 'utils/cloth.ts')))?.[1])
   const missingCloths = []
   for (let n = 1; n <= count; n++) if (!defined.has(`--color-cloth${n}`)) missingCloths.push(`--color-cloth${n}`)
 
   // 4. The tokens are the only place a curve is written: no cubic-bezier() and no raw ease keyword.
   const rawCurves = []
   for (const file of files) {
-    const source = read(file)
-    const code = source.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, '')
+    const source = code(file)
     const name = file.slice(root.length)
-    if (/cubic-bezier\(\s*[\d.]/.test(code)) rawCurves.push(`${name}: cubic-bezier`)
-    if (/(transition|animation)[^;{}]*\b(ease-in|ease-out|ease-in-out|ease)\b(?![-\w])/.test(code)) rawCurves.push(`${name}: raw ease`)
-    if (/['"`](ease-in|ease-out|ease-in-out)['"`]/.test(code)) rawCurves.push(`${name}: raw ease (script)`)
+    if (/cubic-bezier\(\s*[\d.]/.test(source)) rawCurves.push(`${name}: cubic-bezier`)
+    if (/(transition|animation)[^;{}]*\b(ease-in|ease-out|ease-in-out|ease)\b(?![-\w])/.test(source)) rawCurves.push(`${name}: raw ease`)
+    if (/['"`](ease-in|ease-out|ease-in-out)['"`]/.test(source)) rawCurves.push(`${name}: raw ease (script)`)
   }
 
   return { importsFromApp, missingVariables: [...missing].sort(), missingCloths, rawCurves }
