@@ -24,6 +24,7 @@ The layer has no `app/` folder: the package root is its source directory.
   components/ui/*.vue   UiButton, UiRow, UiSheet, …
   composables/*.ts      useModalLayer, useBackDismiss, useSwipeDown, …
   utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth
+  utils/chat/*.ts       the chat's pure logic: timeline, reply, voice
   plugins/              touch-active (`:active` on iOS)
 ```
 
@@ -123,6 +124,22 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
 
    An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
    when the language changes (components read them through `useUiText()`).
+
+   The chat's words are `ui.text.chat.*`, shaped like Bookretreats' `copy/chat.ts` and **German by
+   default** (they are that app's words; the keys above stay English). The app fills them from its copy:
+
+   | Key | Default | Used by |
+   | --- | --- | --- |
+   | `chat.locale` | `de` | `dayLabel`: BCP 47 tag the weekdays and months are spelled in (`Intl`) |
+   | `chat.today`, `chat.yesterday` | Heute, Gestern | `dayLabel` |
+   | `chat.reply.you` | Du | `quoteName` |
+   | `chat.reply.voice`, `.gif`, `.photo` | 🎤 Sprachnachricht, GIF, Foto | `quotePreview` |
+   | `chat.reply.gone` | Nicht mehr verfügbar | `quotePreview` of a quote flagged `gone` |
+   | `chat.media.photoRemoved`, `.gifRemoved` | Foto entfernt, GIF entfernt | `quotePreview` |
+   | `chat.voice.bubble.removed` | Sprachnachricht entfernt | `quotePreview` |
+
+   More keys arrive with the chat components (wave 4b). `useUiText().value.chat` can be passed as
+   the `DayWords` and `ReplyWords` the chat utils take.
 6. **The contract test** in the app: `testing/contract.mjs` is the contract as a function; it takes the
    app's token CSS and returns what breaks it (empty lists mean it holds). This repo runs it against a
    small fixture (`tests/fixtures/tokens.css`), each app against its own generated file:
@@ -257,6 +274,20 @@ first release is `0.1.0`, and while the version is `0.x` a `feat` bumps the mino
 - `utils/haptics.ts`: `tick`, `stepTick`, `hapticsKind`.
 - `utils/keyboard.ts`: the keyboard arithmetic (`readViewport`, the one measurement; `sheetLift`, `paletteLift`, `revealDelta`, …).
 - `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl`, `CoverColors`.
+- `utils/chat/*.ts` (the chat's pure logic, **not auto-imported**: the names are too generic for a global;
+  import `#ui/utils/chat/<file>` from an app, a relative path from a component). No Vue, no clock, no
+  words of their own (they come in from `ui.text.chat`):
+  - `timeline.ts`: `dayKey`, `daysAgo`, `dayLabel(at, now, words)` (Intl for weekdays and months),
+    `clockTime`, `timeline(items, now, keyOf, words)` (day separators, `TimelineRow`), `follows` /
+    `endsRun(rows, index, sameRun)` (runs and tails; the app says what the same run is), `compareCreated`.
+  - `reply.ts`: the swipe maths (`REPLY_THRESHOLD`, `REPLY_MAX`, `EDGE_PX`, `AXIS_PX`, `AXIS_RATIO`,
+    `gestureAxis`, `canStartSwipe`, `replyArmed`, `replyTravel`, `replyProgress`) and the quote's words
+    (`oneline`, `quotePreview(quoted, words)`, `quoteName(mine, name, words)`, `Quoted`, `ReplyWords`).
+  - `voice.ts`: the recording types (`VOICE_TYPES`, `RECORDING_TYPES`, `voiceMime`, `voiceExtension`,
+    `mimeOfPath`, `pickRecordingType`, `canPlayVoice`), the waveform and the clock (`PEAK_COUNT`,
+    `peaksFrom`, `clock`), `micProblem`, `checkVoice(blob, durationMs, limits)`, `PreparedVoice`.
+    The limits (longest and shortest recording, biggest file) are the app's policy, passed as `VoiceLimits`.
+  - Stays in Bookretreats: `formatPhone` (spells a German number: domain), the send queue, the limits' values.
 - `plugins/touch-active.client.ts`: one passive touch listener, so `:active` (press feedback) works on iOS.
 - `plugins/stranded-viewport.client.ts` (added for Bookretreats): fixed chrome back in place after the keyboard (see [the keyboard](#the-keyboard)).
 - `plugins/no-focus-zoom.client.ts`: on iOS only, `maximum-scale=1` on the viewport, so a field under 16 px does not zoom the page in when it takes the keyboard (pinch zoom stays).
