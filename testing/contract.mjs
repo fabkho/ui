@@ -47,6 +47,20 @@ export const OWN_VARIABLES = [
   '--voice-corner-tail',
 ]
 
+/**
+ * Variables the layer reads only with a fallback (`var(--glass-solid, 0%)`): an app may set them (the Glass
+ * setting, a 24 px target size) and an app without them looks as the design does. Not required of the tokens;
+ * `tests/ui-optional-variables.test.ts` holds the layer to reading each one with a fallback.
+ */
+export const OPTIONAL_VARIABLES = [
+  '--glass-solid',
+  '--glass-scale',
+  '--veil-solid',
+  '--size-target',
+  '--hit-up',
+  '--hit-down',
+]
+
 const read = (path) => readFileSync(path, 'utf8')
 
 /**
@@ -187,7 +201,7 @@ export function layerFiles(root = LAYER_ROOT) {
 export function layerContract({ tokensCss, root = LAYER_ROOT }) {
   const files = layerFiles(root)
   const code = (file) => stripFileComments(file, read(file))
-  const own = new Set(OWN_VARIABLES)
+  const own = new Set([...OWN_VARIABLES, ...OPTIONAL_VARIABLES])
   const defined = new Set([...tokensCss.matchAll(/(--[a-z][a-z0-9-]*):/g)].map((m) => m[1]))
 
   // 1. Imports nothing from the app (inside a layer `~` and `@` are the *app's* source folder).

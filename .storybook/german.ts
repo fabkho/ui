@@ -4,6 +4,8 @@ export const GERMAN = {
   cancel: 'Abbrechen',
   offline: 'Offline',
   etAl: 'u. a.',
+  more: 'Mehr',
+  less: 'Weniger',
   chat: {
     locale: 'de',
     today: 'Heute',

@@ -1,5 +1,5 @@
 // The few words the layer says itself (a sheet's Cancel, the Offline button, a
-// cover's "et al."). The app overrides them in its own app.config.ts, or, with
+// cover's "et al.", a clamped text's More and Less). The app overrides them in its own app.config.ts, or, with
 // translations, keeps them current with `updateAppConfig({ ui: { text } })`
 // (README.md, Copy). The layer never imports the app's copy.
 export default defineAppConfig({
@@ -11,6 +11,9 @@ export default defineAppConfig({
       offline: 'Offline',
       /** After the first author when a cover names fewer than all of them. */
       etAl: 'et al.',
+      /** UiClampText: the button that opens a cut text in place, and the one that folds it again. */
+      more: 'More',
+      less: 'Less',
       /**
        * The chat's words (`utils/chat/*` and the chat components: UiChatThread, UiBubble, UiQuote,
        * UiReactionBar, UiComposer, UiVoiceBubble, UiGifPicker). Each app fills them from its own copy
