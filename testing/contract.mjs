@@ -40,6 +40,11 @@ export const OWN_VARIABLES = [
   '--viewport-pan',
   '--index',
   '--count',
+  '--chat-dock',
+  '--composer-inset',
+  '--voice-inset',
+  '--voice-corner',
+  '--voice-corner-tail',
 ]
 
 const read = (path) => readFileSync(path, 'utf8')

@@ -54,6 +54,13 @@ describe('clockTime', () => {
   it('is 24 hours, the hour without a leading zero', () => {
     expect(clockTime(at(2026, 3, 11, 9, 5))).toBe('9:05')
     expect(clockTime(at(2026, 3, 11, 14, 30))).toBe('14:30')
+  })
+
+  it("speaks the locale's clock when it is given one", () => {
+    expect(clockTime(at(2026, 3, 11, 9, 5), 'de')).toBe('9:05')
+    expect(clockTime(at(2026, 3, 11, 14, 30), 'de')).toBe('14:30')
+    expect(clockTime(at(2026, 3, 11, 14, 30), 'en-GB')).toBe('14:30')
+    expect(clockTime(at(2026, 3, 11, 14, 30), 'en-US')).toMatch(/^2:30\sPM$/)
     expect(clockTime(at(2026, 3, 11, 0, 0))).toBe('0:00')
   })
 })

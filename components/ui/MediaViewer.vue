@@ -14,6 +14,8 @@ import { morphFrames } from '../../utils/flip'
 // corner radius. Played on the real image with `clip-path` and a transform, see `utils/flip.ts`
 // and the README for why not the View Transitions API. Reduce Motion, or no face to
 // grow from (gone, off screen), makes both a cross-fade. Copy comes in through props.
+// A picture that fails to load says so (`failed`): the chat's pictures come from short-lived
+// signed URLs, and the app signs one anew (added with the chat, which shows its pictures here).
 // Added for Bookretreats (no Libellus counterpart).
 const props = defineProps<{
   open: boolean
@@ -27,7 +29,11 @@ const props = defineProps<{
   origin?: HTMLElement | null
   testid?: string
 }>()
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{
+  close: []
+  /** The picture did not load (a signed URL that ran out): the app signs it anew and passes the new `url`. */
+  failed: []
+}>()
 
 const id = computed(() => props.testid ?? 'viewer')
 const root = ref<HTMLElement | null>(null)
@@ -246,6 +252,7 @@ function onLeave(el: Element, done: () => void) {
           draggable="false"
           :data-testid="`${id}Image`"
           @click="close"
+          @error="emit('failed')"
         />
         <button
           ref="closer"

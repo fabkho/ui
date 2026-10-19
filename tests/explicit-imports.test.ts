@@ -61,6 +61,10 @@ function bindingsOf(code: string): Set<string> {
   for (const match of code.matchAll(/(?:function\*?|const|let|var|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/g)) {
     names.add(match[1])
   }
+  // A component's own props (`defineProps<{ endsRun?: boolean }>()`): a prop may share a base util's name.
+  for (const block of code.matchAll(/defineProps<\{([\s\S]*?)\}>\(/g)) {
+    for (const key of block[1].matchAll(/^\s*([A-Za-z_$][\w$]*)\??:/gm)) names.add(key[1])
+  }
   for (const match of code.matchAll(/import\s+(type\s+)?([\s\S]*?)\s+from\s+['"][^'"]+['"]/g)) {
     for (const part of match[2].replace(/[{}]/g, ',').split(',')) {
       const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop()!.trim()
