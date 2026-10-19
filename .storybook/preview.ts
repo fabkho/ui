@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook-vue/nuxt'
 import { INITIAL_VIEWPORTS } from 'storybook/viewport'
+import { GERMAN } from './german'
 import './storybook.css'
 
 // Two themes stand in for the apps (tokens.css): one light, one dark. The toolbar sets
@@ -24,9 +25,16 @@ window.matchMedia = (query: string) => {
     },
   })
 }
-
-// The words the layer says itself (`ui.text`): the English defaults, or a German sample like an app would set.
-const GERMAN = { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.' }
+type Words = { [key: string]: string | Words }
+/** Lays `source` over `target`, key by key, so a partial sample leaves the rest as it was. */
+function lay(target: Words, source: Words) {
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === 'string') target[key] = value
+    else lay((target[key] ??= {}) as Words, value)
+  }
+}
+// The English defaults of `app.config.ts`, taken once before anything is laid over them.
+let english: Words | undefined
 
 const preview: Preview = {
   globalTypes: {
@@ -71,12 +79,13 @@ const preview: Preview = {
       components: { story },
       setup() {
         const appConfig = useAppConfig()
-        const english = { ...appConfig.ui.text }
+        english ??= JSON.parse(JSON.stringify(appConfig.ui.text)) as Words
         watchEffect(() => {
           document.documentElement.dataset.theme = context.globals.theme as Theme
           reduceMotion = context.globals.motion === 'reduce'
           document.documentElement.classList.toggle('reduce-motion', reduceMotion)
-          Object.assign(appConfig.ui.text, context.globals.locale === 'de' ? GERMAN : english)
+          lay(appConfig.ui.text as Words, english!)
+          if (context.globals.locale === 'de') lay(appConfig.ui.text as Words, GERMAN)
         })
       },
       template: '<story />',

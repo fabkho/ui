@@ -232,7 +232,11 @@ Every base component in its states, in two themes, with an accessibility check o
   **night** (dark), which stand in for the apps. `.storybook/tokens.css` is a copy of what an app's
   generated tokens look like (Bookretreats' Papier values, Libellus' dark ones) and has to satisfy the
   contract (`tests/storybook-tokens.test.ts`). The globe switches `ui.text` between the English defaults
-  and a German sample. A story can start in a theme with `globals: { theme: 'night' }`.
+  and a German sample (`.storybook/german.ts`, the chat's words included). A story can start in a theme with `globals: { theme: 'night' }`.
+- **Chat stories** (`Chat/…`: thread, bubble, quote, reactions, composer, voice bubble, GIF picker) draw
+  their sample messages, pictures, a silent voice clip, a fake GIF provider (no network) and a stand-in
+  microphone from `.storybook/chat-fixtures.ts`. `Chat/ChatThread` is a live conversation (react, answer,
+  retry, send); look at it in the iPhone viewport.
 - **Add a story**: next to the component, `components/ui/<Name>.stories.ts` (`files` in `package.json`
   leaves `*.stories.ts` out of the package). Copy `Button.stories.ts`: `title: 'Base/<Name>'`, one named
   story per state (sizes, variants, disabled, loading, empty, error, long text), and for an overlay

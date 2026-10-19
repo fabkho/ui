@@ -28,7 +28,8 @@ function walk(dir: string): string[] {
 }
 
 const files = SCANNED_DIRS.flatMap((dir) => walk(join(ROOT, dir)))
-  .filter((path) => !path.endsWith('.d.ts'))
+  // Stories are not shipped (`files` in package.json) and run inside the layer's own Nuxt project, which is no app.
+  .filter((path) => !path.endsWith('.d.ts') && !path.endsWith('.stories.ts'))
   .map((path) => ({ path, rel: relative(ROOT, path).split(sep).join('/'), text: readFileSync(path, 'utf8') }))
 
 /** Drop comments so prose like "use useModalLayer here" is not a usage. */
