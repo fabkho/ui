@@ -9,6 +9,10 @@
 // screen reader says them after the name and the name stays short. A click anywhere in the box focuses the field.
 // `error` (added for Bookretreats, as UiField's): the message under the text, in the error colour; it sets
 // `aria-invalid` and takes the first place in the description. `errorTestid` is its `data-testid`.
+// `footer` slot (BetterReads' review box): a line under the text for a control that belongs to it (such as
+// "Contains spoilers"). It opens (UiReveal) once there is text and closes when the text is gone. It sits outside
+// the <label> and outside the textarea's description, so it is not part of the field's name.
+import UiReveal from './Reveal.vue'
 defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{ id: string; label: string; hint?: string; error?: string | null; errorTestid?: string }>()
@@ -39,7 +43,7 @@ onMounted(fit)
   <div
     class="box flex flex-col gap-sm rounded-md bg-fill px-inset pt-ms pb-inset"
     :class="error ? 'invalid' : focused ? 'focused' : 'edge-faint'"
-    @click="area?.focus()"
+    @click.self="area?.focus()"
   >
     <span class="text-footnote text-ink-muted">
       <label :for="id">{{ label }}</label><template v-if="hint"><span :id="`${id}-hint`" class="text-ink-faint"> · {{ hint }}</span></template>
@@ -57,6 +61,11 @@ onMounted(fit)
       @blur="focused = false"
     />
     <p v-if="error" :id="`${id}-error`" class="text-footnote text-error" :data-testid="errorTestid">{{ error }}</p>
+    <UiReveal v-if="$slots.footer" :show="model.trim().length > 0" class="-mb-xs">
+      <div class="mt-xs flex flex-col border-t border-hairline pt-xs">
+        <slot name="footer" />
+      </div>
+    </UiReveal>
   </div>
 </template>
 

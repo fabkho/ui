@@ -131,6 +131,35 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
    when the language changes (components read them through `useUiText()`).
 
+   **Icon drawings** (`app.config.ts`, `ui.icons`): an app that draws a name differently from the layer
+   sets its SVG shapes on the 24-unit grid under that `IconName`. The string replaces the layer's drawing
+   for that name only; a name left out keeps the layer's. Stroke, size and colour still come from `UiIcon`.
+   The markup is app code (rendered as `v-html`), never user input.
+
+   ```ts
+   export default defineAppConfig({
+     ui: {
+       icons: {
+         people: '<circle cx="9.3" cy="8.8" r="3.3" /><path d="M3.8 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />',
+         heart: '<path d="M12 19.5s-7.5-4.3-7.5-9A3.9 3.9 0 0 1 12 8.2a3.9 3.9 0 0 1 7.5 2.3c0 4.7-7.5 9-7.5 9z" />',
+       },
+     },
+   })
+   ```
+
+   `AppOverride` in `Icon.stories.ts` shows one. Bookretreats sets none, so its icons are the layer's.
+
+   **Text area footer** (`UiTextArea`): BetterReads' review box puts "Contains spoilers" under the text:
+
+   ```vue
+   <UiTextArea id="review" v-model="review" label="Your review" hint="optional" aria-describedby="review-rules">
+     <template #footer><UiSwitchRow … /></template>
+   </UiTextArea>
+   ```
+
+   The footer sits outside the `<label>`, so it is not in the field's name, and it opens once the text is not empty.
+   `aria-describedby` (from the app) joins the hint and the error on the textarea; the footer is not in it.
+
    The chat's words are `ui.text.chat.*`, English by default like the keys above. Each app fills them
    from its own copy (Bookretreats from `copy/chat.ts`, BetterReads from i18n):
 
@@ -287,7 +316,7 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiRow` | A row in a group: icon, label, value or placeholder, chevron; `as="button"` or `to` (a link); `tone="danger"`; slots default (value), `lead` (in the icon's place) and `trailing`. |
 | `UiRowGroup` | Inset grouped rows (iOS): quiet fill, hairline edge; rows draw their own dividers. |
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
-| `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
+| `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. `UiTextArea` adds a `footer` slot (a line under the text, outside the label, open once there is text) and a click on the box's own padding focuses the text. |
 | `UiIconSegments` | A choice of a few as one row of icon segments (`options` with `value`, `label`, `icon`; `value`, `choose`): the chosen one unfolds its name beside the icon. A radiogroup named by `labelledby` or `label`; arrows move the choice. `required`, `invalid`, `disabled`, `testid`. Added from BetterReads (`IconSegments`). |
 | `UiSegmented` | A segmented control; `compact` is the small one at a row's end (Libellus' Glass setting), `disabled` dims it while something is under way. |
 | `UiDateRow` | A day in a row group: the platform's own date picker laid over the row (`v-model` `YYYY-MM-DD`, `text` the day in words, `icon`, `min`, `max`). |
@@ -302,7 +331,7 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiListMotion` | A list whose items come, go and move in place. |
 | `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`; `failed` when the picture does not load, so an app can sign a short-lived URL anew): dark veil, close button, Esc / tap / swipe down / Back close it; the `origin` (a round face, or a rounded tile such as a photo in the Feed card: it starts with the origin's own corner radius) grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
-| `UiIcon` | The icon set on the 24 grid (`IconName`): BetterReads' and Bookretreats' marks in one set. |
+| `UiIcon` | The icon set on the 24 grid (`IconName`): BetterReads' and Bookretreats' marks in one set. An app draws its own version of a name with `ui.icons` (below). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
 | `UiProgress` | A thin progress bar. |
 | `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). |

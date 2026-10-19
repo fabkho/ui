@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { onBeforeUnmount } from 'vue'
 import UiIcon, { type IconName } from './Icon.vue'
 
 /** Every `IconName`, in the order of the union in Icon.vue. */
@@ -60,3 +61,22 @@ export const AllIcons: Story = {
 export const AllIconsBold: Story = { ...AllIcons, args: { size: 32, bold: true } }
 
 export const Night: Story = { ...AllIcons, globals: { theme: 'night' } }
+
+/**
+ * An app draws its own `people` through `ui.icons` (app.config.ts). The story sets it for its own render and puts
+ * the layer's drawing back when it leaves, so the other stories keep theirs.
+ */
+const LAYER_PEOPLE = `<circle cx="9.3" cy="8.8" r="3.3" /><path d="M3.8 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5" /><path d="M15.4 6.1a3.3 3.3 0 0 1 .3 6.4M17 14.9c2.1.5 3.5 2.3 3.5 4.6" />`
+const OWN_PEOPLE = '<circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5z" />'
+export const AppOverride: Story = {
+  args: { name: 'people', size: 48 },
+  render: args => ({
+    components: { UiIcon },
+    setup() {
+      updateAppConfig({ ui: { icons: { people: OWN_PEOPLE } } })
+      onBeforeUnmount(() => updateAppConfig({ ui: { icons: { people: LAYER_PEOPLE } } }))
+      return { args }
+    },
+    template: '<UiIcon v-bind="args" />',
+  }),
+}

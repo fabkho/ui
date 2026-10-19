@@ -58,4 +58,33 @@ export const LongText: Story = {
 /** Attributes such as `maxlength` or `disabled` go to the textarea. */
 export const Disabled: Story = { args: { modelValue: 'Reviews close two weeks after the retreat.', disabled: true } as object }
 
+/**
+ * `footer`: a line under the text for a control that belongs to it. It shows once there is text. It is outside the
+ * label and the description, so the field keeps its name ("Your review") and its hint; the switch has its own name.
+ */
+export const WithFooter: Story = {
+  args: { hint: 'optional', modelValue: 'The ending made me cry, and the lake at dawn is still with me.' } as object,
+  render: args => ({
+    components: { UiTextArea },
+    setup() {
+      const value = ref(args.modelValue)
+      return { args, value }
+    },
+    template: `<div class="w-(--size-menu)"><UiTextArea v-bind="args" v-model="value">
+      <template #footer><label class="flex min-h-(--size-touch) items-center gap-sm text-footnote text-ink-muted"><input type="checkbox" /> Contains spoilers</label></template>
+    </UiTextArea></div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('textbox', { name: 'Your review' })).toHaveAccessibleDescription('· optional')
+    await expect(canvas.getByRole('checkbox', { name: 'Contains spoilers' })).toBeInTheDocument()
+  },
+}
+
+/** Footer, empty text: the footer stays closed until there is something to say. */
+export const WithFooterEmpty: Story = {
+  args: { hint: 'optional', modelValue: '' } as object,
+  render: WithFooter.render,
+}
+
 export const Night: Story = { args: { modelValue: 'A quiet week.', hint: 'optional' }, globals: { theme: 'night' } }

@@ -98,7 +98,11 @@ export type IconName =
 // The icon set: a 24-unit grid, hairline strokes with round caps, stroke =
 // currentColor, so an icon takes the colour of its text. Decorative: the
 // control around it carries the label. `bold` is the active tab's weight.
-withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), { size: 22, bold: false })
+// An app draws its own version of a named icon with `ui.icons` (app.config.ts): the SVG markup of its
+// shapes, in the same 24-unit grid, replaces the layer's drawing for that name. It is app code, not user input.
+const props = withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), { size: 22, bold: false })
+const appIcons = computed(() => (useAppConfig().ui as { icons?: Partial<Record<IconName, string>> }).icons)
+const override = computed(() => appIcons.value?.[props.name])
 </script>
 
 <template>
@@ -114,7 +118,8 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
     class="shrink-0"
     :style="{ strokeWidth: bold ? 'var(--stroke-icon-bold)' : 'var(--stroke-icon)' }"
   >
-    <template v-if="name === 'home'">
+    <template v-if="override"><g v-html="override" /></template>
+    <template v-else-if="name === 'home'">
       <path d="M4.5 10.2 12 4l7.5 6.2V19a1 1 0 0 1-1 1h-4v-5.5h-5V20h-4a1 1 0 0 1-1-1z" />
     </template>
     <template v-else-if="name === 'library'">

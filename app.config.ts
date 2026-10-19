@@ -4,6 +4,12 @@
 // (README.md, Copy). The layer never imports the app's copy.
 export default defineAppConfig({
   ui: {
+    /**
+     * UiIcon drawings an app replaces: the name (an `IconName`) and the SVG markup of its shapes on the 24-unit
+     * grid, e.g. `people: '<circle cx="9.3" cy="8.8" r="3.3" /><path d="…" />'`. Merged over the layer's set;
+     * a name left out keeps the layer's drawing. Empty here: the layer's own drawings are the default.
+     */
+    icons: {} as Record<string, string>,
     text: {
       /** A sheet's and a dialog's way out. */
       cancel: 'Cancel',
