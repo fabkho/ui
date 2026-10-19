@@ -21,6 +21,7 @@
     ".": {
       "release-type": "node",
       "package-name": "@fabkho/ui",
+      "initial-version": "0.1.0",
       "changelog-path": "CHANGELOG.md",
       "draft": false,
       "prerelease": false
