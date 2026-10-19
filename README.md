@@ -245,6 +245,26 @@ Every base component in its states, in two themes, with an accessibility check o
   `parameters: { a11y: { test: 'todo' } }` with a comment naming the rule: it then shows in the panel
   and stays out of CI's way, and the pull request says so. The check finds what a machine can find
   (contrast, names, roles); keyboard order, focus and reduced motion are still read by a person.
+- **The other a11y tools** (what each does; the verdicts on the rest are in the pull request):
+  - **axe in the test run** (`a11y.test: 'error'`, `@storybook/addon-a11y`): the WCAG 2.2 AA + best-practice
+    check above. Colour contrast in both themes is covered here, because the night run repeats every story.
+  - **Accessibility panel + vision simulator** (`@storybook/addon-a11y`, no extra install): the axe report
+    per story in the browser, and the Vision tab that simulates colour blindness, blur and low contrast.
+    Use it by hand where a colour carries meaning.
+  - **Pseudo-states** (`storybook-addon-pseudo-states`): the toolbar's pseudo-state button forces `:hover`,
+    `:focus-visible`, `:active` on a story's elements. It rewrites the stylesheets, so it shows the style,
+    not the real state. `FocusVisible` in `Segmented.stories.ts` is the example: the focus ring is on screen
+    for axe and for the eye.
+  - **Reduced motion** (toolbar, "Motion: reduced"): answers `prefers-reduced-motion: reduce` to the layer's
+    JavaScript and shortens the CSS transitions and animations, as the media query does. Check a motion
+    story in both modes.
+  - **Keyboard** (play functions with `userEvent` from `storybook/test`, run by `pnpm test:storybook`): tabs
+    in, presses the arrows, asserts focus and `aria-checked`. `KeyboardPattern` in `Segmented.stories.ts`
+    is the one to copy.
+- **The rule for a new component**: a story per state, axe clean in both themes (`pnpm test:storybook` and
+  `pnpm test:storybook:night`), and for an interactive widget a keyboard play function that follows the
+  WAI-ARIA Authoring Practices pattern (radio group: arrows move focus and choice; tabs, menu, dialog and
+  switch likewise). Reduced motion and the focus ring are checked by hand with the toolbar.
 
 ## What is in it
 

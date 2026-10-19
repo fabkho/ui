@@ -8,3 +8,13 @@
   background: var(--color-surface);
   color: var(--color-ink);
 }
+
+/* The toolbar's "Motion: reduced" (preview.ts): the same shortening `prefers-reduced-motion: reduce` gives. */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
