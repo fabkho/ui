@@ -19,11 +19,16 @@
     "plugins",
     "router.options.ts",
     "testing",
-    "utils"
+    "utils",
+    "!components/**/*.stories.ts"
   ],
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --project unit",
+    "test:watch": "vitest --project unit",
+    "test:storybook": "vitest run --project storybook",
+    "test:storybook:night": "VITE_STORY_THEME=night vitest run --project storybook",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build -o storybook-static"
   },
   "dependencies": {
     "thumbhash": "0.1.1"
@@ -34,7 +39,20 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@storybook-vue/nuxt": "10.0.3",
+    "@storybook/addon-a11y": "10.6.2",
+    "@storybook/addon-docs": "10.6.2",
+    "@storybook/addon-vitest": "10.6.2",
+    "@tailwindcss/vite": "4.3.3",
+    "@vitest/browser": "5.0.5",
+    "@vitest/browser-playwright": "5.0.5",
+    "nuxt": "4.6.2",
+    "playwright": "1.64.1",
+    "storybook": "10.6.2",
+    "tailwindcss": "4.3.3",
     "vite": "8.3.4",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "vue": "3.5.44",
+    "vue-router": "5.4.0"
   }
 }

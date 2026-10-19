@@ -3,3 +3,4 @@ node_modules/
 .nuxt/
 .output/
 *.log
+storybook-static/

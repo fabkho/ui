@@ -156,7 +156,8 @@ function filesIn(dir) {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name)
     if (statSync(path).isDirectory()) return filesIn(path)
-    return /\.(vue|ts|css)$/.test(name) ? [path] : []
+    // Stories (Storybook) are not the layer's code: they are left out of the package, and out of the contract.
+    return /\.(vue|ts|css)$/.test(name) && !/\.stories\.ts$/.test(name) ? [path] : []
   })
 }
 

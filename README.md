@@ -26,6 +26,7 @@ The layer has no `app/` folder: the package root is its source directory.
   utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth
   utils/chat/*.ts       the chat's pure logic: timeline, reply, voice
   plugins/              touch-active (`:active` on iOS)
+  components/ui/*.stories.ts, .storybook/   Storybook: stories, config, two stand-in themes (not published)
 ```
 
 ## The contract
@@ -208,9 +209,42 @@ recorded here as an exception. **Exceptions today: none.**
 ### Developing it
 
 `pnpm install`, `pnpm test` (Vitest, plain Node: the pure utils and the contract against a fixture;
-components are checked in the apps). Commits are conventional (`feat:`, `fix:`, `perf:` …):
+components are checked in the apps and, rendered in a browser, in [Storybook](#storybook)). Commits are conventional (`feat:`, `fix:`, `perf:` …):
 release-please keeps a release pull request open from them and tags `vX.Y.Z` when it is merged; the
 first release is `0.1.0`, and while the version is `0.x` a `feat` bumps the minor.
+
+## Storybook
+
+Every base component in its states, in two themes, with an accessibility check on each story.
+
+- **Open it**: https://fabkho.github.io/ui/ (rebuilt on every push to `main`; opens on a phone, the
+  viewport menu has an iPhone 390×844 preset).
+- **Run it locally**: `pnpm storybook` (http://localhost:6006). `pnpm build-storybook` builds the
+  static site into `storybook-static/` (CI builds it on every pull request, so a story that no longer
+  builds fails the PR). `pnpm test:storybook` renders every story in headless Chromium and runs axe on it
+  (needs `pnpm exec playwright install chromium-headless-shell` once); it is the `Stories` job in CI. `pnpm test` stays
+  the fast, browser-less Vitest.
+- **How it runs**: `@storybook-vue/nuxt` (Storybook's Nuxt framework, from the `nuxt-modules/storybook`
+  repo) with the layer as the Nuxt project, so stories see the layer's auto-imports, `app.config.ts`
+  (`ui.text`), the `#ui` alias and Tailwind v4 with `assets/css/ui.css`, without a mock. Config is in
+  `.storybook/` (`main.ts`, `preview.ts`, `tokens.css`, `storybook.css`); none of it is published.
+- **Themes**: the toolbar's paint-brush switches `data-theme` on `<html>` between **paper** (light) and
+  **night** (dark), which stand in for the apps. `.storybook/tokens.css` is a copy of what an app's
+  generated tokens look like (Bookretreats' Papier values, Libellus' dark ones) and has to satisfy the
+  contract (`tests/storybook-tokens.test.ts`). The globe switches `ui.text` between the English defaults
+  and a German sample. A story can start in a theme with `globals: { theme: 'night' }`.
+- **Add a story**: next to the component, `components/ui/<Name>.stories.ts` (`files` in `package.json`
+  leaves `*.stories.ts` out of the package). Copy `Button.stories.ts`: `title: 'Base/<Name>'`, one named
+  story per state (sizes, variants, disabled, loading, empty, error, long text), and for an overlay
+  (sheet, dialog, palette) an open button. A new or changed base component gets or updates its story in
+  the same pull request; its docs page, controls and `Show code` come from the component's props
+  (`autodocs` is on for every story).
+- **The accessibility rule**: every story is checked by axe against WCAG 2.2 AA and best practices (the
+  Accessibility panel in the browser; a failing test in CI). A story is green or it is fixed. Only a
+  known problem in a component that cannot be fixed in the same change is marked
+  `parameters: { a11y: { test: 'todo' } }` with a comment naming the rule: it then shows in the panel
+  and stays out of CI's way, and the pull request says so. The check finds what a machine can find
+  (contrast, names, roles); keyboard order, focus and reduced motion are still read by a person.
 
 ## What is in it
 
