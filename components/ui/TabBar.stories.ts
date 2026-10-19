@@ -8,8 +8,8 @@ import UiIcon from './Icon.vue'
 // has no pages, so a path it does not know would reload the iframe. The stories therefore register the tab
 // paths on the live router as empty routes (`routed`, below; nothing is rendered for them, the canvas stays
 // as it is), so a tap really navigates (pushState) and the current tab moves. The route the story started on
-// is put back when it unmounts. (`useRoute()` follows the router only once `<NuxtPage>` reports a page; there is
-// none, so `routed` syncs it after every navigation, with Nuxt's own `_route.sync`.) No router mock and no change to the component.
+// is put back when it unmounts. The bar reads the router's own current route (not `useRoute()`, which waits for
+// `<NuxtPage>`), so nothing has to be synced by hand. No router mock and no change to the component.
 const TABS: UiTab[] = [
   { key: 'home', to: '/home', icon: 'home', label: 'Home', testid: 'tabHome' },
   { key: 'library', to: '/library', icon: 'library', label: 'Library', testid: 'tabLibrary' },
@@ -35,11 +35,6 @@ function routed(path: string) {
   const mine = ++owner
   const paths = new Set([start.path, path, ...TABS.map(tab => tab.to), ...FIVE.map(tab => tab.to)])
   for (const known of paths) if (!router.resolve(known).matched.length) router.addRoute({ path: known, component: Blank })
-  // `useRoute()` follows the router only when `<NuxtPage>` says a page has arrived (`_route.sync`, Nuxt's own);
-  // there is none here, so the stories say it themselves after every navigation.
-  const nuxtApp = useNuxtApp()
-  const off = router.afterEach(() => (nuxtApp._route as unknown as { sync: () => void }).sync())
-  onBeforeUnmount(off)
   void router.replace(path)
   // A newer story has taken the router over by then (it mounts before this one unmounts): leave it be.
   onBeforeUnmount(() => {
@@ -72,13 +67,18 @@ type Story = StoryObj<typeof meta>
 /** Four tabs, the first one current: its icon is bold, in full ink, with the accent dot under it. */
 export const Default: Story = {}
 
-/** The second tab is current. The play function taps the Feed tab: the current tab moves with it. */
+/**
+ * The second tab is current: `aria-current="page"` comes from the router's own route, and only that tab has it.
+ * The play function taps the Feed tab: the current tab moves with it.
+ */
 export const SecondTab: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await waitFor(() => expect(canvas.getByRole('link', { name: 'Library' })).toHaveAttribute('aria-current', 'page'))
+    await expect(canvas.getByRole('link', { name: 'Home' })).not.toHaveAttribute('aria-current')
     await userEvent.click(canvas.getByRole('link', { name: 'Feed' }))
     await waitFor(() => expect(canvas.getByRole('link', { name: 'Feed' })).toHaveAttribute('aria-current', 'page'))
+    await expect(canvas.getByRole('link', { name: 'Library' })).not.toHaveAttribute('aria-current')
   },
   render: args => ({
     components: { UiTabBar },
