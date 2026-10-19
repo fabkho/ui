@@ -173,7 +173,7 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    listener is added late, after the router's own, and a change of page made while a layer closes
    navigates back to the page it left.
 8. **Types** from the base: `import type { IconName } from '#ui/components/ui/Icon.vue'`
-   (`UiTab` from `TabBar.vue`, `SheetRestore` from `Sheet.vue`).
+   (`UiTab` from `TabBar.vue`; `SheetRestore` from `#ui/utils/sheetRestore`, not from `Sheet.vue`).
 
 ### The additive API policy
 
@@ -296,7 +296,7 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiClampText` | A text cut to `lines` lines (2 by default) with a "More" under it when, and only when, it is cut; opens in place and folds again, the height gliding. The words are `ui.text.more` / `ui.text.less`; `testid`. Added from BetterReads (`ClampText`). |
 | `UiPressLink` | A link that starts on touch-down: `press` (preload and start the data; the link element comes with it), `navigate` (just before it takes its destination, for a transition), `data-press-to` parts that go elsewhere. A real anchor. Added from BetterReads (`PressLink`; its cover flight is the app's, on `press` and `navigate`). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
-| `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
+| `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was; focus goes to the panel, then to the `data-autofocus` field once the sheet has finished rising (on iOS in the opening tap; `deferFocus` false: in the tap everywhere), and back to the opener on close. Tab cannot reach the page behind it (`inert`); past the last control it leaves for the browser's own, as with a native modal dialog (no wrap inside the sheet yet). |
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. |
@@ -530,8 +530,9 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   `utils/cloth.ts`; `formatAuthors` from `utils/books.ts` too. Libellus keeps the source-specific
   rest (`coverSrc`, `coverFallbacks`, `APPLE_BOX`, `OPENLIBRARY_SIZE`, `CoverSize`) and removes the
   moved names (auto-imports would otherwise clash). `data/books.ts` imports `CoverColors` from the layer.
-- [ ] **`SheetRestore`** is exported by `Sheet.vue` (`#ui/components/ui/Sheet.vue`);
-  `composables/useSheetRestore.ts` imports it from there.
+- [ ] **`SheetRestore`** is exported by `utils/sheetRestore.ts` (`#ui/utils/sheetRestore`), no longer by
+  `Sheet.vue`; `composables/useSheetRestore.ts` keeps its own `SheetRestore` (with `shown`) or imports the
+  layer's, which has `shown?` too.
 - [ ] **History state key** of `useBackDismiss`: `uiLayer` (was `libellusLayer`); `e2e/support.ts`
   reads `history.state.uiLayer`.
 - [ ] **Router**: the layer's `router.options.ts` (added by the hook in its `nuxt.config.ts`) installs `listenForBack` + `keepsForeignLayers`;
@@ -548,6 +549,14 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   step 3 with the motion tokens.
 
 **Added (nothing to do; available to Libellus)**
+
+- Wave 5b, from Libellus into the base (Libellus keeps its own copies, which still win, until it switches):
+  `UiSheet`'s two-stage focus (`utils/sheetFocus.ts`, `deferFocus`, and `tests/sheet-focus.test.ts` moved with it): the panel has focus at
+  once, the `data-autofocus` field once `data-moving` has cleared, never over focus the member put elsewhere in the sheet, at once with Reduce Motion or
+  a `restore`. `FIELD_FOCUS_AFTER_RISE` is the one switch per platform and ships with `ios: false`: iOS raises the keyboard only for a `focus()` inside
+  the opening tap and Bookretreats stands on it (Libellus ships `ios: true`; flip it there once an iPhone has shown the deferred focus raises the keyboard).
+  `SheetRestore` (with `shown?`) is `utils/sheetRestore.ts`. `UiRoundButton` reads the Glass setting. `UiPill` and `UiSegmented` already were the
+  union (Libellus' press motion and `compact`; nothing else of Libellus' differed).
 
 - Wave 5a, from Libellus into the base (Libellus keeps its own copies, which still win, until it switches):
   `UiIcon` carries `bookmark`, `bookmarkPlus`, `hardcover`, `paperback`, `tablet` and `audiobook` beside Bookretreats' marks (`share` was there);
