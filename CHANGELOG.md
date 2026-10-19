@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/fabkho/ui/compare/v0.3.0...v0.4.0) (2026-10-19)
+
+
+### Features
+
+* layer count, thumbhash decode cache, and no zoom on focus through CSS instead of maximum-scale ([ffb7b60](https://github.com/fabkho/ui/commit/ffb7b60335a66048835a8367996ae83d6f97bfc9))
+* layer count, thumbhash decode cache, no zoom on focus without maximum-scale ([be55ec6](https://github.com/fabkho/ui/commit/be55ec6d97be2ca736658b4457e8b543db6d0473))
+
+
+### Fixes
+
+* **a11y:** name tabs by their content and allow a chat landmark ([114175c](https://github.com/fabkho/ui/commit/114175c5e6238e19520a90d3005167a7314315a9))
+* **a11y:** name tabs by their content and allow a chat landmark ([67bf29c](https://github.com/fabkho/ui/commit/67bf29c7a945b384d99a49bbab97ce426c5f2fab))
+
 ## [0.3.0](https://github.com/fabkho/ui/compare/v0.2.0...v0.3.0) (2026-10-19)
 
 
