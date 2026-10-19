@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { glowOf } from '../../utils/cloth'
 // The light a cover throws into the room: two soft pools in the cover's own
 // precomputed colours, fading into the surface, with a whisper of grain so the
 // gradient never bands. Absolutely positioned: put it first inside a card

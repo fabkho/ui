@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
+import { useSwipeDown } from '../../composables/useSwipeDown'
+import { durationToken, easingToken, prefersReducedMotion } from '../../utils/motion'
 import { morphFrames } from '../../utils/flip'
 
 // A picture full screen: dark veil, the picture as large as the screen allows, a close

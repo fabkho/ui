@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
 // A round glass button for chrome that floats over content (TopBar, the
 // reader's capsule). The icon is the face, or the default slot where a face is
 // not an icon (the reader's Aa); `label` is what assistive tech says.

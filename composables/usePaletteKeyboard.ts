@@ -1,5 +1,7 @@
 import type { Ref } from 'vue'
 import { paletteLift } from '../utils/keyboard'
+import { useKeyboardViewport } from './useKeyboardInset'
+import { useKeyboardInset } from './useKeyboardInset'
 
 /**
  * A search palette on the keyboard (added for Bookretreats; the book, Serien & Filme and author palettes share it):

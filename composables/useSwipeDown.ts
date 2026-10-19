@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import { dismisses } from '../utils/sheetDrag'
+import { useSheetTouch } from './useSheetTouch'
 
 /**
  * Swipe down to dismiss, for anything that rises from the bottom (UiSheet, the

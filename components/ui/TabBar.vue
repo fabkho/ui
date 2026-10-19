@@ -22,6 +22,11 @@ export type UiTab = {
 </script>
 
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
+import { useHideOnScroll } from '../../composables/useHideOnScroll'
+import { useModalShown } from '../../composables/useModalLayer'
+import { prefersReducedMotion } from '../../utils/motion'
+import { useModalLayer } from '../../composables/useModalLayer'
 // A floating glass tab bar, after Libellus' (its components/shell/TabBar.vue,
 // which carries Libellus' own tabs and search): a small capsule of icons over
 // the content with nothing behind it (no fade, no scroll edge: its glass, edge

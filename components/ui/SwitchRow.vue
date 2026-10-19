@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UiRow from './Row.vue'
+import UiSwitch from './Switch.vue'
 // A setting that is on or off, as a row in a UiRowGroup: the label (and an
 // icon), the switch at the right. The whole row is the control (`role=switch`,
 // 48 px high), as the Profile's Dark mode row. `testid` goes on the row.
