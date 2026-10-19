@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 const config: StorybookConfig = {
   framework: '@storybook-vue/nuxt',
   stories: ['../components/**/*.stories.ts'],
-  addons: ['@storybook/addon-a11y', '@storybook/addon-docs'],
+  addons: ['@storybook/addon-a11y', '@storybook/addon-docs', 'storybook-addon-pseudo-states'],
   core: { disableTelemetry: true },
   async viteFinal(config) {
     config.plugins = [...(config.plugins ?? []), tailwindcss()]

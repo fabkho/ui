@@ -7,6 +7,24 @@ import './storybook.css'
 const THEMES = { paper: 'Paper (light)', night: 'Night (dark)' } as const
 type Theme = keyof typeof THEMES
 
+// `prefers-reduced-motion` cannot be switched from script, so the toolbar's "Reduce motion" does two things:
+// it answers `matchMedia('(prefers-reduced-motion: reduce)')` as true (what the layer's JavaScript asks, e.g.
+// `utils/motion.ts`), and it sets `.reduce-motion` on <html>, which `storybook.css` uses to shorten the CSS
+// transitions and animations the way the media query does. Storybook-only; the layer does not do this.
+const nativeMatchMedia = window.matchMedia.bind(window)
+let reduceMotion = false
+window.matchMedia = (query: string) => {
+  const list = nativeMatchMedia(query)
+  if (query !== '(prefers-reduced-motion: reduce)') return list
+  return new Proxy(list, {
+    get: (target, key) => {
+      if (key === 'matches') return reduceMotion
+      const value = Reflect.get(target, key)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
+}
+
 // The words the layer says itself (`ui.text`): the English defaults, or a German sample like an app would set.
 const GERMAN = { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.' }
 
@@ -18,6 +36,18 @@ const preview: Preview = {
         title: 'Theme',
         icon: 'paintbrush',
         items: Object.entries(THEMES).map(([value, title]) => ({ value, title })),
+        dynamicTitle: true,
+      },
+    },
+    motion: {
+      description: 'prefers-reduced-motion',
+      toolbar: {
+        title: 'Motion',
+        icon: 'lightning',
+        items: [
+          { value: 'motion', title: 'Motion: as the system says' },
+          { value: 'reduce', title: 'Motion: reduced' },
+        ],
         dynamicTitle: true,
       },
     },
@@ -35,7 +65,7 @@ const preview: Preview = {
     },
   },
   // `VITE_STORY_THEME=night pnpm test:storybook` runs every story, and its axe check, in the dark theme.
-  initialGlobals: { theme: import.meta.env.VITE_STORY_THEME === 'night' ? 'night' : 'paper', locale: 'en' },
+  initialGlobals: { theme: import.meta.env.VITE_STORY_THEME === 'night' ? 'night' : 'paper', locale: 'en', motion: 'motion' },
   decorators: [
     (story, context) => ({
       components: { story },
@@ -44,6 +74,8 @@ const preview: Preview = {
         const english = { ...appConfig.ui.text }
         watchEffect(() => {
           document.documentElement.dataset.theme = context.globals.theme as Theme
+          reduceMotion = context.globals.motion === 'reduce'
+          document.documentElement.classList.toggle('reduce-motion', reduceMotion)
           Object.assign(appConfig.ui.text, context.globals.locale === 'de' ? GERMAN : english)
         })
       },

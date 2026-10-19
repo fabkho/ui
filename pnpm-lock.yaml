@@ -42,6 +42,9 @@ importers:
       storybook:
         specifier: 10.6.2
         version: 10.6.2(react@19.3.1)
+      storybook-addon-pseudo-states:
+        specifier: 10.6.2
+        version: 10.6.2(storybook@10.6.2(react@19.3.1))
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -3368,6 +3371,11 @@ packages:
 
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
+
+  storybook-addon-pseudo-states@10.6.2:
+    resolution: {integrity: sha512-JXzmpXTFTjN//Z9xzxTc74Bqf+n86YH8MlJhj3pe8c7FvGoTQfFwWni81sk8Cj/tTAkh3QPfU9LeFAYjAUZUsg==}
+    peerDependencies:
+      storybook: ^10.6.2
 
   storybook@10.6.2:
     resolution: {integrity: sha512-qHDINMiapxFUxYb+xC3j8u7Y+85X3u+/PlytE/wmnyg+bU0agCW3jUmWP4vIh2MioO2jTK/2B3Lcw6IpRFzQBA==}
@@ -7667,6 +7675,10 @@ snapshots:
   statuses@2.0.2: {}
 
   std-env@4.3.0: {}
+
+  storybook-addon-pseudo-states@10.6.2(storybook@10.6.2(react@19.3.1)):
+    dependencies:
+      storybook: 10.6.2(react@19.3.1)
 
   storybook@10.6.2(react@19.3.1):
     dependencies:

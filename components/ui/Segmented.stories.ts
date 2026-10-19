@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, userEvent, within } from 'storybook/test'
 import { ref } from 'vue'
 import UiIcon from './Icon.vue'
 import UiRow from './Row.vue'
@@ -87,3 +88,28 @@ export const IconOptions: Story = {
 }
 
 export const Night: Story = { globals: { theme: 'night' } }
+
+/**
+ * The keyboard pattern for a radio group (APG): Tab lands on the chosen option, the arrows move the choice
+ * and the focus together, and they wrap. Copy this play function for any interactive widget.
+ */
+export const KeyboardPattern: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [pages, scroll] = canvas.getAllByRole('radio')
+    await userEvent.tab()
+    await expect(pages).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(scroll).toHaveFocus()
+    await expect(scroll).toHaveAttribute('aria-checked', 'true')
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(pages).toHaveFocus()
+    await expect(pages).toHaveAttribute('aria-checked', 'true')
+  },
+}
+
+/** The focus ring of a keyboard user, forced on with the pseudo-states addon so axe and the eye both see it. */
+export const FocusVisible: Story = {
+  args: { modelValue: 'scroll' },
+  parameters: { pseudo: { focusVisible: ['.option'] } },
+}
