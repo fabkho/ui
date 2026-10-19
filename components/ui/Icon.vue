@@ -1,5 +1,5 @@
 <script lang="ts">
-/** Every icon the layer draws: Libellus' set (its docs/DESIGN.md, Icons) and the ones Bookretreats added. */
+/** Every icon the layer draws: the union of BetterReads' set (its docs/DESIGN.md, Icons) and Bookretreats' marks. */
 export type IconName =
   | 'home'
   | 'library'
@@ -85,6 +85,13 @@ export type IconName =
   | 'pin'
   | 'poll'
   | 'reply'
+  // Added for BetterReads (the Want to read bookmark and the formats of an edition), on the same grid:
+  | 'bookmark'
+  | 'bookmarkPlus'
+  | 'hardcover'
+  | 'paperback'
+  | 'tablet'
+  | 'audiobook'
 </script>
 
 <script setup lang="ts">
@@ -366,6 +373,28 @@ withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), {
       <path d="M12 11.6c2.6 0 5 3.1 5 5.2 0 1.5-1.1 2.2-2.4 2.2-1 0-1.6-.5-2.6-.5s-1.6.5-2.6.5C8.1 19 7 18.3 7 16.8c0-2.1 2.4-5.2 5-5.2z" />
       <ellipse cx="5.8" cy="10.2" rx="1.6" ry="2" /><ellipse cx="9.5" cy="6.2" rx="1.6" ry="2.1" />
       <ellipse cx="14.5" cy="6.2" rx="1.6" ry="2.1" /><ellipse cx="18.2" cy="10.2" rx="1.6" ry="2" />
+    </template>
+    <!-- A Book she has: the bookmark (`fill-current` fills it). -->
+    <template v-else-if="name === 'bookmark'"><path d="M6.5 5.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v14l-5.5-3.8-5.5 3.8z" /></template>
+    <!-- Want to read: the bookmark with a plus in it. -->
+    <template v-else-if="name === 'bookmarkPlus'">
+      <path d="M6.5 5.5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v14l-5.5-3.8-5.5 3.8z" /><path d="M12 8.2v4.6M9.7 10.5h4.6" />
+    </template>
+    <!-- Formats of an edition. Hardcover: a closed book, the board's spine side rounded, its page block under the cover. -->
+    <template v-else-if="name === 'hardcover'">
+      <path d="M8 3.5h10.5v14H8A2 2 0 0 0 6 19.5V5.5a2 2 0 0 1 2-2Z" /><path d="M6 19.5a2 2 0 0 0 2 2h10.5v-4M10.5 7.5h5" />
+    </template>
+    <!-- Paperback: a slim soft cover, creased at the spine, no page block. -->
+    <template v-else-if="name === 'paperback'">
+      <path d="M7.5 3.5h9A1.5 1.5 0 0 1 18 5v14a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5Z" /><path d="M9.5 3.5v17M12.5 8h3" />
+    </template>
+    <!-- Ebook as a format: a reader with its page of text and home bar (`ebook` has no home bar). -->
+    <template v-else-if="name === 'tablet'">
+      <rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M8.5 7.5h7M8.5 10.5h7M8.5 13.5h4M10.5 17.5h3" />
+    </template>
+    <!-- Audiobook: headphones. -->
+    <template v-else-if="name === 'audiobook'">
+      <path d="M5 15v-3a7 7 0 0 1 14 0v3" /><rect x="4.5" y="14" width="4" height="6" rx="1.6" /><rect x="15.5" y="14" width="4" height="6" rx="1.6" />
     </template>
   </svg>
 </template>

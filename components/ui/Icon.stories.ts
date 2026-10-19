@@ -9,7 +9,7 @@ const NAMES: IconName[] = [
   'leading3', 'margins0', 'margins1', 'margins2', 'margins3', 'map', 'people', 'chat', 'orga', 'person', 'gear', 'send', 'eyeOff',
   'bell', 'heart', 'eye', 'download', 'doc', 'book', 'shield', 'star', 'cake', 'ticket', 'history', 'userPlus', 'quote', 'drop',
   'share', 'clock', 'ban', 'unlock', 'checkCircle', 'calendarOff', 'external', 'mic', 'play', 'pause', 'paw', 'link', 'feed', 'pin',
-  'poll', 'reply',
+  'poll', 'reply', 'bookmark', 'bookmarkPlus', 'hardcover', 'paperback', 'tablet', 'audiobook',
 ]
 
 const meta = {
