@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.2.0](https://github.com/fabkho/ui/compare/v0.1.0...v0.2.0) (2026-10-19)
+
+
+### Features
+
+* **chat:** the chat's components in the base, as they are (wave 4b) ([7efb62f](https://github.com/fabkho/ui/commit/7efb62fc04e79f7ff54814b3bb50bec44b6f2a9b))
+* **chat:** the chat's components in the base, moved from Bookretreats as they are ([10b3ff7](https://github.com/fabkho/ui/commit/10b3ff7312006a5e89a02cea343650af42718c8c))
+* **chat:** the chat's pure logic in the base (wave 4a) ([d0a911f](https://github.com/fabkho/ui/commit/d0a911f1dba44b82d65563f7af4381501368261e))
+* serve pure chat utils to plain Node as @fabkho/ui/pure/* ([ad79244](https://github.com/fabkho/ui/commit/ad792447732a82299148adf234181e564d46f30b))
+* serve pure chat utils to plain Node as @fabkho/ui/pure/* ([611e5c9](https://github.com/fabkho/ui/commit/611e5c91ba512870cef59b3b3b00a284772ba3b7))
+
+
+### Fixes
+
+* **a11y:** a reaction pill's name carries its count, an unavailable photo is no "View large" button ([74bf33e](https://github.com/fabkho/ui/commit/74bf33ea28a4401cdb242c08aed24e1a0247a1dc))
+* **a11y:** the base's accessibility gaps from the Storybook and chat reviews ([03914de](https://github.com/fabkho/ui/commit/03914de5943ace94281f0a3ece5909a0a7df43c4))
+* **a11y:** the composer's chips are a toolbar with 44 px targets ([d3756af](https://github.com/fabkho/ui/commit/d3756af95c8b11515497f45b2a4f4ddcb9f31282))
+* **a11y:** UiAvatar names itself with label, and is hidden only when decorative ([9ecd131](https://github.com/fabkho/ui/commit/9ecd131cf369dd4a1ba96f2cdfdcf8a4efbf51c1))
+* **a11y:** UiDateRow's invalid day has a cue besides its colour ([8c0f225](https://github.com/fabkho/ui/commit/8c0f2258ad6c890d3e1faa740b7047eb6a705e79))
+* **a11y:** UiDaySeparator is a heading ([4789bea](https://github.com/fabkho/ui/commit/4789beaf8a89dd11adf7e8553a5eddb5247790f8))
+* **a11y:** UiGifPicker lists its GIFs as list items and loads when mounted open ([ddb231b](https://github.com/fabkho/ui/commit/ddb231bb7bb641990952254e18499872473e9c1c))
+* **a11y:** UiMediaViewer keeps focus inside while it is open ([8538412](https://github.com/fabkho/ui/commit/853841246a236e896055fd9f10688ec2d10910bc))
+* **a11y:** UiPill radio moves like a radio group (roving tabindex, arrows, wrap) ([67b2874](https://github.com/fabkho/ui/commit/67b2874a58a813748260c4b42d21ca6917ebc9ac))
+* **a11y:** UiQuote's name and preview have a space between them, label-content-name-mismatch is on again ([f0ae647](https://github.com/fabkho/ui/commit/f0ae647d3638d3632d294657af82baafee61e078))
+* **a11y:** UiReactionBar is one tab stop with 44 px targets ([3e0b88e](https://github.com/fabkho/ui/commit/3e0b88e62fc8db26573754a97234c59837f1dbc5))
+* **a11y:** UiSheet's body that scrolls is a focusable, named region ([2d8c1fb](https://github.com/fabkho/ui/commit/2d8c1fbf5c5fa8f00e064aa28de518d54e7cde5d))
+* **a11y:** UiTabBar reads the current tab from the router's own route ([ec342ac](https://github.com/fabkho/ui/commit/ec342acc088f463f40cc7d0cd628e91297f6779b))
+* **a11y:** UiTextArea's hint and error describe the field ([c18debe](https://github.com/fabkho/ui/commit/c18debebae7bc9e969904116353cd13017a7dd07))
+* **chat:** review fixes — thread marks as the page had them, runs stop at system lines, group-safe reaction words, compact composer, neutral comments ([da1c813](https://github.com/fabkho/ui/commit/da1c81308ca532552350299537a3224a05c9b379))
+* **contract:** ignore comments when scanning layer variables ([23097be](https://github.com/fabkho/ui/commit/23097be6da831e7f5ef8f581c2fd020ee0d46be3))
+* **contract:** ignore comments when scanning layer variables ([1622cd4](https://github.com/fabkho/ui/commit/1622cd4516c115e96eab6df1ab90a5cb95e2aab1))
+* import base siblings explicitly ([9ee2ae6](https://github.com/fabkho/ui/commit/9ee2ae60b547e35d52adfea94fa309f47d3ab3af))
+
 ## 0.1.0 (2026-10-19)
 
 
