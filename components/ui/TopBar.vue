@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiRoundButton from './RoundButton.vue'
 // The top of a pushed screen (book detail, a collection): round glass buttons
 // that float over the cover's light — back on the left, actions on the right
 // (slot `trailing`, use UiRoundButton) — and an optional small centred title.

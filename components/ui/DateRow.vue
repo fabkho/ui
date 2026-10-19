@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiRow from './Row.vue'
 // A day in a RowGroup (Libellus' DateRow, "Finished on · Today · 3 Oct"): the calendar icon (or `icon`), the
 // label, the day in words, a chevron. The whole row is the platform's own date picker (an invisible
 // `<input type="date">` laid over it), so on a phone a tap opens the native wheel or calendar. `min` and `max`

@@ -6,6 +6,10 @@ export interface SheetRestore {
 </script>
 
 <script setup lang="ts">
+import { useKeyboardViewport } from '../../composables/useKeyboardInset'
+import { useModalLayer } from '../../composables/useModalLayer'
+import { useSwipeDown } from '../../composables/useSwipeDown'
+import { useUiText } from '../../composables/useUiText'
 // A bottom sheet the iOS way: it rises over a scrim with a grabber and a title
 // row — a text Cancel at the top left (never a round ✕), the title in the
 // middle, the sheet's one action at the right in the lamp colour. Closed by
@@ -28,6 +32,7 @@ export interface SheetRestore {
 // page — at its resting place with its scrim, its list scrolled where it was,
 // nothing rising or fading in. A fresh open (no `restore`) still rises.
 import { revealDelta, sheetLift } from '../../utils/keyboard'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const open = defineModel<boolean>('open', { required: true })
 

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
+import { useModalLayer } from '../../composables/useModalLayer'
+import { usePaletteKeyboard } from '../../composables/usePaletteKeyboard'
+import { useSwipeDown } from '../../composables/useSwipeDown'
+import { useUiText } from '../../composables/useUiText'
 // A search palette (added for Bookretreats; Libellus' search palette, `components/shell/SearchOverlay.vue`,
 // without its morph out of the tab bar): over the page, which stays put behind it, blurred and veiled, a raised
 // card right above the keyboard. The query row is at its bottom (the search glyph in the lamp colour, the field,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
 // A consent or a choice that is ticked (added for Bookretreats; the check of Libellus' import
 // shelves as a component): a hairline ring, ticked a lamp-lit disc with the tick in it, the words
 // beside it (slot; it may hold a link). The whole row is the label, at least 44 high. The box is

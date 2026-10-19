@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
 // One row in a RowGroup: an optional icon, the label, the value on the right
 // (or a placeholder), an optional chevron. 48 px tall, a hairline divider
 // inset under the text from the second row on. `as` makes it a button, an `a` (a link

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import UiIcon from './Icon.vue'
+import { useUiText } from '../../composables/useUiText'
 // D's pill. `primary` is the lit one (ink on the room, one per screen),
 // `secondary` a hairline outline, `quiet` a translucent fill (actions on cards),
 // `plain` text only (the third choice, links in a sentence), `danger`

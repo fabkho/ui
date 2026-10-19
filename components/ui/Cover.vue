@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useUiText } from '../../composables/useUiText'
+import { clothOf, formatAuthors, glowOf, thumbhashDataUrl } from '../../utils/cloth'
 // A Book's cover in the book's 2:3 shape at one of the token widths. The image
 // is never stretched (object-fit: cover). While it loads it sits on its
 // thumbhash, or on its dominant colour, or on a quiet fill; it fades in once

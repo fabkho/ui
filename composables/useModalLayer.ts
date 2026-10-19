@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { useBackDismiss } from './useBackDismiss'
 
 /**
  * What a sheet or a dialog does to the rest of the app while it is open, as on

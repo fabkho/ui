@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import UiButton from './Button.vue'
+import { useKeyboardViewport } from '../../composables/useKeyboardInset'
+import { useModalLayer } from '../../composables/useModalLayer'
+import { useUiText } from '../../composables/useUiText'
 // A confirmation for something that cannot be taken back (deleting a read,
 // removing a Book from the Library). It rises over a scrim above everything,
 // sheets included: the question in the serif, what is lost beneath it, the
@@ -17,6 +21,7 @@
 // field kept in view), and the page holds still under it
 // (composables/useKeyboardInset.ts, `pin`).
 import { revealDelta, sheetLift } from '../../utils/keyboard'
+import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
 const open = defineModel<boolean>('open', { required: true })
 
