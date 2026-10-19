@@ -44,6 +44,8 @@ export default defineAppConfig({
           label: 'Message',
           placeholder: 'Message',
           send: 'Send',
+          /** The chips over the field are a toolbar; this is its name for assistive tech. */
+          actions: 'Message actions',
           /** The chips over the field. */
           photo: 'Photo',
           photoLabel: 'Send a photo from your gallery',

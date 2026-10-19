@@ -53,10 +53,10 @@ if (import.meta.dev) {
   line-height: 1;
   white-space: nowrap;
 }
-/* The finger's 44 around the 34 drawn. */
+/* The finger's 44 around the 34 drawn: 44 high, and at least 44 wide (a short word still gets a full target). */
 .chip::after {
   position: absolute;
-  inset: calc((34px - var(--size-touch)) / 2) 0;
+  inset: calc((34px - var(--size-touch)) / 2) min(0px, calc((100% - var(--size-touch)) / 2));
   content: '';
 }
 .chip:active {

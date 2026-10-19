@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UiComposerChip from './ComposerChip.vue'
 import UiIcon from './Icon.vue'
+import { useRovingToolbar } from '../../composables/useRovingToolbar'
 import { useUiText } from '../../composables/useUiText'
 import { useVoiceRecorder } from '../../composables/useVoiceRecorder'
 import { clock, liveRow, type PreparedVoice } from '../../utils/chat/voice'
@@ -13,7 +14,7 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // there is nothing to send). "Photo" (the phone's own picker; with `photoAccept`), "GIF" (the app's
 // GIF picker, UiGifPicker; with `gifs` — keyboard GIFs cannot work, Chrome on Android refuses
 // inserting images from the keyboard into a web page) and the app's own chips (the `actions` slot,
-// UiComposerChip: "Share number", say) float above it as small glass pills, as filter chips float. While the field has the keyboard they fold away: the row's room goes to the thread
+// UiComposerChip: "Share number", say; a toolbar for assistive tech, one tab stop with the arrow keys along it) float above it as small glass pills, as filter chips float. While the field has the keyboard they fold away: the row's room goes to the thread
 // and the capsule stands alone on the keyboard, as in iMessage. They come back when the field is left
 // (a drag on the thread closes the keyboard, UiChatThread). Sending never waits: the app shows the
 // message at once.
@@ -90,6 +91,10 @@ const emit = defineEmits<{
 }>()
 const uiText = useUiText()
 const chat = computed(() => uiText.value.chat)
+
+/** The chips over the field are a toolbar (APG): one tab stop, the arrow keys move along them. */
+const chips = useTemplateRef<HTMLElement>('chips')
+const chipKeys = useRovingToolbar(chips)
 
 const recorder = useVoiceRecorder({ maxMs: () => props.voiceMaxMs ?? 0 })
 const recording = computed(() => recorder.state.value !== 'idle')
@@ -197,7 +202,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       :inert="(!note && focused) || undefined"
       :data-testid="`${testid}.actions`"
     >
-      <div class="actions-row flex gap-sm">
+      <div ref="chips" class="actions-row flex gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
         <p v-if="note" class="pill glass edge" role="status" :data-testid="`${testid}.note`">
           <span>{{ note }}</span>
           <button type="button" class="note-close" :aria-label="noteLabel" :data-testid="`${testid}.noteClose`" @click="emit('dismissNote')">
@@ -223,7 +228,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
     </div>
     <!-- The row folds (its room goes to 0) while the field has the keyboard. -->
     <div v-else-if="photoAccept || gifs || $slots.actions" class="actions" :data-folded="focused || undefined" :inert="focused || undefined" :data-testid="`${testid}.actions`">
-      <div class="actions-row flex gap-sm">
+      <div ref="chips" class="actions-row flex gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
         <UiComposerChip v-if="photoAccept" :label="chat.composer.photoLabel" icon="camera" :data-testid="`${testid}.photo`" @click="picker?.click()">
           {{ chat.composer.photo }}
         </UiComposerChip>
@@ -466,7 +471,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
 }
 .note-close::after {
   position: absolute;
-  inset: -12px;
+  inset: calc((14px - var(--size-touch)) / 2);
   content: '';
 }
 .note-close:focus-visible {

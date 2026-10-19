@@ -352,7 +352,7 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 | `offline` | No connection. We will try again in a moment. | UiChatThread |
 | `olderLoading`, `olderFailed`, `olderRetry` | Loading earlier messages, Earlier messages could not be loaded., Try again | UiChatThread |
 | `read`, `sending`, `failed`, `retryHint` | Read, Sending …, Not sent. Tap to try again., Tap to try again. | UiBubble |
-| `composer.label`, `.placeholder`, `.send` | Message, Message, Send | UiComposer |
+| `composer.label`, `.placeholder`, `.send`, `.actions` | Message, Message, Send, Message actions (the chips' toolbar) | UiComposer |
 | `composer.photo`, `.photoLabel`, `.gif`, `.gifLabel` | Photo, Send a photo from your gallery, GIF, Find and send a GIF | UiComposer's chips |
 | `reply.bar`, `.cancel`, `.deleted`, `.show` | Reply, Discard reply, Message deleted, `{name}: {preview}. Go to message` | UiReactionBar, UiComposer, UiQuote |
 | `media.photo`, `.photoMine`, `.gif`, `.gifMine`, `.open`, `.loading`, `.unavailable` | Photo, Your photo, GIF, Your GIF, View large, Loading picture, Picture not available right now | UiBubble |

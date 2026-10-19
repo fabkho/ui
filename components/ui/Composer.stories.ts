@@ -4,9 +4,6 @@ import UiComposer from './Composer.vue'
 import UiComposerChip from './ComposerChip.vue'
 import { fakeMicrophone } from '../../.storybook/chat-fixtures'
 
-// axe's `label-content-name-mismatch` is off for the story that carries a quote: see Quote.stories.ts.
-const quoteRules = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
-
 // The composer floats over the thread (a glass capsule, the chips above it); the stories sit it on a busy
 // backdrop so the glass shows. `v-model` is the text: every story holds it in a `ref`, so the field really
 // takes typing, and send clears it. The thread docks it at the bottom of the screen (see ChatThread).
@@ -85,16 +82,41 @@ export const WithChips: Story = {
   }),
 }
 
+/**
+ * The chips over the field are a toolbar (APG): one tab stop, and Left / Right / Home / End move along them (they
+ * wrap). Each is a 44 × 44 target (see ComposerChip).
+ */
+export const ChipsKeyboard: Story = {
+  render: WithChips.render,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const toolbar = canvas.getByRole('toolbar', { name: 'Message actions' })
+    const [photo, gif, share, like] = within(toolbar).getAllByRole('button')
+    await expect(toolbar.querySelectorAll('[tabindex="0"]')).toHaveLength(1)
+    await userEvent.tab()
+    await expect(photo).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(gif).toHaveFocus()
+    await userEvent.keyboard('{End}')
+    await expect(like).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(photo).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+    await expect(share).toHaveFocus()
+    // One tab stop: Tab leaves the toolbar for the field.
+    await userEvent.tab()
+    await expect(canvas.getByRole('textbox')).toHaveFocus()
+  },
+}
+
 /** Answering a message: the quote stands over the capsule, its ✕ takes it back (`cancelQuote`). */
 export const Answering: Story = {
   args: { quote: { name: 'Sam', preview: 'Did you get to the last chapter yet?' }, modelValue: 'Yes, ' },
-  parameters: quoteRules,
 }
 
 /** A long quote is cut to one line. */
 export const AnsweringLong: Story = {
   args: { quote: { name: 'Alexandra Konstantinopoulou-Whitfield', preview: 'I have been thinking about the ending for days now and I still cannot decide whether she can be trusted.' } },
-  parameters: quoteRules,
 }
 
 // ------------------------------------------------------------------ compact
@@ -149,7 +171,6 @@ export const RecordingAtTheLimit: Story = {
 export const German: Story = { args: { modelValue: '' }, globals: { locale: 'de' } }
 export const GermanAnswering: Story = {
   args: { quote: { name: 'Sam', preview: 'Hast du das letzte Kapitel schon gelesen?' }, modelValue: 'Ja, ' },
-  parameters: quoteRules,
   globals: { locale: 'de' },
 }
 export const GermanRecording: Story = { ...Recording, globals: { locale: 'de' } }
