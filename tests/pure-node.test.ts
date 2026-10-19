@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest'
 /**
  * The pure utils run under plain Node, with no Nuxt and no Vite: trappist's data layer (Playwright,
  * Node) imports them as `@fabkho/ui/pure/<name>`. The script runs in a child `node` process, so what
- * this proves is what a consumer gets: the built `dist/pure` files, resolved through the `exports`
- * map (the self-reference of this package). `pretest` builds them first.
+ * this proves is what a consumer gets: the `utils/chat` files, resolved through the `exports`
+ * map (the self-reference of this package). No build step: the files are the source.
  */
 const root = fileURLToPath(new URL('..', import.meta.url))
 

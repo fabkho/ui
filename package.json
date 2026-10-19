@@ -11,10 +11,7 @@
   "packageManager": "pnpm@10.34.7",
   "exports": {
     ".": "./nuxt.config.ts",
-    "./pure/*": {
-      "types": "./dist/pure/*.d.ts",
-      "default": "./dist/pure/*.js"
-    },
+    "./pure/*": "./utils/chat/*.js",
     "./*": "./*"
   },
   "main": "./nuxt.config.ts",
@@ -28,7 +25,6 @@
     "router.options.ts",
     "testing",
     "utils",
-    "dist",
     "!components/**/*.stories.ts"
   ],
   "scripts": {
@@ -37,10 +33,7 @@
     "test:storybook": "vitest run --project storybook",
     "test:storybook:night": "VITE_STORY_THEME=night vitest run --project storybook",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build -o storybook-static",
-    "build:pure": "tsc -p tsconfig.pure.json",
-    "prepare": "tsc -p tsconfig.pure.json",
-    "pretest": "pnpm build:pure"
+    "build-storybook": "storybook build -o storybook-static"
   },
   "dependencies": {
     "thumbhash": "0.1.1"
@@ -63,7 +56,6 @@
     "storybook": "10.6.2",
     "storybook-addon-pseudo-states": "10.6.2",
     "tailwindcss": "4.3.3",
-    "typescript": "7.0.2",
     "vite": "8.3.4",
     "vitest": "5.0.5",
     "vue": "3.5.44",

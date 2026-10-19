@@ -636,4 +636,4 @@ namespace, a `spring` group is unitless
 
 ## Pure utils under plain Node
 
-`utils/chat/{voice,timeline,reply}.ts` are framework-free. `pnpm build:pure` (run by `prepare` and `pretest`) emits them to `dist/pure/` as ESM + `.d.ts` (`tsconfig.pure.json`), and the `exports` map serves them as `@fabkho/ui/pure/<name>` for plain Node (Playwright, scripts). Node's type stripping is not used: it skips `node_modules`, which is where a consumer finds this package. Nuxt keeps importing the `.ts` sources (`#ui/utils/chat/voice`). Add a util to `tsconfig.pure.json` only when it imports nothing from Nuxt or the app.
+`utils/chat/{voice,timeline,reply}.js` are framework-free ESM with JSDoc types, so they load in plain Node with no build step: `import { voiceMime } from '@fabkho/ui/pure/voice'` (the `exports` map maps `./pure/*` to `./utils/chat/*.js`). Nuxt and the components import the same files as `#ui/utils/chat/voice`. Node's type stripping is not used (it skips `node_modules`, where consumers get the package). A util may go on the `./pure/*` path only when it imports nothing from Nuxt or the app.
