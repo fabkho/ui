@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import UiConfirm from './Confirm.vue'
 import UiButton from './Button.vue'
 import UiField from './Field.vue'
+import UiSheet from './Sheet.vue'
+import { useModalDepth, useModalShown } from '../../composables/useModalLayer'
 
 // The dialog is a modal layer: while it is open the rest of the page is `inert` and focus is inside it. Every
 // story therefore shows a button that opens it, and the stories are drawn in an iframe in the docs page
@@ -112,6 +114,42 @@ export const WithField: Story = {
         </UiConfirm>
       </div>`,
   }),
+}
+
+/**
+ * `useModalDepth` counts the layers on screen, `useModalShown` says whether there is any. A dialog over a sheet is 2,
+ * where the boolean stays true throughout: an app that does something once for every layer (BetterReads dims the
+ * installed app's status bar under the scrim) reads the count, one that does it once for all of them the boolean.
+ */
+export const OverASheet: Story = {
+  parameters: { docs: { story: { inline: false, iframeHeight: 560 } } },
+  render: args => ({
+    components: { UiConfirm, UiSheet, UiButton },
+    setup: () => ({ args, sheet: ref(false), confirm: ref(false), depth: useModalDepth(), shown: useModalShown() }),
+    template: `
+      <div class="flex min-h-[520px] flex-col items-center justify-center gap-md bg-surface">
+        <UiButton tone="secondary" @click="sheet = true">Open sheet</UiButton>
+        <p class="text-body text-ink-muted" data-testid="layerDepth" :data-shown="shown">Layers on screen: {{ depth }}</p>
+        <UiSheet v-model:open="sheet" title="Reading goal" testid="goalSheet">
+          <UiButton tone="secondary" @click="confirm = true">Remove goal</UiButton>
+        </UiSheet>
+        <UiConfirm v-bind="args" v-model:open="confirm" @confirm="confirm = false" />
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const readout = within(canvasElement).getByTestId('layerDepth')
+    expect(readout).toHaveTextContent('Layers on screen: 0')
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const sheet = await within(document.body).findByRole('dialog', { name: 'Reading goal' })
+    await waitFor(() => expect(readout).toHaveTextContent('Layers on screen: 1'))
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Remove goal' }))
+    const dialog = await within(document.body).findByRole('alertdialog', { name: /Remove this book/ })
+    await waitFor(() => expect(readout).toHaveTextContent('Layers on screen: 2'))
+    expect(readout).toHaveAttribute('data-shown', 'true')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(readout).toHaveTextContent('Layers on screen: 1'))
+    expect(readout).toHaveAttribute('data-shown', 'true')
+  },
 }
 
 /** Starts open, for looking at the dialog at rest. */

@@ -349,6 +349,41 @@
   }
 }
 
+/* No zoom on focus on iPhone, and the page stays as pinch-zoomable as before. Safari on iOS zooms the page in when a
+   text field under 16 px takes the keyboard and leaves it zoomed. `maximum-scale=1` in the viewport meta stops that
+   but also WCAG 1.4.4 (axe `meta-viewport`: no `maximum-scale` under 5), so the fix is the field's own size: 16 px at
+   least, on iOS only (only WebKit on a touch device knows -webkit-touch-callout; nothing zooms on focus elsewhere,
+   and a field there keeps the design's size). Only fields under 16 px change, by up to 1 px:
+   - a field with no size of its own inherits the page's (a 15 px body): `max(16px, 1em)`, in the base layer so any
+     `text-*` class still wins;
+   - a field that takes one of the small sizes (`text-body` and below) is raised to 16 px, unlayered because the
+     class lives in the utilities layer. The bigger sizes (`text-input`, `text-callout`) are left alone.
+   Checkboxes, radios, ranges, files, buttons and colour pickers take no keyboard, so they are left out. */
+@supports (-webkit-touch-callout: none) {
+  @layer base {
+    :is(input, textarea, select):not(
+        [type='checkbox'],
+        [type='radio'],
+        [type='range'],
+        [type='file'],
+        [type='button'],
+        [type='submit'],
+        [type='reset'],
+        [type='image'],
+        [type='color'],
+        [type='hidden']
+      ) {
+      font-size: max(16px, 1em);
+    }
+  }
+  :is(input, textarea, select):is(.text-subhead, .text-footnote, .text-caption) {
+    font-size: 16px;
+  }
+  :is(input, textarea, select).text-body {
+    font-size: max(16px, var(--text-body));
+  }
+}
+
 /* Safari has no `scrollbar-color`: the same thin thumb through its own
    pseudo-elements (inset from the edge, so it reads as a line, not a slab). */
 @supports not (scrollbar-color: auto) {
