@@ -70,6 +70,12 @@ const props = withDefaults(
     headShown?: boolean
     /** The test ids' start: `chat` → `chat.screen`, `chat.list`, `chat.thread`, … */
     testid?: string
+    /**
+     * The screen is a named landmark: `role="region"`, named by `label`, so a screen reader's landmark list finds
+     * the conversation. Off by default; an app that already wraps the screen in `<main>` leaves it off. With it on,
+     * the top bar's `<header>` is no `banner` (it sits inside the region: `role="none"`).
+     */
+    landmark?: boolean
   }>(),
   {
     sameRun: (before: T, item: T) => sameSide(before, item),
@@ -82,6 +88,7 @@ const props = withDefaults(
     notice: null,
     headShown: true,
     testid: 'chat',
+    landmark: false,
   },
 )
 
@@ -381,7 +388,15 @@ defineExpose({
 </script>
 
 <template>
-  <div class="chat-screen" :style="frame" :data-keyboard="keyboardUp || undefined" :data-testid="`${testid}.screen`" :data-status="status">
+  <div
+    class="chat-screen"
+    :style="frame"
+    :role="landmark ? 'region' : undefined"
+    :aria-label="landmark ? label : undefined"
+    :data-keyboard="keyboardUp || undefined"
+    :data-testid="`${testid}.screen`"
+    :data-status="status"
+  >
     <!-- The thread: the whole screen, scrolling under the glass. -->
     <div
       ref="scroller"
@@ -454,7 +469,7 @@ defineExpose({
 
     <!-- The top bar over the page: the app's back, title and menu. -->
     <div class="veil" aria-hidden="true" />
-    <header ref="header" class="top bar-top safe-x pointer-events-none" :data-testid="`${testid}.head`">
+    <header ref="header" class="top bar-top safe-x pointer-events-none" :role="landmark ? 'none' : undefined" :data-testid="`${testid}.head`">
       <div class="relative flex h-(--size-touch) items-center justify-between px-inset">
         <slot name="top" />
       </div>

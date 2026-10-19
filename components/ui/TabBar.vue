@@ -12,6 +12,14 @@ export type UiTab = {
   label: string
   /** A longer name for assistive tech when there is news or the tab is locked ("Friends, neue Nachrichten"). */
   ariaLabel?: string
+  /**
+   * The tab is named by its content instead of `label`/`ariaLabel`: the link gets no `aria-label`, so the
+   * visible text the tab draws (the text of its `icon-<key>` slot) is its name, as WCAG 2.5.3 asks. For an
+   * icon slot that draws no text of its own (a face, an avatar), give a `label-<key>` slot: its text is
+   * rendered visually hidden and is the name. Use it for a tab whose slot shows visible text (initials, a
+   * name); without it the tab stays named by `label`.
+   */
+  nameFromContent?: boolean
   /** Something waits in that tab: a small accent dot on the icon's shoulder. */
   dot?: boolean
   /** Not open yet: the icon in ghost ink with a small lock. It stays a link (the page says why). */
@@ -49,6 +57,8 @@ import { useModalLayer } from '../../composables/useModalLayer'
 // A tab can draw something of its own in place of its icon: the slot `icon-<key>`
 // ({ active }), Instagram's own face for the profile. The slot brings its own
 // active state (a ring), so the accent dot under the tab is left out for it.
+// Such a tab can be named by its content (`nameFromContent`, with a `label-<key>`
+// slot for a face with no text): no aria-label hides what it draws.
 const props = withDefaults(
   defineProps<{
     items: readonly UiTab[]
@@ -94,7 +104,7 @@ function tapped(event: MouseEvent, tab: UiTab) {
       :to="tab.to"
       class="tab"
       :class="tab.locked ? 'text-ink-ghost' : current(tab.to) ? 'text-ink' : 'text-ink-faint'"
-      :aria-label="tab.ariaLabel ?? tab.label"
+      :aria-label="tab.nameFromContent ? undefined : (tab.ariaLabel ?? tab.label)"
       :aria-current="current(tab.to) ? 'page' : undefined"
       :data-testid="tab.testid"
       @click="tapped($event, tab)"
@@ -113,6 +123,7 @@ function tapped(event: MouseEvent, tab: UiTab) {
           <UiIcon name="lock" :size="12" bold />
         </span>
       </span>
+      <span v-if="tab.nameFromContent && slots[`label-${tab.key}`]" class="sr-only"><slot :name="`label-${tab.key}`" /></span>
       <span v-if="!drawn(tab)" class="dot" :class="current(tab.to) ? 'opacity-100' : 'opacity-0'" aria-hidden="true" />
     </NuxtLink>
     <slot />

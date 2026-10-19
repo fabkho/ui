@@ -161,4 +161,70 @@ export const SubPageIsCurrent: Story = {
   }),
 }
 
+/**
+ * `nameFromContent`: no aria-label on the tab; the name is what it draws. Here the face has no text, so the
+ * `label-profile` slot gives the name (visually hidden). The face is `aria-hidden`; the name is "Profile".
+ * The play function tabs to it from the bar's start and taps it with the keyboard.
+ */
+export const NamedByHiddenLabel: Story = {
+  args: {
+    items: TABS.map(tab => (tab.key === 'profile' ? { ...tab, nameFromContent: true } : tab)),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const profile = await canvas.findByRole('link', { name: 'Profile' })
+    await expect(profile).not.toHaveAttribute('aria-label')
+    profile.focus()
+    await expect(profile).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(profile).toHaveAttribute('aria-current', 'page'))
+  },
+  render: args => ({
+    components: { UiTabBar },
+    setup() {
+      routed('/home')
+      return { args }
+    },
+    template: `
+      <div class="min-h-[360px] bg-surface">
+        <UiTabBar v-bind="args">
+          <template #icon-profile="{ active }">
+            <span
+              class="flex size-[28px] items-center justify-center rounded-pill bg-cloth2 text-caption font-medium text-cloth-ink"
+              :class="active ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : ''"
+              aria-hidden="true"
+            >F</span>
+          </template>
+          <template #label-profile>Profile</template>
+        </UiTabBar>
+      </div>`,
+  }),
+}
+
+/** `nameFromContent` with visible text in the icon slot: the visible text is the name ("Me"); no hidden label needed. */
+export const NamedByVisibleText: Story = {
+  args: {
+    items: TABS.map(tab => (tab.key === 'profile' ? { ...tab, nameFromContent: true } : tab)),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(await canvas.findByRole('link', { name: 'Me' })).toHaveTextContent('Me')
+  },
+  render: args => ({
+    components: { UiTabBar },
+    setup() {
+      routed('/home')
+      return { args }
+    },
+    template: `
+      <div class="min-h-[360px] bg-surface">
+        <UiTabBar v-bind="args">
+          <template #icon-profile>
+            <span class="flex size-[28px] items-center justify-center text-caption font-medium text-ink">Me</span>
+          </template>
+        </UiTabBar>
+      </div>`,
+  }),
+}
+
 export const Night: Story = { globals: { theme: 'night' } }

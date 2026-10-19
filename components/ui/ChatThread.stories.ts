@@ -185,6 +185,19 @@ export const Conversation: Story = {
   globals: { viewport: { value: 'iphone', isRotated: false } },
 }
 
+/**
+ * `landmark`: the screen is a `region` named by `label` ("Sam"), so it shows in the landmark list. The play function
+ * finds it by that name and checks the thread inside it. The default story has no region (`landmark` is off).
+ */
+export const Landmark: Story = {
+  args: { items: conversation(), landmark: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const region = await canvas.findByRole('region', { name: 'Sam' })
+    await expect(within(region).getByRole('list', { name: 'Sam' })).toBeInTheDocument()
+  },
+}
+
 /** Opens the reaction bar on a message with the bubble's "React" button (the one for keyboards and VoiceOver), then picks. */
 export const ReactionBarOpen: Story = {
   args: { items: conversation() },
