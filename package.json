@@ -9,6 +9,11 @@
     "url": "git+https://github.com/fabkho/ui.git"
   },
   "packageManager": "pnpm@10.34.7",
+  "exports": {
+    ".": "./nuxt.config.ts",
+    "./pure/*": "./utils/chat/*.js",
+    "./*": "./*"
+  },
   "main": "./nuxt.config.ts",
   "files": [
     "app.config.ts",

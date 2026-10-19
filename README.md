@@ -633,3 +633,7 @@ namespace, a `spring` group is unitless
 - A new variable the layer reads goes into this README's list and into the app's tokens in the
   same bump (the contract test holds the two together).
 - Anything that differs from Libellus goes into [Changes against Libellus](#changes-against-libellus).
+
+## Pure utils under plain Node
+
+`utils/chat/{voice,timeline,reply}.js` are framework-free ESM with JSDoc types, so they load in plain Node with no build step: `import { voiceMime } from '@fabkho/ui/pure/voice'` (the `exports` map maps `./pure/*` to `./utils/chat/*.js`). Nuxt and the components import the same files as `#ui/utils/chat/voice`. Node's type stripping is not used (it skips `node_modules`, where consumers get the package). A util may go on the `./pure/*` path only when it imports nothing from Nuxt or the app.
