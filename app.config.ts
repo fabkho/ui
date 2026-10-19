@@ -12,9 +12,11 @@ export default defineAppConfig({
       /** After the first author when a cover names fewer than all of them. */
       etAl: 'et al.',
       /**
-       * The chat's words (`utils/chat/*`, and the chat components to come). Each app fills them
-       * from its own copy (Bookretreats from `copy/chat.ts`, BetterReads from i18n). Keys are added
-       * with the components that say them.
+       * The chat's words (`utils/chat/*` and the chat components: UiChatThread, UiBubble, UiQuote,
+       * UiReactionBar, UiComposer, UiVoiceBubble, UiGifPicker, UiMediaViewer in the chat). Each app
+       * fills them from its own copy (Bookretreats from `copy/chat.ts`, BetterReads from i18n).
+       * A word with a `{name}` in it is a template: the component fills the braces in (`fillWords`,
+       * `utils/chat/words.ts`), so an app can hand over its own function's output for `'{name}'`.
        */
       chat: {
         /** A BCP 47 tag: the language the weekdays and months of a day separator are spelled in (`Intl`). */
@@ -22,6 +24,32 @@ export default defineAppConfig({
         /** Day separators; older days are written out by `dayLabel`. */
         today: 'Today',
         yesterday: 'Yesterday',
+        /** The thread while it loads (for a screen reader: the placeholder is drawn). */
+        loading: 'Loading the conversation',
+        /** The line under the top bar while the device is offline. */
+        offline: 'No connection. We will try again in a moment.',
+        /** Paging up: earlier messages at the top of the thread. */
+        olderLoading: 'Loading earlier messages',
+        olderFailed: 'Earlier messages could not be loaded.',
+        olderRetry: 'Try again',
+        /** Under one's own last message once the other one has read it. */
+        read: 'Read',
+        /** Under a message that is taking a while on its way. */
+        sending: 'Sending …',
+        /** Under a message that did not go out; the bubble is the button. */
+        failed: 'Not sent. Tap to try again.',
+        /** After the app's own sentence for a refused message (`error` on the message). */
+        retryHint: 'Tap to try again.',
+        composer: {
+          label: 'Message',
+          placeholder: 'Message',
+          send: 'Send',
+          /** The chips over the field. */
+          photo: 'Photo',
+          photoLabel: 'Send a photo from your gallery',
+          gif: 'GIF',
+          gifLabel: 'Find and send a GIF',
+        },
         /** Answering one message: what a quote says for a message that is not words. */
         reply: {
           /** One's own message is quoted with this, as in WhatsApp. */
@@ -31,17 +59,93 @@ export default defineAppConfig({
           photo: 'Photo',
           /** A message whose content was withdrawn (`Quoted.gone`). */
           gone: 'No longer available',
+          /** The way without a swipe: the entry in the reaction bar. */
+          bar: 'Reply',
+          /** The ✕ of the quote over the composer. */
+          cancel: 'Discard reply',
+          /** The quoted message was deleted meanwhile. */
+          deleted: 'Message deleted',
+          /** A tap on a quote jumps to the original. */
+          show: '{name}: {preview}. Go to message',
         },
-        /** A picture whose sender is gone. */
+        /** A picture in the thread. */
         media: {
+          photo: 'Photo',
+          photoMine: 'Your photo',
+          gif: 'GIF',
+          gifMine: 'Your GIF',
+          open: 'View large',
+          loading: 'Loading picture',
+          /** Its sender is gone: the picture went with them. */
           photoRemoved: 'Photo removed',
           gifRemoved: 'GIF removed',
+          /** The picture did not load and no new address is coming. */
+          unavailable: 'Picture not available right now',
         },
+        /** Voice messages: the microphone in the composer, the recording bar, the bubble. */
         voice: {
+          record: 'Record a voice message',
+          recording: 'Recording',
+          stopped: 'Recording stopped',
+          timer: '{elapsed} of {max}',
+          cancel: 'Discard recording',
+          send: 'Send voice message',
+          /** At the limit the recording stops by itself; it can still be sent. */
+          limit: 'That is as long as a recording can be. You can send it now.',
+          /** Why the microphone did not start (`micProblem`). */
+          problems: {
+            denied: 'Your microphone is turned off for this app. Allow it in your device or browser settings and try again.',
+            none: 'We cannot find a microphone on your device.',
+            busy: 'Something else is using your microphone. Close it and try again.',
+            unsupported: 'This browser cannot record voice messages.',
+            failed: 'The recording did not work. Please try again.',
+          },
           bubble: {
+            mine: 'Your voice message',
+            hers: 'Voice message',
+            play: 'Play',
+            pause: 'Pause',
+            loading: 'Loading voice message',
             /** Its sender is gone: the recording went with them. */
             removed: 'Voice message removed',
+            /** A recording in a format this device cannot play. */
+            unplayable: 'Your device cannot play this voice message.',
+            /** The sound broke off or did not start: one more try on a tap. */
+            playFailed: 'Playing did not work. Tap to try again.',
+            position: '{now} of {total}',
           },
+        },
+        /** A picture full screen. */
+        viewer: {
+          label: 'Picture',
+          close: 'Close',
+        },
+        /** The GIF picker (a sheet). The provider's own words (placeholder, attribution, topics) are props. */
+        gifPicker: {
+          title: 'Send a GIF',
+          search: 'Search GIFs',
+          feedsLabel: 'GIF topics',
+          results: 'For “{q}”',
+          none: 'No GIF for “{q}”.',
+          more: 'Load more',
+          loading: 'Loading GIFs',
+          pick: 'Send',
+          retry: 'Try again',
+        },
+        /** Reactions on a message: the bar over a bubble and the pill on its corner. */
+        reactions: {
+          bar: 'Choose a reaction',
+          open: 'React',
+          /** What each emoji is called for a screen reader; an emoji without a name is read as itself. */
+          names: { '❤️': 'Heart', '😂': 'Laughing', '😮': 'Surprised', '😢': 'Sad', '🔥': 'Fire', '📚': 'Books' } as Record<string, string>,
+          pick: 'React with {name}',
+          takeBack: 'Take back {name}',
+          byYou: '{name} from you',
+          byHer: '{name} from them',
+          byBoth: '{name} from both of you',
+          pill: 'Reactions: {parts}',
+          copy: 'Copy',
+          copied: 'Copied',
         },
       },
     },

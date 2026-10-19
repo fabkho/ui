@@ -144,3 +144,14 @@ export function checkVoice(blob: Blob, durationMs: number, limits: VoiceLimits):
   if (blob.size > limits.maxBytes || blob.size === 0) return 'large'
   return null
 }
+
+/** How many live bars the composer draws while it records. */
+export const LIVE_BARS = 28
+
+/**
+ * The live bars as a fixed row of `count`: the newest reading on the right, older ones scrolling off to
+ * the left, silence (0) where there is nothing yet.
+ */
+export function liveRow(latest: readonly number[], count = LIVE_BARS): number[] {
+  return Array.from({ length: count }, (_, i) => latest[latest.length - count + i] ?? 0)
+}
