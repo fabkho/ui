@@ -66,3 +66,36 @@ export const AsDiv: Story = {
 }
 
 export const Night: Story = { globals: { theme: 'night' } }
+
+/** `still`: items are only added and removed, never reordered, so none gets a move. Shown inside a sheet-like card, as a list rising with a sheet is. */
+export const Still: Story = {
+  args: { still: true },
+  render: args => ({
+    components: { UiListMotion, UiButton },
+    setup() {
+      let next = 4
+      const items = ref(TITLES.slice(0, 4).map((title, id) => ({ id, title })))
+      const add = () => {
+        if (next >= TITLES.length) next = 0
+        items.value.push({ id: Date.now(), title: TITLES[next++]! })
+      }
+      const remove = (id: number) => (items.value = items.value.filter(item => item.id !== id))
+      return { args, items, add, remove }
+    },
+    template: `
+      <div class="flex w-full max-w-sm flex-col gap-md">
+        <div class="flex gap-sm">
+          <UiButton tone="secondary" size="sm" @click="add">Add an item</UiButton>
+        </div>
+        <UiListMotion :tag="args.tag" :still="args.still" class="m-0 flex list-none flex-col gap-sm p-0">
+          <li v-for="item in items" :key="item.id" class="flex items-center justify-between rounded-md bg-surface-raised px-md py-ms text-ink text-body">
+            {{ item.title }}
+            <UiButton tone="plain" size="sm" @click="remove(item.id)">Remove<span class="sr-only"> {{ item.title }}</span></UiButton>
+          </li>
+        </UiListMotion>
+      </div>`,
+  }),
+}
+
+/** `still` in the dark theme. */
+export const StillNight: Story = { ...Still, globals: { theme: 'night' } }
