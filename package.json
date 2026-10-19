@@ -1,6 +1,6 @@
 {
   "name": "@fabkho/ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Bookretreats' and BetterReads' shared UI base: a Nuxt layer of components, composables, utils and a Tailwind v4 stylesheet, themed only through CSS variables.",
   "license": "MIT",
   "type": "module",

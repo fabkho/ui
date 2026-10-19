@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/fabkho/ui/compare/v0.2.0...v0.3.0) (2026-10-19)
+
+
+### Features
+
+* **cover:** the cover leans under the finger behind an opt-in tilt prop, with coverTilt and the motion helpers it stands on ([ddddc0f](https://github.com/fabkho/ui/commit/ddddc0f6edf66a38c52aa9086e933dfc0c84343d))
+* **css:** the glass setting (--glass-solid, --glass-scale) read with fallbacks, and the veil-tint, icon-action, stretched and tap-text utilities ([9751744](https://github.com/fabkho/ui/commit/97517442522071630eaa1136bbdc9aa8a08e0d88))
+* **icon:** the union of both apps' icons: bookmarks and the formats of an edition beside Bookretreats' marks ([d237278](https://github.com/fabkho/ui/commit/d2372787d4ffb8510f193a2b573213b8478381af))
+* merge the drift, part 1: icons, glass setting, CSS utilities, cover tilt, ClampText, SeeAll, PressLink, IconSegments ([6f6cb0a](https://github.com/fabkho/ui/commit/6f6cb0a84bb5a5b347b7674c5fe0af7e854565ab))
+* merge the drift, part 2: UiSheet focus both ways, UiRoundButton glass ([31c5af5](https://github.com/fabkho/ui/commit/31c5af5977275cd034a16cf5dc22f6c9530f280d))
+* **sheet:** UiSheet's field takes focus once the sheet has finished rising, with Libellus' sheet focus rules and tests, and SheetRestore leaves Sheet.vue ([25b6361](https://github.com/fabkho/ui/commit/25b63616eee9909f7b8849471e578004d49ae665))
+* UiClampText, UiSeeAll, UiPressLink and UiIconSegments, with ui.text more and less ([b52bba4](https://github.com/fabkho/ui/commit/b52bba4df8ffd87b84c9d17466978730a78ee871))
+* UiRoundButton reads the Glass setting, and UiPill's press scale stands still with Reduce Motion ([edbc994](https://github.com/fabkho/ui/commit/edbc9945e71ce07080db9042c6b7688ba0abc772))
+
 ## [0.2.0](https://github.com/fabkho/ui/compare/v0.1.0...v0.2.0) (2026-10-19)
 
 
