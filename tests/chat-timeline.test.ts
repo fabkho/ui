@@ -12,8 +12,8 @@ import {
 } from '../utils/chat/timeline'
 
 // The chat's pure rules: day separators, runs and times. Dates are built in the local
-// time zone, as the helpers read them, so the suite holds wherever it runs. The words come
-// in as the layer's `ui.text.chat` would bring them; the assertions are Bookretreats' own,
+// time zone, as the helpers read them, so the suite holds wherever it runs. The words are
+// passed in explicitly, German here (the layer's own defaults are English, see chat-text.test.ts); the assertions are Bookretreats' own,
 // moved with the code (`formatPhone` stays in that app: a German number's spelling is domain).
 const words: DayWords = { today: 'Heute', yesterday: 'Gestern', locale: 'de' }
 const at = (y: number, m: number, d: number, h = 12, min = 0) => new Date(y, m - 1, d, h, min)

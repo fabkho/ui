@@ -19,9 +19,10 @@ import {
 // The chat's pure reply rules ("Antworten"): the swipe that arms a reply and the words a
 // quote shows. The gesture itself (the pointer events, the bubble that follows the finger)
 // is a bubble's and is driven in the apps; what is decided here is arithmetic. Moved from
-// Bookretreats with the same assertions; the words come in as the layer's `ui.text.chat`
-// brings them, and a withdrawn number is the app's `gone` flag (it was `kind: 'phone_share'`
-// with an empty body, a domain the base does not know).
+// Bookretreats with the same assertions; the words are passed in explicitly, German here
+// (the layer's own defaults are English, see chat-text.test.ts), and a withdrawn
+// number is the app's `gone` flag (it was `kind: 'phone_share'` with an empty body, a domain
+// the base does not know).
 const words: ReplyWords = {
   reply: { you: 'Du', voice: '🎤 Sprachnachricht', gif: 'GIF', photo: 'Foto', gone: 'Nicht mehr verfügbar' },
   media: { gifRemoved: 'GIF entfernt', photoRemoved: 'Foto entfernt' },

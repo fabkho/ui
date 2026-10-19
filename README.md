@@ -125,18 +125,18 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
    when the language changes (components read them through `useUiText()`).
 
-   The chat's words are `ui.text.chat.*`, shaped like Bookretreats' `copy/chat.ts` and **German by
-   default** (they are that app's words; the keys above stay English). The app fills them from its copy:
+   The chat's words are `ui.text.chat.*`, English by default like the keys above. Each app fills them
+   from its own copy (Bookretreats from `copy/chat.ts`, BetterReads from i18n):
 
    | Key | Default | Used by |
    | --- | --- | --- |
-   | `chat.locale` | `de` | `dayLabel`: BCP 47 tag the weekdays and months are spelled in (`Intl`) |
-   | `chat.today`, `chat.yesterday` | Heute, Gestern | `dayLabel` |
-   | `chat.reply.you` | Du | `quoteName` |
-   | `chat.reply.voice`, `.gif`, `.photo` | 🎤 Sprachnachricht, GIF, Foto | `quotePreview` |
-   | `chat.reply.gone` | Nicht mehr verfügbar | `quotePreview` of a quote flagged `gone` |
-   | `chat.media.photoRemoved`, `.gifRemoved` | Foto entfernt, GIF entfernt | `quotePreview` |
-   | `chat.voice.bubble.removed` | Sprachnachricht entfernt | `quotePreview` |
+   | `chat.locale` | `en` | `dayLabel`: BCP 47 tag the weekdays and months are spelled in (`Intl`) |
+   | `chat.today`, `chat.yesterday` | Today, Yesterday | `dayLabel` |
+   | `chat.reply.you` | You | `quoteName` |
+   | `chat.reply.voice`, `.gif`, `.photo` | 🎤 Voice message, GIF, Photo | `quotePreview` |
+   | `chat.reply.gone` | No longer available | `quotePreview` of a quote flagged `gone` |
+   | `chat.media.photoRemoved`, `.gifRemoved` | Photo removed, GIF removed | `quotePreview` |
+   | `chat.voice.bubble.removed` | Voice message removed | `quotePreview` |
 
    More keys arrive with the chat components (wave 4b). `useUiText().value.chat` can be passed as
    the `DayWords` and `ReplyWords` the chat utils take.
