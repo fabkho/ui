@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, waitFor, within } from 'storybook/test'
 import UiCover from './Cover.vue'
 
 const SIZES = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -30,6 +31,7 @@ const meta = {
     decorative: false,
     whole: false,
     kind: 'book',
+    tilt: false,
   },
   argTypes: { size: { control: 'inline-radio', options: SIZES }, kind: { control: 'inline-radio', options: ['book', 'screen'] } },
 } satisfies Meta<typeof UiCover>
@@ -110,6 +112,46 @@ export const AllSizes: Story = {
         <div class="flex flex-wrap items-end gap-md"><UiCover v-for="size in SIZES" :key="size" v-bind="args" :src="null" :colors="null" :size="size" /></div>
       </div>`,
   }),
+}
+
+/** The sheet inside a cover: what leans. */
+const sheetOf = (canvasElement: HTMLElement) => canvasElement.querySelector<HTMLElement>('[data-cover]')!
+
+/**
+ * `tilt` (the Book page's hero): the sheet leans towards the finger, up to eight degrees at the edge, and comes back flat
+ * when it lets go. Off with Reduce Motion and while anything moves; off by default.
+ */
+export const Tilt: Story = {
+  args: { tilt: true, size: 'xl', glow: true },
+  play: async ({ canvasElement }) => {
+    const sheet = sheetOf(canvasElement)
+    const root = sheet.parentElement!
+    const box = root.getBoundingClientRect()
+    const flat = 'perspective(700px) rotateX(0.000deg) rotateY(0.000deg)'
+    // A finger on the cover's top right corner: the top and right edges come near.
+    root.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7, pointerType: 'touch', clientX: box.right, clientY: box.top }))
+    await waitFor(() => expect(sheet.style.transform).toMatch(/rotateX\(-[1-9]/))
+    await expect(sheet.style.willChange).toBe('transform')
+    root.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7, pointerType: 'touch', clientX: box.right, clientY: box.top }))
+    // Let go: the inline lean is gone at once and a Web Animation brings the sheet back to flat.
+    await expect(sheet.style.transform).not.toBe(flat)
+    await waitFor(() => expect(sheet.style.willChange).toBe(''))
+    await expect(within(canvasElement).getByRole('img', { name: 'Dune' })).toHaveAttribute('draggable', 'false')
+  },
+}
+
+/** Without `tilt`, a press does nothing to the cover. */
+export const NoTiltByDefault: Story = {
+  args: { size: 'xl' },
+  play: async ({ canvasElement }) => {
+    const sheet = sheetOf(canvasElement)
+    const root = sheet.parentElement!
+    const box = root.getBoundingClientRect()
+    root.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 8, pointerType: 'touch', clientX: box.right, clientY: box.top }))
+    await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    await expect(sheet.style.transform).toBe('')
+    await expect(root).not.toHaveClass('tilt')
+  },
 }
 
 export const Night: Story = { args: { glow: true, size: 'xl' }, globals: { theme: 'night' }, parameters: { layout: 'padded' } }

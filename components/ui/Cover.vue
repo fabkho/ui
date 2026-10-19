@@ -25,7 +25,11 @@ import { clothOf, formatAuthors, glowOf, thumbhashDataUrl } from '../../utils/cl
 // copy of itself, so the slot is filled in the cover's own colours and no
 // letter of its title is cut off. A cover near 2:3 fills the slot as always.
 // `kind="screen"` (a series or a film, Bookretreats): a poster has no spine, so the crease is left out.
+// `tilt` (the Book page's hero only, BetterReads): the sheet leans under the finger and comes back flat
+// (utils/coverTilt.ts; docs/MOTION.md, Hero cover). Off by default, so a cover that is not asked to lean
+// is untouched; off with Reduce Motion and while anything moves.
 import { isBlankCover, type CoverColors } from '../../utils/cloth'
+import { attachCoverTilt } from '../../utils/coverTilt'
 
 const props = withDefaults(
   defineProps<{
@@ -52,8 +56,10 @@ const props = withDefaults(
     whole?: boolean
     /** A book (printed, with a spine crease) or a screen's poster (a series or a film: no spine). */
     kind?: 'book' | 'screen'
+    /** The sheet leans under the finger (the Book page's hero). */
+    tilt?: boolean
   }>(),
-  { authors: () => [], src: null, fallbacks: () => [], thumbhash: null, colors: null, size: 'sm', glow: false, eager: false, priority: false, decorative: false, whole: false, kind: 'book' },
+  { authors: () => [], src: null, fallbacks: () => [], thumbhash: null, colors: null, size: 'sm', glow: false, eager: false, priority: false, decorative: false, whole: false, kind: 'book', tilt: false },
 )
 
 /** How far an image's shape may be from 2:3 (as a share of it) and still fill the slot when `whole`. */
@@ -137,10 +143,20 @@ const glowStyle = computed(() => {
 
 const cloth = computed(() => `var(--color-cloth${clothOf(props.title)})`)
 const authorLine = computed(() => formatAuthors(props.authors, uiText.value.etAl))
+
+// The finger's surface is the root (it never moves); what leans is the sheet.
+const root = useTemplateRef<HTMLElement>('root')
+watch(
+  [root, () => props.tilt],
+  ([element, tilt], _, onCleanup) => {
+    if (element && tilt) onCleanup(attachCoverTilt(element))
+  },
+  { immediate: true, flush: 'post' },
+)
 </script>
 
 <template>
-  <div class="relative shrink-0 aspect-2/3" :class="WIDTHS[size]">
+  <div ref="root" class="relative shrink-0 aspect-2/3" :class="[WIDTHS[size], tilt && 'tilt']">
     <template v-if="glow">
       <img v-if="showImage" :src="current!" alt="" class="halo" :class="!loaded && 'out'" :loading="eager ? 'eager' : 'lazy'" aria-hidden="true" />
       <span class="pool" :class="showImage && loaded && 'out'" :style="glowStyle" aria-hidden="true" />
@@ -156,6 +172,7 @@ const authorLine = computed(() => formatAuthors(props.authors, uiText.value.etAl
         :loading="eager ? 'eager' : 'lazy'"
         :fetchpriority="priority ? 'high' : undefined"
         decoding="async"
+        :draggable="tilt ? false : undefined"
         class="block size-full transition-opacity duration-(--duration-standard) ease-standard"
         :class="[loaded ? 'opacity-100' : 'opacity-0', fitted ? 'relative object-contain' : 'object-cover']"
         :data-fitted="fitted || undefined"
@@ -187,6 +204,21 @@ const authorLine = computed(() => formatAuthors(props.authors, uiText.value.etAl
 </template>
 
 <style scoped>
+/* A cover that leans: a vertical move that starts on it scrolls the page (the browser takes it and
+   the cover lets go); a long press neither selects nor opens the image's menu. With Reduce Motion it
+   is a picture like any other. */
+.tilt {
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt {
+    touch-action: auto;
+  }
+}
+
 /* Placeholder type scales with the cover: everything in container units. */
 .sheet {
   container-type: inline-size;
