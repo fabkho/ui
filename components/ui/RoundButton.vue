@@ -22,8 +22,9 @@ defineProps<{ icon?: IconName; label: string }>()
 
 <style scoped>
 .round {
-  background-color: var(--color-glass);
-  -webkit-backdrop-filter: blur(var(--blur-chrome));
-  backdrop-filter: blur(var(--blur-chrome));
+  /* The owner's Glass setting (ui.css, `.glass`): both variables are optional, and without them this is the plain glass. */
+  background-color: color-mix(in srgb, var(--color-surface-sheet) var(--glass-solid, 0%), var(--color-glass));
+  -webkit-backdrop-filter: blur(calc(var(--blur-chrome) * var(--glass-scale, 1)));
+  backdrop-filter: blur(calc(var(--blur-chrome) * var(--glass-scale, 1)));
 }
 </style>
