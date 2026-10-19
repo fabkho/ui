@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import UiComposerChip from './ComposerChip.vue'
 import UiIcon from './Icon.vue'
 
@@ -79,6 +79,23 @@ export const InARow: Story = {
         <UiComposerChip>Share number</UiComposerChip>
       </div>`,
   }),
+}
+
+/**
+ * The finger's target is 44 × 44 around the 34 drawn (WCAG 2.5.8, our rule 44), also for a chip whose words are
+ * short: the hit area is a pseudo-element, so the look does not change.
+ */
+export const TouchTarget: Story = {
+  render: InARow.render,
+  play: async ({ canvasElement }) => {
+    for (const chip of within(canvasElement).getAllByRole('button')) {
+      const target = getComputedStyle(chip, '::after')
+      await expect(Number.parseFloat(target.width)).toBeGreaterThanOrEqual(44)
+      await expect(Number.parseFloat(target.height)).toBeGreaterThanOrEqual(44)
+    }
+    // The drawn chip is still 34 high.
+    await expect(Math.round(within(canvasElement).getByRole('button', { name: 'Find and send a GIF' }).getBoundingClientRect().height)).toBe(34)
+  },
 }
 
 export const Night: Story = { globals: { theme: 'night' } }

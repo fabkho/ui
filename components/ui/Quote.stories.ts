@@ -1,13 +1,7 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import UiQuote from './Quote.vue'
 import { quote } from '../../.storybook/chat-fixtures'
-
-// axe's `label-content-name-mismatch` reads the button's text as "SamDid you get…" (the name and the
-// preview are two blocks with no space between them in the DOM) and the name as "Sam: Did you get…. Go to
-// message", and reports a mismatch. Both words are in the name, in order, so WCAG 2.5.3 holds; the
-// heuristic does not see it. Only that rule is off here (the PR notes it); a space between the two spans
-// in Quote.vue would make the DOM say what the screen shows.
 
 // A quote sits on top of a bubble, so the stories draw it on the ground it has there: the paper card for
 // theirs, the ink bubble for mine (`mine` turns the type to on-ink).
@@ -24,14 +18,22 @@ const meta = {
         <p class="pt-xs text-body">Yes, I did. It was worth the wait.</p>
       </div>`,
   }),
-  parameters: { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } },
 } satisfies Meta<typeof UiQuote>
 export default meta
 
 type Story = StoryObj<typeof meta>
 
-/** A button to the original message: a tap jumps to it (the thread's `jumpTo`). */
-export const Theirs: Story = {}
+/**
+ * A button to the original message: a tap jumps to it (the thread's `jumpTo`). The name and the preview have a
+ * space between them in the DOM, so the button's text reads as it looks ("Sam Did you get…") and its name
+ * contains it (WCAG 2.5.3; axe's `label-content-name-mismatch` is on here).
+ */
+export const Theirs: Story = {
+  play: async ({ canvasElement }) => {
+    const button = within(canvasElement).getByRole('button')
+    await expect(button).toHaveTextContent(/^Sam Did you get/)
+  },
+}
 
 /** On an ink bubble: the stripe stays in the accent, the type is on-ink. */
 export const OnMyBubble: Story = { args: { mine: true, quote: quote({ mine: true, name: 'You', preview: 'Finished it last night.' }) } }

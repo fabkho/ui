@@ -37,7 +37,7 @@ describe('the reaction pill', () => {
   it('names each emoji and whose it is', () => {
     expect(reactionsLabel([r('❤️', 1, true)], words)).toBe('Reactions: Heart from you')
     expect(reactionsLabel([r('❤️', 1, false), r('🔥', 2, true)], words)).toBe(
-      'Reactions: Heart from them, Fire from both of you',
+      'Reactions: Heart from them, Fire from both of you ×2',
     )
   })
 
@@ -48,6 +48,13 @@ describe('the reaction pill', () => {
     expect(reactionWho({ count: 2, mine: false })).toBe('byMany')
     expect(reactionWho({ count: 3, mine: true })).toBe('byMany')
     expect(reactionsLabel([r('🔥', 3, false)], words)).toBe('Reactions: Fire from 3')
+  })
+
+  it('carries the number the pill shows (label in name), once', () => {
+    // "from both of you" does not say 2; "from 3" already does.
+    expect(reactionsLabel([r('🔥', 2, true)], words)).toBe('Reactions: Fire from both of you ×2')
+    expect(reactionsLabel([r('🔥', 2, false)], words)).toBe('Reactions: Fire from 2')
+    expect(reactionsLabel([r('🔥', 3, false), r('❤️', 1, true)], words)).toBe('Reactions: Fire from 3, Heart from you')
   })
 
   it('reads an emoji without a name as itself', () => {

@@ -6,8 +6,11 @@ import UiRow from './Row.vue'
 // keep impossible days out of the picker where the platform honours them; the caller checks the day again either
 // way. `v-model` is `YYYY-MM-DD`, or '' when the picker was cleared (`placeholder` says what an empty day means).
 // The input carries `testid`.
+// `invalid` is not only a colour (WCAG 1.4.1): the day takes a struck-through calendar before it, and the input says
+// `aria-invalid`, which assistive tech announces. The message itself is the caller's, next to the row (3.3.1).
 // Added for Bookretreats: the layer imports no app copy and has no `useDays`, so the day in words is the caller's
 // (`text`, shown instead of the ISO day) and `icon` picks the mark (the birthday's cake).
+import UiIcon from './Icon.vue'
 import type { IconName } from './Icon.vue'
 
 const model = defineModel<string>({ required: true })
@@ -39,7 +42,8 @@ function openPicker(event: MouseEvent) {
 
 <template>
   <UiRow :label="label" :icon="icon" chevron class="active:bg-fill-strong">
-    <span class="figures text-caption" :class="invalid ? 'text-error' : model ? 'text-ink-muted' : 'text-ink-faint'">
+    <span class="figures inline-flex items-center gap-xs text-caption" :class="invalid ? 'text-error' : model ? 'text-ink-muted' : 'text-ink-faint'">
+      <UiIcon v-if="invalid" name="calendarOff" :size="14" :data-testid="`${testid}Invalid`" />
       {{ model ? (text ?? model) : placeholder }}
     </span>
     <input

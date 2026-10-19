@@ -8,6 +8,7 @@ export interface SheetRestore {
 <script setup lang="ts">
 import { useKeyboardViewport } from '../../composables/useKeyboardInset'
 import { useModalLayer } from '../../composables/useModalLayer'
+import { useScrollable } from '../../composables/useScrollable'
 import { useSwipeDown } from '../../composables/useSwipeDown'
 import { useUiText } from '../../composables/useUiText'
 // A bottom sheet the iOS way: it rises over a scrim with a grabber and a title
@@ -22,7 +23,8 @@ import { useUiText } from '../../composables/useUiText'
 // does not scroll under it, and focus is inside it — on the panel, or on the
 // field marked `data-autofocus`, focused in the tap that opened the sheet so
 // iOS raises the keyboard with it. Closing gives focus back to what opened it
-// (composables/useModalLayer.ts). With the keyboard up the sheet rides on it,
+// (composables/useModalLayer.ts). A body that scrolls is a focusable, named region (tabindex 0, named by
+// the title), so a keyboard user can scroll it (`useScrollable`); one that fits is not. With the keyboard up the sheet rides on it,
 // the page holds still under it (iOS would pan it to the field; `pin`) and the
 // focused field scrolls into view (composables/useKeyboardInset.ts).
 //
@@ -61,6 +63,8 @@ const { handlers, offset, dragging } = useSwipeDown(close)
 const scrim = useTemplateRef<HTMLElement>('scrim')
 const panel = useTemplateRef<HTMLElement>('panel')
 const body = useTemplateRef<HTMLElement>('body')
+/** The body scrolls (a long list): then the keyboard has to reach it (WCAG 2.1.1), and it is a named region. */
+const scrollable = useScrollable(body)
 const { afterLeave } = useModalLayer(open, {
   elements: () => [scrim.value, panel.value],
   initialFocus: () => panel.value?.querySelector<HTMLElement>('[data-autofocus]') ?? panel.value,
@@ -251,7 +255,15 @@ function onAfterLeave() {
         </header>
         <!-- `md` between the title row and the content, and `md` under it above
              the home indicator / Android's navigation (Material's least). -->
-        <div ref="body" data-sheet-body class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-ml pt-md pb-md" @scroll.passive="onScroll">
+        <div
+          ref="body"
+          data-sheet-body
+          class="body min-h-0 flex-1 overflow-y-auto overscroll-contain px-ml pt-md pb-md"
+          :role="scrollable ? 'region' : undefined"
+          :aria-labelledby="scrollable ? titleId : undefined"
+          :tabindex="scrollable ? 0 : undefined"
+          @scroll.passive="onScroll"
+        >
           <slot />
         </div>
       </section>
@@ -302,6 +314,12 @@ function onAfterLeave() {
 .sheet-enter-from,
 .sheet-leave-to {
   transform: translateY(100%);
+}
+
+/* A body that scrolls takes the focus for the arrow keys and Page Up/Down: its ring sits inside, the panel clips. */
+.body:focus-visible {
+  outline: var(--stroke-focus) solid var(--color-accent);
+  outline-offset: calc(-1 * var(--stroke-focus));
 }
 
 /* The header's hairline shows once the body has scrolled under it. */

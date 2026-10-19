@@ -67,7 +67,10 @@ const veilStyle = computed(() =>
 // sheet) takes either one outside itself for a tap beside it and would close.
 // No useModalLayer / system-Back entry on purpose: the viewer also opens over Bookretreats'
 // member sheet (vaul, query-driven), which the layer's history entry would close with it.
-// Focus goes to the close button and back to where it came from, as the chat's viewer does.
+// Focus goes to the close button and back to where it came from, as the chat's viewer does, and stays inside
+// while it is open (APG dialog): the close button is the only control, so Tab and Shift+Tab stay on it, and
+// focus that ends up anywhere else (a screen reader's cursor, a click in the page behind) is brought back.
+// The rest of the page is not made `inert` for the same reason as above (a sheet under it must not notice).
 let trigger: HTMLElement | null = null
 watch(visible, async (isOpen) => {
   if (isOpen) {
@@ -82,13 +85,32 @@ function afterLeave() {
 }
 
 function onKey(event: KeyboardEvent) {
-  if (event.key !== 'Escape' || !visible.value) return
+  if (!visible.value) return
+  if (event.key === 'Tab') {
+    // The dialog's one tabbable element: Tab (either way) stays on it.
+    event.preventDefault()
+    closer.value?.focus({ preventScroll: true })
+    return
+  }
+  if (event.key !== 'Escape') return
   // Captured first and stopped: Esc closes the picture, not the sheet under it.
   event.stopPropagation()
   close()
 }
-onMounted(() => window.addEventListener('keydown', onKey, true))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey, true))
+/** Focus that left the dialog while it is open (and not leaving) comes back to the close button. */
+function onOutsideFocus(event: FocusEvent) {
+  if (!visible.value || leaving) return
+  const target = event.target
+  if (target instanceof Node && !root.value?.contains(target)) closer.value?.focus({ preventScroll: true })
+}
+onMounted(() => {
+  window.addEventListener('keydown', onKey, true)
+  document.addEventListener('focusin', onOutsideFocus, true)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey, true)
+  document.removeEventListener('focusin', onOutsideFocus, true)
+})
 
 const FINAL_RADIUS = 'var(--radius-lg, 16px)'
 

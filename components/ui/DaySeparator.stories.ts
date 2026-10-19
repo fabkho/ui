@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, within } from 'storybook/test'
 import UiDaySeparator from './DaySeparator.vue'
 
 // A day separator is a list item (a thread is a list), so each story puts it in the list it belongs to.
@@ -31,8 +32,32 @@ export const AsDiv: Story = {
   }),
 }
 
+/**
+ * A day is a heading (WCAG 1.3.1): a screen reader's reader jumps from day to day, and the messages after it
+ * belong to it. The heading sits inside the list item, so the thread's list stays a list. `level` sets which one (2 by default).
+ */
+export const AsHeading: Story = {
+  args: { label: 'Yesterday' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('heading', { name: 'Yesterday', level: 2 })).toBeVisible()
+    await expect(canvas.getByRole('listitem')).toContainElement(canvas.getByRole('heading'))
+  },
+}
+
+export const HeadingLevel: Story = {
+  args: { label: 'Monday', level: 3 },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('heading', { name: 'Monday', level: 3 })).toBeVisible()
+  },
+}
+
 /** In a thread: between two runs of bubbles. */
 export const InAThread: Story = {
+  play: async ({ canvasElement }) => {
+    const days = within(canvasElement).getAllByRole('heading')
+    await expect(days.map(day => day.textContent)).toEqual(['Yesterday', 'Today'])
+  },
   render: () => ({
     components: { UiDaySeparator },
     template: `

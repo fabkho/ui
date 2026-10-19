@@ -40,6 +40,9 @@ const ground = computed(() => (props.mine ? 'bg-on-ink/10' : 'bg-fill'))
       <span class="truncate text-caption font-medium" :class="mine ? 'text-on-ink' : 'text-ink'" :data-testid="`${testid}.quoteName`">
         {{ quote.name }}
       </span>
+      <!-- A space between the two lines, so the button's text reads "Sam Did you get…" (WCAG 2.5.3, Label in Name:
+           the two blocks of a flex column have no space between them, and the visible text ran together). -->
+      {{ ' ' }}
       <span class="line-clamp-2 text-caption" :class="mine ? 'text-on-ink opacity-70' : 'text-ink-muted'" :data-testid="`${testid}.quotePreview`">
         {{ quote.preview }}
       </span>

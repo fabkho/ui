@@ -108,18 +108,20 @@ async function choose(next: string) {
 /** The chip that is showing: none during a search. */
 const chosen = computed(() => (searched.value || query.value.trim() ? null : feed.value))
 
+function opened() {
+  query.value = ''
+  feed.value = firstFeed()
+  void load()
+}
 watch(open, (isOpen) => {
   clearTimeout(timer)
-  if (isOpen) {
-    query.value = ''
-    feed.value = firstFeed()
-    void load()
-    return
-  }
+  if (isOpen) return opened()
   requests.cancel()
   items.value = []
   status.value = 'idle'
 })
+// Mounted already open (a screen that shows it from the start, a story): there is no change to watch for.
+onMounted(() => open.value && opened())
 
 onBeforeUnmount(() => clearTimeout(timer))
 
@@ -192,23 +194,23 @@ const placeOf = computed(() => new Map(items.value.map((gif, i) => [gif.id, i + 
       <div v-else class="relative">
         <!-- A new topic's grid crossfades over the old one (standard; instant with Reduce Motion). -->
         <Transition name="gif-swap">
-          <div :key="swapKey" class="grid grid-cols-2 items-start gap-sm" role="list">
-            <div v-for="(column, c) in columns" :key="c" class="flex flex-col gap-sm">
-              <button
-                v-for="gif in column"
-                :key="gif.id"
-                type="button"
-                role="listitem"
-                class="relative block w-full overflow-hidden rounded-md bg-fill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                :style="{ aspectRatio: `${gif.width} / ${gif.height}` }"
-                :aria-label="gif.title ? fillWords(words.pickTitled, { title: gif.title }) : fillWords(words.pick, { n: placeOf.get(gif.id) ?? 0 })"
-                :data-testid="`${testid}.gif`"
-                :data-gif-id="gif.id"
-                @click="pick(gif)"
-              >
-                <img :src="gif.preview" alt="" loading="lazy" decoding="async" class="size-full object-cover" />
-              </button>
-            </div>
+          <!-- Two columns, each a list of its GIFs (a button may not be a `listitem`: the item is the <li> around it). -->
+          <div :key="swapKey" class="grid grid-cols-2 items-start gap-sm">
+            <ul v-for="(column, c) in columns" :key="c" class="flex flex-col gap-sm">
+              <li v-for="gif in column" :key="gif.id">
+                <button
+                  type="button"
+                  class="relative block w-full overflow-hidden rounded-md bg-fill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  :style="{ aspectRatio: `${gif.width} / ${gif.height}` }"
+                  :aria-label="gif.title ? fillWords(words.pickTitled, { title: gif.title }) : fillWords(words.pick, { n: placeOf.get(gif.id) ?? 0 })"
+                  :data-testid="`${testid}.gif`"
+                  :data-gif-id="gif.id"
+                  @click="pick(gif)"
+                >
+                  <img :src="gif.preview" alt="" loading="lazy" decoding="async" class="size-full object-cover" />
+                </button>
+              </li>
+            </ul>
           </div>
         </Transition>
       </div>

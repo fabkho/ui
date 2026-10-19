@@ -41,6 +41,34 @@ export const Keyboard: Story = {
   },
 }
 
+/**
+ * Roving tabindex (APG toolbar): one tab stop, on the reader's reaction (the first button without one), and
+ * it follows the focus; Tab leaves the bar. Every button is a 44 × 44 cell (WCAG 2.5.8).
+ */
+export const RovingTabindex: Story = {
+  args: { replyable: true, copyable: true, current: '😂' },
+  decorators: [() => ({ template: '<div class="rounded-md bg-linear-to-br from-accent-soft to-surface-raised p-xl"><story /><button type="button">After</button></div>' })],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const buttons = within(canvas.getByRole('toolbar')).getAllByRole('button')
+    await expect(buttons.filter(button => button.tabIndex === 0)).toHaveLength(1)
+    for (const button of buttons) {
+      const box = button.getBoundingClientRect()
+      await expect(Math.round(box.width)).toBeGreaterThanOrEqual(44)
+      await expect(Math.round(box.height)).toBeGreaterThanOrEqual(44)
+    }
+    await userEvent.tab()
+    await expect(canvas.getByRole('button', { name: 'Take back Laughing' })).toHaveFocus()
+    await userEvent.keyboard('{End}')
+    await expect(canvas.getByRole('button', { name: 'Copy' })).toHaveFocus()
+    await expect(buttons.filter(button => button.tabIndex === 0)).toEqual([canvas.getByRole('button', { name: 'Copy' })])
+    await userEvent.tab()
+    await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(canvas.getByRole('button', { name: 'Copy' })).toHaveFocus()
+  },
+}
+
 /** A longer set (the app's `emojis`): the capsule grows with it. */
 export const SixEmoji: Story = { args: { emojis: ['❤️', '😂', '😮', '😢', '🔥', '👍'] } }
 

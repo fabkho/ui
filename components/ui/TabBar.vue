@@ -64,11 +64,13 @@ const emit = defineEmits<{ reselect: [key: string] }>()
 const slots = useSlots()
 const drawn = (tab: UiTab) => !!slots[`icon-${tab.key}`]
 
-const route = useRoute()
+// The router's own current route, not `useRoute()`: that one follows the router only when `<NuxtPage>` reports
+// a finished page (`_route.sync`), and the tab's `aria-current` must be true as soon as the navigation is.
+const route = useRouter().currentRoute
 const modal = useModalShown()
 const { hidden: away, reveal } = useHideOnScroll(() => props.hideOnScroll && !modal.value)
 
-const current = (to: string) => route.path === to || (!props.exact && route.path.startsWith(`${to}/`))
+const current = (to: string) => route.value.path === to || (!props.exact && route.value.path.startsWith(`${to}/`))
 
 function tapped(event: MouseEvent, tab: UiTab) {
   if (!current(tab.to)) return

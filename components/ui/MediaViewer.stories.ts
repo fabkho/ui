@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import UiMediaViewer from './MediaViewer.vue'
 import UiButton from './Button.vue'
 
@@ -78,6 +78,29 @@ export const GrowsFromOrigin: Story = {
 
 /** Without a `url` there is nothing to show: the viewer stays closed, even with `open` set. */
 export const WithoutUrl: Story = { args: { url: null } }
+
+/**
+ * The dialog pattern (APG): focus goes to the close button, Tab and Shift+Tab stay in the dialog, and when it
+ * closes focus returns to the button that opened it.
+ */
+export const FocusTrap: Story = {
+  play: async ({ canvasElement }) => {
+    const opener = within(canvasElement).getByRole('button', { name: 'View photo' })
+    await userEvent.click(opener)
+    const dialog = await within(document.body).findByRole('dialog', { name: 'Photo viewer' })
+    const closer = within(dialog).getByRole('button', { name: 'Close photo' })
+    await waitFor(() => expect(closer).toHaveFocus())
+    await userEvent.tab()
+    await expect(closer).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(closer).toHaveFocus()
+    // Focus that lands behind the dialog is brought back.
+    opener.focus()
+    await expect(closer).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(opener).toHaveFocus(), { timeout: 3000 })
+  },
+}
 
 /** Starts open, for looking at the viewer at rest. */
 export const Open: Story = {

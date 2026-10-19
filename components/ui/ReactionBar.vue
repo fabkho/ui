@@ -13,9 +13,11 @@ import { fillWords } from '../../utils/chat/words'
 // gesture and the one a screen reader and a keyboard reach).
 //
 // A toolbar for assistive tech (APG "Toolbar"): opened by a button (VoiceOver, a keyboard) it takes the
-// focus (on the reader's, or the first, `focusOnOpen`), the arrow keys, Home and End move along it, Escape
+// focus (on the reader's, or the first, `focusOnOpen`). It is one tab stop (roving tabindex: the reader's
+// reaction, or the first button, and then wherever the focus last was), the arrow keys, Home and End move along it, Escape
 // closes it and the focus goes back to where it came from (UiBubble). It rises a little and fades in over
 // `standard`, leaves over `exit` (the Transition is the caller's); with Reduce Motion it is simply there.
+// Each button is a 44 × 44 cell (WCAG 2.5.8, our rule 44); the lit or hovered disc inside it is the 40 it always was.
 // The emoji are named for a screen reader by `ui.text.chat.reactions.names` (an emoji without a name is
 // read as itself). Moved into the base unchanged.
 const props = withDefaults(
@@ -36,6 +38,19 @@ const uiText = useUiText()
 
 const bar = ref<HTMLElement | null>(null)
 const buttons = () => [...(bar.value?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+
+/** The buttons' keys in order (an emoji, `reply`, `copy`), and the one that is the toolbar's tab stop (roving tabindex). */
+const keys = computed(() => [...props.emojis, ...(props.replyable ? ['reply'] : []), ...(props.copyable ? ['copy'] : [])])
+const remembered = ref<string | null>(null)
+watch(() => props.current, () => (remembered.value = null))
+const stop = computed(() => {
+  const wanted = remembered.value ?? props.current
+  return wanted && keys.value.includes(wanted) ? wanted : keys.value[0]
+})
+function onFocusin(event: FocusEvent) {
+  const key = (event.target as HTMLElement).closest<HTMLElement>('button')?.dataset.roving
+  if (key) remembered.value = key
+}
 
 onMounted(() => {
   if (!props.focusOnOpen) return
@@ -72,16 +87,19 @@ const nameOf = (emoji: string) => reactionName(emoji, words.value.names)
     ref="bar"
     role="toolbar"
     :aria-label="words.bar"
-    class="bar glass edge flex items-center rounded-pill p-xxs shadow-float"
+    class="bar glass edge flex items-center rounded-pill px-xxs shadow-float"
     :data-testid="`${testid}.reactionBar`"
     @keydown="onKeydown"
+    @focusin="onFocusin"
   >
     <button
       v-for="emoji in emojis"
       :key="emoji"
       type="button"
-      class="emoji flex size-(--size-button-md) items-center justify-center rounded-pill"
-      :class="current === emoji && 'on bg-accent-soft'"
+      class="emoji flex size-(--size-touch) items-center justify-center rounded-pill"
+      :class="current === emoji && 'on'"
+      :tabindex="stop === emoji ? 0 : -1"
+      :data-roving="emoji"
       :aria-label="fillWords(current === emoji ? words.takeBack : words.pick, { name: nameOf(emoji) })"
       :aria-pressed="current === emoji"
       :data-testid="`${testid}.reactionPick`"
@@ -95,7 +113,9 @@ const nameOf = (emoji: string) => reactionName(emoji, words.value.names)
       <button
         v-if="replyable"
         type="button"
-        class="emoji flex size-(--size-button-md) items-center justify-center rounded-pill text-ink-muted"
+        class="emoji flex size-(--size-touch) items-center justify-center rounded-pill text-ink-muted"
+        :tabindex="stop === 'reply' ? 0 : -1"
+        data-roving="reply"
         :aria-label="uiText.chat.reply.bar"
         :data-testid="`${testid}.reactionReply`"
         @click="emit('reply')"
@@ -106,7 +126,9 @@ const nameOf = (emoji: string) => reactionName(emoji, words.value.names)
     <template v-if="copyable">
       <button
         type="button"
-        class="emoji flex size-(--size-button-md) items-center justify-center rounded-pill text-ink-muted"
+        class="emoji flex size-(--size-touch) items-center justify-center rounded-pill text-ink-muted"
+        :tabindex="stop === 'copy' ? 0 : -1"
+        data-roving="copy"
         :aria-label="words.copy"
         :data-testid="`${testid}.reactionCopy`"
         @click="emit('copy')"
@@ -122,21 +144,33 @@ const nameOf = (emoji: string) => reactionName(emoji, words.value.names)
   background-color: var(--color-glass);
 }
 .emoji {
+  position: relative;
+  isolation: isolate;
   font-size: var(--text-title);
   line-height: 1;
-  transition:
-    background-color var(--duration-quick) var(--ease-standard),
-    transform var(--duration-instant) var(--ease-standard);
+  transition: transform var(--duration-instant) var(--ease-standard);
+}
+/* The disc that lights: the 40 the button was drawn at, inside its 44 cell. */
+.emoji::before {
+  position: absolute;
+  z-index: -1;
+  inset: calc((var(--size-touch) - var(--size-button-md)) / 2);
+  border-radius: var(--radius-pill);
+  content: '';
+  transition: background-color var(--duration-quick) var(--ease-standard);
+}
+.emoji.on::before {
+  background-color: var(--color-accent-soft);
 }
 .emoji:active {
   transform: scale(0.9);
 }
 .emoji:focus-visible {
   outline: var(--stroke-focus) solid var(--color-accent);
-  outline-offset: calc(-1 * var(--stroke-focus));
+  outline-offset: calc(-1 * var(--stroke-focus) - (var(--size-touch) - var(--size-button-md)) / 2);
 }
 @media (hover: hover) {
-  .emoji:not(.on):hover {
+  .emoji:not(.on):hover::before {
     background-color: var(--color-fill);
   }
 }

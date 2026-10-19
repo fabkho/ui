@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, waitFor, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import UiSheet from './Sheet.vue'
 import UiButton from './Button.vue'
 import UiField from './Field.vue'
@@ -102,11 +102,46 @@ export const Restored: Story = {
   render: LongBody.render,
 }
 
-/** Starts open, for looking at the sheet at rest. */
+/**
+ * A body that scrolls is a focusable, named region, so the keyboard can scroll it (WCAG 2.1.1; axe's
+ * `scrollable-region-focusable`): Tab reaches it after the buttons of the title row.
+ */
+export const LongBodyIsFocusable: Story = {
+  args: { title: 'Choose a shelf', action: 'Done' },
+  render: args => ({
+    components: { UiSheet, UiButton, UiRow, UiRowGroup },
+    setup: () => ({
+      args,
+      open: ref(true),
+      shelves: ['Currently reading', 'Want to read', 'Finished 2025', 'Finished 2024', 'Favourites', 'Science fiction', 'Fantasy', 'Poetry', 'Essays', 'Travel', 'History', 'Biography', 'Cookbooks', 'Graphic novels', 'Lent out', 'Gifts'],
+    }),
+    template: `
+      <div class="flex min-h-[560px] items-center justify-center bg-surface">
+        <UiSheet v-bind="args" v-model:open="open" @action="open = false">
+          <p class="text-body text-ink-muted">Shelves are lists of books. Choose where this one goes.</p>
+          <UiRowGroup class="mt-md">
+            <UiRow v-for="shelf in shelves" :key="shelf" :label="shelf" />
+          </UiRowGroup>
+        </UiSheet>
+      </div>`,
+  }),
+  play: async () => {
+    const body = within(document.body)
+    const region = await body.findByRole('region', { name: 'Choose a shelf' })
+    await expect(region).toHaveAttribute('tabindex', '0')
+    await expect(region.scrollHeight).toBeGreaterThan(region.clientHeight)
+    for (let i = 0; i < 4 && document.activeElement !== region; i++) await userEvent.tab()
+    await expect(region).toHaveFocus()
+  },
+}
+
+/** Starts open, for looking at the sheet at rest. A body that fits is not a tab stop. */
 export const Open: Story = {
   args: { action: 'Save' },
   play: async () => {
-    await waitFor(() => expect(within(document.body).getByRole('dialog', { name: 'Reading goal' })).toBeVisible())
+    const body = within(document.body)
+    await waitFor(() => expect(body.getByRole('dialog', { name: 'Reading goal' })).toBeVisible())
+    await expect(body.queryByRole('region')).toBeNull()
   },
   render: args => ({
     components: { UiSheet, UiButton },
