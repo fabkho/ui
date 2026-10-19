@@ -23,7 +23,7 @@ The layer has no `app/` folder: the package root is its source directory.
   assets/css/ui.css     utilities, base styles, keyframes, Reduce Motion
   components/ui/*.vue   UiButton, UiRow, UiSheet, …
   composables/*.ts      useModalLayer, useBackDismiss, useSwipeDown, …
-  utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth
+  utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth, coverTilt, clampText
   utils/chat/*.ts       the chat's pure logic: timeline, reply, voice
   plugins/              touch-active (`:active` on iOS)
   components/ui/*.stories.ts, .storybook/   Storybook: stories, config, two stand-in themes (not published)
@@ -42,7 +42,11 @@ The layer has no `app/` folder: the package root is its source directory.
    reads one the app's tokens do not define.
 3. **Decorations are theme properties.** Whether a cover lights the room (`UiAmbient`, the cover's
    halo and pool) is the theme's `--opacity-glow` / `--opacity-halo`, never a component's choice.
-   Bookretreats sets both to 0 in Papier and Blau; Libellus keeps its values.
+   Bookretreats sets both to 0 in Papier and Blau; Libellus keeps its values. How glassy the floating
+   chrome is (the owner's Glass setting) is the theme's too: `--glass-solid` (how far the tint goes to
+   the room's solid colour, 0 % by default) and `--glass-scale` (a factor on the blur radius, 1 by default),
+   read with fallbacks, so an app that sets neither looks as the design does (Libellus sets them from
+   `html[data-glass]`, Bookretreats not at all).
 4. **No Reka, no vaul inside the layer**: these are Libellus' own components, which have none.
    (Bookretreats' member sheet, with its two detents and its fixed footer, is the one sheet that
    stays on vaul, in the app; it sits just under the layer's sheets, `z-35` / `z-36` against the
@@ -116,11 +120,12 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
 4. **Fonts** are the app's: the base names the families only through `--font-sans|mono|serif`.
    Libellus' (and Bookretreats') are Geist, Geist Mono and Newsreader from Fontsource.
 5. **Copy** (`app.config.ts`): the base's own words are `ui.text.cancel` (a sheet's and a dialog's
-   way out), `ui.text.offline` (UiButton `offline`) and `ui.text.etAl` (a cover's authors). The
+   way out), `ui.text.offline` (UiButton `offline`), `ui.text.etAl` (a cover's authors) and
+   `ui.text.more` / `ui.text.less` (UiClampText's button). The
    base's defaults are English; an app overrides them in its `app.config.ts`:
 
    ```ts
-   export default defineAppConfig({ ui: { text: { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.' } } })
+   export default defineAppConfig({ ui: { text: { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.', more: 'Mehr', less: 'Weniger' } } })
    ```
 
    An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
@@ -283,9 +288,13 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiRowGroup` | Inset grouped rows (iOS): quiet fill, hairline edge; rows draw their own dividers. |
 | `UiSwitch` / `UiSwitchRow` | The switch's picture / a row that is a switch (`v-model`, `role=switch`). |
 | `UiField` / `UiTextArea` | Text field / text area the Libellus way: small label, input-size type, one rule that lights in the accent. |
+| `UiIconSegments` | A choice of a few as one row of icon segments (`options` with `value`, `label`, `icon`; `value`, `choose`): the chosen one unfolds its name beside the icon. A radiogroup named by `labelledby` or `label`; arrows move the choice. `required`, `invalid`, `disabled`, `testid`. Added from BetterReads (`IconSegments`). |
 | `UiSegmented` | A segmented control; `compact` is the small one at a row's end (Libellus' Glass setting), `disabled` dims it while something is under way. |
 | `UiDateRow` | A day in a row group: the platform's own date picker laid over the row (`v-model` `YYYY-MM-DD`, `text` the day in words, `icon`, `min`, `max`). |
 | `UiCheckbox` | A ticked consent or choice: Libellus' round check over the native checkbox, the words in its slot (added for Bookretreats). |
+| `UiSeeAll` | The pill at the right of a section's head that opens the rest of it ("See all 11 ›"): a button (`dialog` for one that opens a sheet) or, with `to`, a link; the label is the slot. Added from BetterReads (`SeeAll`). |
+| `UiClampText` | A text cut to `lines` lines (2 by default) with a "More" under it when, and only when, it is cut; opens in place and folds again, the height gliding. The words are `ui.text.more` / `ui.text.less`; `testid`. Added from BetterReads (`ClampText`). |
+| `UiPressLink` | A link that starts on touch-down: `press` (preload and start the data; the link element comes with it), `navigate` (just before it takes its destination, for a transition), `data-press-to` parts that go elsewhere. A real anchor. Added from BetterReads (`PressLink`; its cover flight is the app's, on `press` and `navigate`). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
 | `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was. |
 | `UiConfirm` | A confirmation dialog over a scrim. |
@@ -293,12 +302,12 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiListMotion` | A list whose items come, go and move in place. |
 | `UiMediaViewer` | A picture full screen (`open`, `url`, `label`, `dialogLabel`, `closeLabel`, `origin`; `failed` when the picture does not load, so an app can sign a short-lived URL anew): dark veil, close button, Esc / tap / swipe down / Back close it; the `origin` (a round face, or a rounded tile such as a photo in the Feed card: it starts with the origin's own corner radius) grows into it until it fills the screen and shrinks back on close or after a swipe down (`clip-path` + transform, see below); a cross-fade under Reduce Motion. Added for Bookretreats. |
 | `UiAvatar` | Initials in mono in a hairline ring, or the photo over them. |
-| `UiIcon` | The icon set on the 24 grid (`IconName`). |
+| `UiIcon` | The icon set on the 24 grid (`IconName`): BetterReads' and Bookretreats' marks in one set. |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
 | `UiProgress` | A thin progress bar. |
 | `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). |
 | `UiSkeleton` | A placeholder swelling with the loading wave. |
-| `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen. |
+| `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen; `tilt` (off by default) leans the sheet under the finger (the Book page's hero). |
 | `UiSearchPalette` | A search palette over the page (Libellus' search, without the morph out of the tab bar): veil, raised card on the keyboard, query row (glyph, field, clear, Cancel) at its bottom, the answers in the default slot above it; `v-model:open`, `v-model:query`, `label`, `placeholder`, `clear`, `cancel`, `status`, `testid`; everything else goes to the `<input>`; `cleared`. Focuses the query first, then rises and fades in (iOS: a field focused in a transparent layer leaves its list dead under the finger). Added for Bookretreats. |
 | `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place. |
 | `UiChatThread`, `UiBubble`, `UiDaySeparator`, `UiQuote`, `UiReactionBar`, `UiComposer`, `UiComposerChip`, `UiVoiceBubble`, `UiGifPicker` | The chat: see [Chat](#chat). |
@@ -388,7 +397,9 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
-- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`.
+- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`, `progressAt`, and what waits for motion: `addMover`, `moving`, `afterMotion`, `followAfterMotion`.
+- `utils/coverTilt.ts`: the lean of a pressed cover (`leanAt`, `leanTransform`, `between`, `mayLean`, `stillCovers`, `attachCoverTilt`), used by `UiCover`'s `tilt`.
+- `utils/clampText.ts`: `isCut`, `heightKeyframes`, the pure parts of `UiClampText`.
 - `utils/haptics.ts`: `tick`, `stepTick`, `hapticsKind`.
 - `utils/keyboard.ts`: the keyboard arithmetic (`readViewport`, the one measurement; `sheetLift`, `paletteLift`, `revealDelta`, …).
 - `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl`, `CoverColors`.
@@ -462,7 +473,9 @@ for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and 
 - The device's insets, read once: `--safe-area-top|bottom|left|right`, `--bar-top`, `--float-bottom`
   (iOS: floating chrome sits `tabBarDrop` into the home-indicator inset).
 - Utilities: `screen-inset`, `bar-top`, `safe-bottom`, `safe-x`, `float-bottom`, `screen-bottom` (added for Bookretreats: `bottom: 0` less a stranded pan; never name a utility `<property>-<token>` after a spacing token — `bottom-screen` was read as `bottom-<spacing-screen>` and left sheets 20 px short, r10), `clear-tab-bar`,
-  `edge`, `edge-faint`, `glass`, `figures`, `eyebrow`, `book-title`, `title-wrap`, `scrollbar-none`,
+  `edge`, `edge-faint`, `glass` (reads the optional `--glass-solid` and `--glass-scale`), `veil-tint` (the palette's veil; `--veil-solid`),
+  `icon-action` (an icon button at a row's end: 24 px drawn, 44 px to touch; `--hit-up`, `--hit-down`), `stretched` (one button's tap box over its whole
+  row), `tap-text` (a control drawn as small text that never makes its row taller), `figures`, `eyebrow`, `book-title`, `title-wrap`, `scrollbar-none`,
   `skeleton`, `wave`, `arrive`.
 - Keyframes: `placeholder-wave`, `arrive`, `page-fade-in`, `page-fade-out`, `page-rise`, `page-sink`.
 - Base: the room's colour and type on `<html>`/`<body>`, no sideways scrolling, thin ghost-ink
@@ -476,11 +489,15 @@ layer uses the utility rather than the variable). The contract test (`testing/co
 reads a variable the generated file lacks.
 
 - **Colour** (`--color-*`, `bg-*` / `text-*` / `border-*`): `surface`, `surface-raised`,
-  `surface-sheet`, `glass`, `fill`, `fill-strong`, `hairline`, `hairline-strong`, `ink`,
+  `surface-sheet`, `glass`, `veil`, `fill`, `fill-strong`, `hairline`, `hairline-strong`, `ink`,
   `ink-muted`, `ink-faint`, `ink-ghost`, `on-ink`, `accent`, `accent-ink`, `accent-soft`,
   `lamp-light`, `lamp-cone`, `error`, `error-soft` (UiGifPicker), `scrim`, `cloth1` … `cloth6`, `cloth-ink`.
 - **Elevation** (`shadow-*`): `button`, `cover`, `float`, `sheet`, `raised`, `palette` (the chat).
 - **Opacity**: `--opacity-glow`, `--opacity-halo` (the theme's decorations).
+- **Optional** (read with a fallback, so an app may leave them out; `OPTIONAL_VARIABLES` in `testing/contract.mjs`,
+  and `tests/ui-optional-variables.test.ts` holds the layer to the fallback): `--glass-solid` (0 %) and
+  `--glass-scale` (1), the Glass setting; `--veil-solid` (0 %), the same for the palette's veil; `--size-target`
+  (24 px), the small target of `icon-action`; `--hit-up` and `--hit-down`, which a caller of `icon-action` sets.
 - **Blur** (`--blur-*`): `glass`, `chrome`, `halo`.
 - **Spacing** (`--spacing-*`, `p-*`, `gap-*`, …): `xxs`, `xs`, `sm`, `ms`, `inset`, `md`, `ml`,
   `lg`, `xl`, `xxl`, `screen`, `bar-top`, `tab-bar-drop`, `float-above`, `grabber`.
@@ -531,6 +548,16 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   step 3 with the motion tokens.
 
 **Added (nothing to do; available to Libellus)**
+
+- Wave 5a, from Libellus into the base (Libellus keeps its own copies, which still win, until it switches):
+  `UiIcon` carries `bookmark`, `bookmarkPlus`, `hardcover`, `paperback`, `tablet` and `audiobook` beside Bookretreats' marks (`share` was there);
+  the `glass` utility reads `--glass-solid` and `--glass-scale` with fallbacks (the Glass setting; Libellus' `html[data-glass]` rules and `utils/glass.ts` stay its own),
+  and `veil-tint`, `icon-action`, `stretched`, `tap-text` are in `ui.css` (`icon-action` and `tap-text` read `--size-target` with a 24 px fallback);
+  `utils/coverTilt.ts` with `UiCover`'s `tilt` prop (off by default); `utils/motion.ts` has Libellus' `progressAt`, `addMover`, `moving`, `afterMotion`, `followAfterMotion`;
+  `UiClampText`, `UiSeeAll`, `UiPressLink` and `UiIconSegments` (Libellus' `ClampText`, `SeeAll`, `PressLink`, `IconSegments`) with `ui.text.more` and `ui.text.less`.
+  Differences to take when Libellus switches: `UiClampText` reads `ui.text.more` / `.less` instead of `review.more` / `.less` and takes `lines`;
+  `UiPressLink` no longer calls `useBookFlight`: `press` now carries the link element, and `navigate` (new) is the moment `launch(link, to)` ran
+  (`@press="el => prepare(el, to)"`, `@navigate="el => launch(el, to)"`); `UiIconSegments` takes an optional `testid` and `label` (for no visible label), and keeps its one tab stop when `value` matches none.
 
 - `UiAvatar`: `lazy` (the photo loads with `loading="lazy"`; a photo that fails to load is dropped, the initials stay), `size` (xs 30 · sm 32, the default and Libellus' only size · md 40 · lg 40 · xl 72),
   `solid` (the fill laid on the room colour, opaque over a cover) and `fallback` (a second URL to draw when `photo` is refused: Bookretreats draws the 256 px face of a member's photo and falls back to the stored 1024 px one, `data/avatarFace.ts`; when that fails too the initials stay), plus a `fallback` event, emitted when that switch happens, so the caller can remember a missing face and not ask for it again (`MemberAvatar`).
