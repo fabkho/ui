@@ -5,9 +5,6 @@ import UiQuote from './Quote.vue'
 import { useVoicePlayer } from '../../composables/useVoicePlayer'
 import { quote, voiceMessage } from '../../.storybook/chat-fixtures'
 
-// axe's `label-content-name-mismatch` is off for the story that carries a quote: see Quote.stories.ts.
-const quoteRules = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
-
 /**
  * What the player says is shared by the whole app (`useVoicePlayer`: one voice at a time, `current.key` is
  * the bubble that has the sound). A story that shows a bubble playing or paused puts that state in
@@ -122,7 +119,6 @@ export const PlayFailed: Story = {
 
 /** An answer by voice: the quote sits inside the same card, over the play row (`quote` slot). */
 export const WithQuote: Story = {
-  parameters: quoteRules,
   render: args => ({
     components: { UiVoiceBubble, UiQuote },
     setup: () => ({ args, original: quote({ preview: 'Can you tell me about the ending?' }) }),
