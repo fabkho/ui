@@ -99,11 +99,22 @@
     var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
 }
 
-/* Floating glass: the tab bar, the avatar menu, round buttons over covers. */
+/* Floating glass: the tab bar, the avatar menu, round buttons over covers. The tint is the
+   theme's `glass`, mixed toward the room's own solid sheet colour by the app's Glass setting
+   (`--glass-solid`: 0 % in the design, 100 % with Glass off), and the blur radius is scaled by
+   `--glass-scale` (1 in the design, 0.5 for a medium setting). Both are optional: an app that
+   does not set them gets the design's glass, as before. Mixed where it is used, so a reader's
+   sepia or light room inside a dark app mixes with its own colours. */
 @utility glass {
-  background-color: var(--color-glass);
-  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(1.6);
-  backdrop-filter: blur(var(--blur-glass)) saturate(1.6);
+  background-color: color-mix(in srgb, var(--color-surface-sheet) var(--glass-solid, 0%), var(--color-glass));
+  -webkit-backdrop-filter: blur(calc(var(--blur-glass) * var(--glass-scale, 1))) saturate(1.6);
+  backdrop-filter: blur(calc(var(--blur-glass) * var(--glass-scale, 1))) saturate(1.6);
+}
+
+/* The veil over the page behind the search palette: the theme's `veil`, solid in the room's colour
+   as far as the app's Glass setting takes it (`--veil-solid`, optional: 0 % by default). */
+@utility veil-tint {
+  background-color: color-mix(in srgb, var(--color-surface) var(--veil-solid, 0%), var(--color-veil));
 }
 
 /* Mono figures and dates line up in columns. */
@@ -122,6 +133,94 @@
   font-weight: var(--text-eyebrow--font-weight);
   text-transform: uppercase;
   color: var(--color-ink-faint);
+}
+
+/*
+ * An icon button in the column at a row's right edge (Want to read, the heart). Drawn at --size-target (24 px,
+ * WCAG 2.2 AA 2.5.8). Its touch box, the ::after, is --size-touch wide (the 44 px rule) and as tall as the icon
+ * plus `--hit-up` above and `--hit-down` below (10 px each by default: 44 px, centred, for an icon alone). A pair
+ * of icons a small gap apart set `--hit-up` and `--hit-down` on each, so their boxes split at the midpoint between
+ * them and reach outward, and never overlap each other or the row above and below. The column is as narrow as
+ * the icon. `aria-disabled` keeps focus where a disabled button would drop it.
+ * `--size-target` is optional (24 px without it); `--hit-up` and `--hit-down` are the caller's.
+ */
+@utility icon-action {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-target, 24px);
+  height: var(--size-target, 24px);
+
+  &::after {
+    position: absolute;
+    top: calc(-1 * var(--hit-up, (var(--size-touch) - var(--size-target, 24px)) / 2));
+    left: 50%;
+    width: var(--size-touch);
+    height: calc(
+      var(--size-target, 24px) + var(--hit-up, (var(--size-touch) - var(--size-target, 24px)) / 2) +
+        var(--hit-down, (var(--size-touch) - var(--size-target, 24px)) / 2)
+    );
+    content: '';
+    transform: translateX(-50%);
+  }
+
+  &[aria-disabled='true'] {
+    cursor: default;
+  }
+}
+
+/*
+ * The tap of a whole row (a friends row, a feed's batch row): a button or link that holds the row's words (or only
+ * its fan), its ::after stretched over the row, which must be `relative`. What else the row has to tap (an avatar,
+ * a name) is `relative z-1` above it, so nothing is nested in a link or a button. The focus ring is drawn on the
+ * stretched box, inside the row's edge, so the row's overflow cannot cut it.
+ */
+@utility stretched {
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::after {
+    outline: var(--stroke-focus) solid var(--color-accent-ink);
+    outline-offset: calc(-1 * var(--stroke-focus));
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* A control drawn as small text, no pill (a friend's Want to read, a heart with its count): it never makes its row taller.
+   WCAG 2.2's 24 px target is its own box, pulled back into the row by the negative margin; the 44 px (--size-touch)
+   is an invisible box centred on it, at least that wide and tall. Put `padding-block: var(--spacing-xs)` on the line it
+   sits in so the 44 px boxes of neighbouring lines overlap less. */
+@utility tap-text {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  font-size: var(--text-caption);
+  line-height: 1;
+  white-space: nowrap;
+  min-width: calc(var(--spacing-sm) * 3);
+  min-height: calc(var(--spacing-sm) * 3);
+  margin-block: calc(var(--spacing-sm) * -0.75);
+
+  &::after {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    width: calc(100% + var(--spacing-sm) * 2);
+    min-width: var(--size-touch);
+    height: var(--size-touch);
+    content: '';
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* Book titles: serif, optical sizes on. */

@@ -1,5 +1,7 @@
 export declare const LAYER_ROOT: string
 export declare const OWN_VARIABLES: string[]
+/** Variables the layer reads only with a fallback; an app may set them, none has to. */
+export declare const OPTIONAL_VARIABLES: string[]
 export declare function layerFiles(root?: string): string[]
 export declare function layerContract(options: { tokensCss: string; root?: string }): {
   /** Layer files that import from the app (`~/`, `@/`, stores, i18n). */
