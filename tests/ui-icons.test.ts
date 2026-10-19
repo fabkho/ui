@@ -38,4 +38,10 @@ describe('the icon set', () => {
       expect(names).toContain(name)
     }
   })
+
+  it('lets an app draw a name itself through ui.icons, before the layer drawing', () => {
+    expect(icon).toContain('v-if="override"')
+    expect(icon).toContain('useAppConfig().ui')
+    expect(read('../../app.config.ts')).toContain('icons:')
+  })
 })
