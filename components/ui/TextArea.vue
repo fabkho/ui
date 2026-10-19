@@ -4,9 +4,21 @@
 // serif italic, a lamp ring while it has the focus. It grows with the text up
 // to a few lines, then scrolls. Attributes (maxlength, data-testid, …) go to
 // the <textarea>.
+//
+// The label names the field; the hint (and the error) describe it (`aria-describedby`, as UiField's do), so a
+// screen reader says them after the name and the name stays short. A click anywhere in the box focuses the field.
+// `error` (added for Bookretreats, as UiField's): the message under the text, in the error colour; it sets
+// `aria-invalid` and takes the first place in the description. `errorTestid` is its `data-testid`.
 defineOptions({ inheritAttrs: false })
 
-defineProps<{ id: string; label: string; hint?: string }>()
+const props = defineProps<{ id: string; label: string; hint?: string; error?: string | null; errorTestid?: string }>()
+const attrs = useAttrs()
+const described = computed(
+  () =>
+    [props.error ? `${props.id}-error` : null, props.hint ? `${props.id}-hint` : null, attrs['aria-describedby'] as string | undefined]
+      .filter(Boolean)
+      .join(' ') || undefined,
+)
 const model = defineModel<string>({ required: true })
 
 const focused = ref(false)
@@ -24,13 +36,13 @@ onMounted(fit)
 </script>
 
 <template>
-  <label
-    :for="id"
+  <div
     class="box flex flex-col gap-sm rounded-md bg-fill px-inset pt-ms pb-inset"
-    :class="focused ? 'focused' : 'edge-faint'"
+    :class="error ? 'invalid' : focused ? 'focused' : 'edge-faint'"
+    @click="area?.focus()"
   >
     <span class="text-footnote text-ink-muted">
-      {{ label }}<template v-if="hint"><span class="text-ink-faint"> · {{ hint }}</span></template>
+      <label :for="id">{{ label }}</label><template v-if="hint"><span :id="`${id}-hint`" class="text-ink-faint"> · {{ hint }}</span></template>
     </span>
     <textarea
       :id="id"
@@ -38,16 +50,23 @@ onMounted(fit)
       v-model="model"
       v-bind="$attrs"
       rows="2"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="described"
       class="area w-full resize-none bg-transparent font-serif text-callout text-ink italic caret-accent outline-none placeholder:text-ink-faint"
       @focus="focused = true"
       @blur="focused = false"
     />
-  </label>
+    <p v-if="error" :id="`${id}-error`" class="text-footnote text-error" :data-testid="errorTestid">{{ error }}</p>
+  </div>
 </template>
 
 <style scoped>
 .box {
   transition: box-shadow var(--duration-quick) var(--ease-standard);
+}
+
+.box.invalid {
+  box-shadow: inset 0 0 0 var(--stroke-rule) var(--color-error);
 }
 
 .box.focused {

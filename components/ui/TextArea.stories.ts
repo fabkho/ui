@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, within } from 'storybook/test'
 import { ref } from 'vue'
 import UiTextArea from './TextArea.vue'
 
@@ -24,8 +25,27 @@ export const Filled: Story = {
   args: { modelValue: 'A quiet week, long breakfasts and a very good teacher. I would come back tomorrow.' },
 }
 
-/** The hint sits beside the label, after a dot. */
-export const WithHint: Story = { args: { hint: 'optional', placeholder: 'What stayed with you?' } as object }
+/**
+ * The hint sits beside the label, after a dot. It describes the field (`aria-describedby`), so the name stays
+ * "Your review" and a screen reader adds "optional" after it.
+ */
+export const WithHint: Story = {
+  args: { hint: 'optional', placeholder: 'What stayed with you?' } as object,
+  play: async ({ canvasElement }) => {
+    const field = within(canvasElement).getByRole('textbox', { name: 'Your review' })
+    await expect(field).toHaveAccessibleDescription('· optional')
+  },
+}
+
+/** `error`: the message under the text, in the error colour; the field says `aria-invalid` and is described by it, before the hint. */
+export const WithError: Story = {
+  args: { hint: 'optional', error: 'Reviews need at least ten words.', errorTestid: 'reviewError', modelValue: 'Nice.' } as object,
+  play: async ({ canvasElement }) => {
+    const field = within(canvasElement).getByRole('textbox', { name: 'Your review' })
+    await expect(field).toBeInvalid()
+    await expect(field).toHaveAccessibleDescription('Reviews need at least ten words. · optional')
+  },
+}
 
 /** It grows with the text up to six lines, then scrolls. */
 export const LongText: Story = {
