@@ -21,15 +21,36 @@ export function clothOf(title: string): number {
   return (hash % CLOTH_COUNT) + 1
 }
 
-/** A stored thumbhash (base64) → a tiny PNG data URL to show while the cover loads. */
+/** How many decoded placeholders `thumbhashDataUrl` keeps (a few screens of covers; each is a ~1 KB data URL). */
+export const THUMBHASH_CACHE_SIZE = 200
+
+/** Hash → data URL (or null for one that does not decode), least recently used first: a Map keeps its insertion order. */
+const decoded = new Map<string, string | null>()
+
+/**
+ * A stored thumbhash (base64) → a tiny PNG data URL to show while the cover loads.
+ * Every decode builds a PNG (and base64-encodes it), and a shelf or a list draws the same cover again on every
+ * render and scroll, so the last `THUMBHASH_CACHE_SIZE` results are kept (a hit is moved to the back, the oldest
+ * goes first). Same output as without the cache; a hash that does not decode is remembered as null too.
+ */
 export function thumbhashDataUrl(hash: string | null | undefined): string | null {
   if (!hash) return null
+  const hit = decoded.get(hash)
+  if (hit !== undefined) {
+    decoded.delete(hash)
+    decoded.set(hash, hit)
+    return hit
+  }
+  let url: string | null
   try {
     const bytes = Uint8Array.from(atob(hash), (c) => c.charCodeAt(0))
-    return thumbHashToDataURL(bytes)
+    url = thumbHashToDataURL(bytes)
   } catch {
-    return null
+    url = null
   }
+  decoded.set(hash, url)
+  if (decoded.size > THUMBHASH_CACHE_SIZE) decoded.delete(decoded.keys().next().value!)
+  return url
 }
 
 type Rgb = [number, number, number]

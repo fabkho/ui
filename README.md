@@ -373,8 +373,10 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 
 ### Composables and utils (auto-imported)
 
-- `useModalLayer` (+ `useModalShown`): a sheet or dialog makes the rest of the app inert, locks the
-  scroll, moves focus in and back. `useBackDismiss` (+ `listenForBack`, `keepsForeignLayers`): the
+- `useModalLayer` (+ `useModalShown`, `useModalDepth`): a sheet or dialog makes the rest of the app inert, locks the
+  scroll, moves focus in and back. `useModalShown()` is whether any layer is on screen (open, or still leaving),
+  `useModalDepth()` how many (a confirm over a sheet is 2): read the boolean for what happens once for all layers (hold
+  a list change back, dim the installed app's status bar), the count for what happens once per layer. `useBackDismiss` (+ `listenForBack`, `keepsForeignLayers`): the
   system Back closes it.
 - `useSwipeDown`: follow the finger down, dismiss past a distance or a flick. A finger does it the iOS way
   (`useSheetTouch`, decisions in `utils/sheetDrag.ts`): content scrolled down scrolls under a downward drag,
@@ -402,7 +404,7 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 - `utils/clampText.ts`: `isCut`, `heightKeyframes`, the pure parts of `UiClampText`.
 - `utils/haptics.ts`: `tick`, `stepTick`, `hapticsKind`.
 - `utils/keyboard.ts`: the keyboard arithmetic (`readViewport`, the one measurement; `sheetLift`, `paletteLift`, `revealDelta`, …).
-- `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl`, `CoverColors`.
+- `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl` (keeps its last 200 decodes, `THUMBHASH_CACHE_SIZE`), `CoverColors`.
 - `utils/chat/*.ts` (the chat's pure logic, **not auto-imported**: the names are too generic for a global;
   import `#ui/utils/chat/<file>` from an app, a relative path from a component). No Vue, no clock, no
   words of their own (they come in from `ui.text.chat`):
@@ -419,7 +421,7 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
   - Stays in Bookretreats: `formatPhone` (spells a German number: domain), the send queue, the limits' values.
 - `plugins/touch-active.client.ts`: one passive touch listener, so `:active` (press feedback) works on iOS.
 - `plugins/stranded-viewport.client.ts` (added for Bookretreats): fixed chrome back in place after the keyboard (see [the keyboard](#the-keyboard)).
-- `plugins/no-focus-zoom.client.ts`: on iOS only, `maximum-scale=1` on the viewport, so a field under 16 px does not zoom the page in when it takes the keyboard (pinch zoom stays).
+- No zoom on focus is CSS, not a plugin (`assets/css/ui.css`; see [the keyboard](#the-keyboard)): on iOS a text field under 16 px is drawn at 16 px, and the viewport meta is left alone.
 
 ### The keyboard
 
@@ -462,8 +464,34 @@ What stands on the keyboard (`UiSheet`, `UiConfirm`, a search palette, a chat sc
   is left from the floating chrome's and the sheets' bottom (`--viewport-pan`, read by `float-bottom` and
   `screen-bottom`), and flips the page's display to have a shrunk viewport measured again
   (`strandedViewport` in utils/keyboard.ts decides).
-- A field under 16 px makes iOS zoom the page in on focus and keep it zoomed (`no-focus-zoom`
-  prevents that; the layer's own fields are larger).
+- **What an app needs for `stranded-viewport`.** The plugin only measures; what the member sees put right is
+  whatever reads `--viewport-pan`. The base's own floating and bottom-standing things do (`UiTabBar`, `UiSearchPalette`,
+  `UiChatThread`'s dock through `float-bottom`; `UiSheet` and `UiConfirm` through `screen-bottom`), so an app that
+  takes the plugin gets them right for free. Its **own** fixed chrome at the bottom of the screen has to honour the
+  variable too, or it stays where iOS left it:
+  - give it the `float-bottom` utility (a floating bar or button: `--float-bottom` less the pan) or `screen-bottom`
+    (an edge-to-edge sheet: `bottom: 0` less the pan) instead of its own `bottom`; or, in CSS,
+    `bottom: calc(<its own offset> - var(--viewport-pan, 0px))` (the fallback `0px` is what an app without the plugin,
+    or a browser that is not iOS WebKit, sees);
+  - nothing else: no JavaScript, no listener of its own. `--viewport-pan` is set on `<html>` only while a pan is
+    stranded (px of how far the visual viewport still sits off the layout viewport) and removed when it is gone, so
+    the element moves back by itself, with the same `transition` it has for any `bottom` change (none is fine);
+  - chrome at the **top** is not affected (the pan stranded after the keyboard is a bottom problem), and a
+    `position: sticky` or in-flow element needs nothing.
+  The viewport meta needs `interactive-widget=resizes-content` as for the rest of the keyboard code (above). The
+  plugin is on by registering the layer (it is `plugins/stranded-viewport.client.ts`, client only, a no-op outside iOS
+  WebKit), so a screen that must not use it has nothing to opt out of: it just does not read the variable. For
+  BetterReads that is the whole list: its tab bar, palette and sheets are the base's and need nothing; only a fixed
+  bottom element of its own (a floating button, a toast) gets `float-bottom` or the `calc` above.
+- A field under 16 px makes iOS zoom the page in on focus and keep it zoomed. This used to be stopped with
+  `maximum-scale=1` in the viewport meta (`plugins/no-focus-zoom.client.ts`); that fails WCAG 1.4.4 (axe's
+  `meta-viewport`: pinch zoom has to be possible, and iOS still lets the member pinch). The base now gives
+  the fields what Safari wants instead (`ui.css`, iOS only: `-webkit-touch-callout`): a text field under 16 px is
+  drawn at 16 px (`max(16px, 1em)` for one with no size of its own; `text-body` and the smaller `text-*` sizes on an
+  `<input>`, `<textarea>` or `<select>` raised to 16 px, `text-input` and `text-callout` and everything bigger left
+  as designed). Nothing changes elsewhere, and nothing changes for an app whose fields are 16 px already. An app
+  with a field of its own size (`text-[14px]`, a `font-size` in a stylesheet) has to keep it at 16 px or more on iOS
+  itself, or it zooms.
 
 Measured in the iOS Simulator (Safari tab and Home Screen app) and Chrome on the Android emulator
 for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and the action in view.
@@ -618,8 +646,10 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   `keyboardShown` and `pinHold` in `utils/keyboard.ts`. `UiSheet`, `UiConfirm` and Bookretreats' palette, chat and Feed post pin.
 - `UiConfirm`: stands on the keyboard as a sheet does (lift, `room` cap, the card scrolls and keeps the
   focused field in view), for a field in its slot.
-- `plugins/no-focus-zoom.client.ts`: no zoom on focus on iOS. Libellus' fields are 16 px or larger, so it
-  has not needed it; it does as soon as one is smaller.
+- No zoom on focus on iOS: Libellus' fields are 16 px or larger, so it has not needed it; Bookretreads' are not (the
+  chat composer is 15 px). First a plugin (`maximum-scale=1` on the viewport, added for Bookretreads), now CSS in
+  `ui.css`: a field under 16 px is drawn at 16 px on iOS, and the viewport keeps pinch zoom (WCAG 1.4.4, axe
+  `meta-viewport`).
 - `UiPill`: `radio` (`role=radio` + `aria-checked` instead of `aria-pressed`, for a choice of one), and the
   press (scale 0.97 over `instant`) and a `quick` fade between on and off that Libellus' pill lacks.
 - `UiDateRow`: Libellus' `components/ui/DateRow.vue` (a day in a RowGroup: the native date picker laid invisibly over

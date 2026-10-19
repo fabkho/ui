@@ -17,7 +17,9 @@ import { useBackDismiss } from './useBackDismiss'
  *
  * `useModalShown` tells the screens whether any layer is still on screen
  * (open, or on its way out), so they can hold a list change back until the
- * sheet that caused it has gone (`useSettled`).
+ * sheet that caused it has gone (`useSettled`). `useModalDepth` says how many:
+ * for what stacks with every layer (a scrim over the status bar) rather than
+ * once for all of them.
  */
 type Layer = {
   /** The layer's own elements (its scrim and panel), direct children of `<body>`. */
@@ -148,4 +150,15 @@ export function useModalLayer(
 /** Whether a sheet or dialog is on screen: open, or still on its way out. */
 export function useModalShown(): Readonly<Ref<boolean>> {
   return computed(() => shownLayers.value > 0)
+}
+
+/**
+ * How many sheets and dialogs are on screen: open, or still on its way out
+ * (a confirm over a sheet is 2). `useModalShown` is this above 0; the count is
+ * for what an app draws once per layer, or once for all of them (the installed
+ * app's status bar under the scrim: dim it when the count leaves 0, not at
+ * every step).
+ */
+export function useModalDepth(): Readonly<Ref<number>> {
+  return computed(() => shownLayers.value)
 }

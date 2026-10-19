@@ -54,6 +54,21 @@ export const Empty: Story = {}
 /** Something written: send is lit (ink on the glass). Return sends only on a desktop keyboard; on a phone it is a new line. */
 export const Typing: Story = { args: { modelValue: 'On my way, save me a seat!' } }
 
+/**
+ * No zoom on focus on iPhone: Safari zooms the page in on a field under 16 px, so on iOS (`ui.css`, where only WebKit
+ * knows `-webkit-touch-callout`) the field is 16 px at least, with no `maximum-scale` in the viewport. Elsewhere it
+ * keeps the design's text size, which is all this runs against in Chromium; Bookretreads' WebKit iPhone project
+ * checks the iOS side.
+ */
+export const FieldSizeOnIos: Story = {
+  play: async ({ canvasElement }) => {
+    const field = within(canvasElement).getByRole('textbox')
+    const size = Number.parseFloat(getComputedStyle(field).fontSize)
+    if (CSS.supports('-webkit-touch-callout', 'none')) expect(size).toBeGreaterThanOrEqual(16)
+    else expect(size).toBe(Number.parseFloat(getComputedStyle(document.body).fontSize))
+  },
+}
+
 /** The field grows with what is written, up to five lines, then scrolls. */
 export const Multiline: Story = {
   args: { modelValue: 'First line.\nSecond line.\nThird line, which is long enough that it will wrap over to a fourth line on a narrow phone.\nFifth.\nSixth line scrolls.' },
