@@ -161,11 +161,26 @@ export const FocusMovesInAndBack: Story = {
   render: opener,
   play: async ({ canvasElement }) => {
     const opening = within(canvasElement).getByRole('button', { name: 'Open sheet' })
+    // Every focus move inside the sheet, with whether the panel was still moving at that moment.
+    const log: { target: string; moving: boolean }[] = []
+    const record = (event: FocusEvent) => {
+      const target = event.target as HTMLElement
+      const panel = target.closest('[role=dialog]')
+      if (panel) log.push({ target: target.id || target.getAttribute('role') || target.tagName, moving: panel.hasAttribute('data-moving') })
+    }
+    document.addEventListener('focusin', record, true)
     await userEvent.click(opening)
     const dialog = await dialogOf('Add a book')
     const field = within(dialog).getByLabelText('ISBN')
     await waitFor(() => expect(field).toHaveFocus())
+    document.removeEventListener('focusin', record, true)
     await expect(dialog).not.toHaveAttribute('data-moving')
+    // The panel had focus first (the trap, VoiceOver); the field took it after `data-moving` cleared, not mid-rise.
+    const panelAt = log.findIndex(entry => entry.target === 'dialog')
+    const fieldAt = log.findIndex(entry => entry.target === 'isbn')
+    await expect(panelAt, 'the panel had focus first').toBeGreaterThanOrEqual(0)
+    await expect(fieldAt, 'then the field').toBeGreaterThan(panelAt)
+    await expect(log[fieldAt]!.moving, 'the field took focus after the rise').toBe(false)
     await expect(opening.closest('[inert]'), 'the page behind it is out of reach').not.toBeNull()
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(opening).toHaveFocus())
