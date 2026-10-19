@@ -150,10 +150,6 @@ const render = (extra: { composer?: boolean; head?: boolean } = {}): Story['rend
     </UiChatThread>`,
 })
 
-// axe's `label-content-name-mismatch` is off for stories that show a quote: see Quote.stories.ts. The reaction
-// pill's count (UiBubble) trips it too: see Bubble.stories.ts.
-const quoteRules = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
-
 // The thread is the whole screen (`position: fixed`, its bottom on the keyboard), so the stories are full
 // screen, drawn in an iframe in the docs, and best looked at in the iPhone 390×844 viewport. The
 // conversation is live: react, answer (the reaction bar's "Reply"), retry the failed message, send one.
@@ -173,7 +169,7 @@ const meta = {
     headShown: true,
     testid: 'chat',
   },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 720 } }, ...quoteRules },
+  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 720 } } },
   render: render(),
 } satisfies Meta<typeof UiChatThread>
 export default meta
@@ -221,8 +217,11 @@ export const Loading: Story = { args: { status: 'loading' } }
 /** Any other `status` draws the `state` slot (unavailable, an error) and no composer. */
 export const Unavailable: Story = { args: { status: 'unavailable' } }
 
+// The pills with two counts ("Heart from 3, Laughing from 5") say both numbers in their names; axe's
+// `label-content-name-mismatch` wants them side by side: see Bubble.stories.ts.
 /** A group: a run is one sender's (`sameRun`), the name stands over the first bubble, reaction counts go past two. */
 export const Group: Story = {
+  parameters: { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } },
   args: {
     items: group(),
     label: 'Book club',

@@ -88,9 +88,18 @@ export function reactionName(emoji: string, names: Record<string, string>): stri
   return names[emoji] ?? emoji
 }
 
-/** What the pill says: each emoji and whose it is ("Reactions: Heart from you, Fire from both of you"). */
+/**
+ * What the pill says: each emoji and whose it is ("Reactions: Heart from you, Fire from both of you ×2").
+ * The pill draws the count beside an emoji chosen by more than one person, so the name carries that number
+ * too (WCAG 2.5.3, Label in Name: someone using voice control says what they see): after the words, unless
+ * the app's own words already say it (`{count}`). Not in brackets: a bracketed aside is left out when a name is compared with what is
+ * drawn (axe's `label-content-name-mismatch` does).
+ */
 export function reactionsLabel(reactions: readonly BubbleReaction[], words: ReactionWords): string {
-  const parts = reactions.map((r) => fillWords(words[reactionWho(r)], { name: reactionName(r.emoji, words.names), count: r.count }))
+  const parts = reactions.map((r) => {
+    const said = fillWords(words[reactionWho(r)], { name: reactionName(r.emoji, words.names), count: r.count })
+    return r.count > 1 && !said.includes(String(r.count)) ? `${said} ×${r.count}` : said
+  })
   return fillWords(words.pill, { parts: parts.join(', ') })
 }
 

@@ -540,7 +540,22 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
             <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
               <UiQuote v-if="quote" class="m-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
             </slot>
+            <!-- Nothing to view (the file is gone, signing failed): the frame says so and is no button, so no
+                 name says "View large" over it. A failed send (`failed`) still is one: it retries. -->
+            <div
+              v-if="unavailable && !failed"
+              class="relative block"
+              :style="mediaStyle"
+              :data-testid="`${testid}.media`"
+              :data-media-kind="item.media.kind"
+              @click.stop="swallowAfterPress($event)"
+            >
+              <span class="flex size-full items-center justify-center px-sm text-center text-caption text-ink-faint">
+                {{ chat.media.unavailable }}
+              </span>
+            </div>
             <button
+              v-else
               type="button"
               class="relative block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               :style="mediaStyle"

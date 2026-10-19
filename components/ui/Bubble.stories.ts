@@ -4,12 +4,10 @@ import UiBubble from './Bubble.vue'
 import UiButton from './Button.vue'
 import { EMOJIS, message, photoMessage, picturesMedia, quote, voiceMessage } from '../../.storybook/chat-fixtures'
 
-// axe's `label-content-name-mismatch` is off for the stories that carry a quote: see Quote.stories.ts.
-const quoteRules = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
-
-// a11y todo (label-content-name-mismatch, WCAG 2.5.3): a reaction pill with a count shows the number ("2"), and the
-// name ("Reactions: Fire from both of you") does not say it; a voice-control user cannot say what they see.
-const pillTodo = { a11y: { test: 'todo' as const } }
+// axe's `label-content-name-mismatch` wants the numbers a pill draws side by side ("5 3") to sit side by side in its name.
+// A pill with two counts says both ("Heart from 5, Surprised from 3": every drawn number is in the name, in order,
+// so WCAG 2.5.3 holds), which that heuristic does not see. Off only for the stories with two counts.
+const twoCounts = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
 
 // One message, drawn as the thread draws it: a column as wide as a phone's thread. Theirs is the raised paper
 // card on the left, mine is ink on the right; the small corner (the tail) is on the last bubble of a run.
@@ -132,18 +130,15 @@ export const RetryInteractive: Story = {
 /** An answer: the quoted message on top of the bubble, a tap on it jumps to the original (`quoteTap`). */
 export const WithQuote: Story = {
   args: { item: message({ body: 'Yes, and it was worth the wait.' }), quote: quote() },
-  parameters: quoteRules,
 }
 
 export const WithQuoteOnMine: Story = {
   args: { item: message({ mine: true, body: 'Not yet, tonight.' }), quote: quote({ mine: false }) },
-  parameters: quoteRules,
 }
 
 /** The quoted message is gone: "Message deleted", no button. */
 export const WithDeletedQuote: Story = {
   args: { item: message({ mine: true, body: 'That was my favourite line.' }), quote: quote({ id: null }) },
-  parameters: quoteRules,
 }
 
 /** The chat just jumped here from a quote: the bubble lights up for a moment (`highlight`). */
@@ -158,7 +153,10 @@ export const ReactionFromThem: Story = {
 
 /** Mine and theirs on the same emoji: "from both of you", the emoji with a 2. */
 export const ReactionFromBoth: Story = {
-  parameters: pillTodo,
+  play: async ({ canvasElement }) => {
+    // The pill draws "2", so its name says it (WCAG 2.5.3, Label in Name).
+    await expect(within(canvasElement).getByTestId('chat.reactions')).toHaveAccessibleName('Reactions: Fire from both of you ×2, Laughing from them')
+  },
   args: {
     canReact: true,
     item: message({ mine: true, body: 'It was the best part.', reactions: [{ emoji: '🔥', count: 2, mine: true }, { emoji: '😂', count: 1, mine: false }], myReaction: '🔥' }),
@@ -167,7 +165,7 @@ export const ReactionFromBoth: Story = {
 
 /** A group: counts above two ("Heart from 5"). */
 export const ReactionsInAGroup: Story = {
-  parameters: pillTodo,
+  parameters: twoCounts,
   args: {
     canReact: true,
     item: message({ reactions: [{ emoji: '❤️', count: 5, mine: false }, { emoji: '😮', count: 3, mine: true }], myReaction: '😮' }),
@@ -192,17 +190,19 @@ export const ReactionBarBelow: Story = {
 export const Photo: Story = { args: { item: photoMessage() } }
 export const PhotoMine: Story = { args: { item: photoMessage({ mine: true }) } }
 export const Gif: Story = { args: { item: message({ kind: 'media', body: '', media: picturesMedia('gif', 320, 200) }) } }
-export const PhotoWithQuote: Story = { args: { item: photoMessage({ mine: true }), quote: quote() }, parameters: quoteRules }
+export const PhotoWithQuote: Story = { args: { item: photoMessage({ mine: true }), quote: quote() } }
 
 /** The URL is being signed: an empty frame in the picture's shape, and a status for a screen reader. */
 export const PhotoLoading: Story = { args: { item: photoMessage({}, { url: null }) } }
 
 /** Nothing new is coming (the file is gone, signing failed): the bubble says so. */
-// a11y todo (label-content-name-mismatch, WCAG 2.5.3): the frame says "Picture not available right now", but its button
-// is still named "Photo. View large" (and does nothing).
 export const PhotoUnavailable: Story = {
   args: { item: photoMessage({}, { url: null, unavailable: true }) },
-  parameters: { a11y: { test: 'todo' } },
+  play: async ({ canvasElement }) => {
+    // Nothing to view: the frame is no button, so nothing says "View large" over it.
+    await expect(within(canvasElement).queryByRole('button', { name: /view large/i })).toBeNull()
+    await expect(within(canvasElement).getByTestId('chat.media')).toHaveTextContent('Picture not available right now')
+  },
 }
 
 /** Its sender is gone, and the picture with them. */
@@ -213,7 +213,7 @@ export const PhotoRemoved: Story = { args: { item: photoMessage({}, { removed: t
 /** A voice message: play button, waveform as progress, length (see VoiceBubble for its states). */
 export const Voice: Story = { args: { item: voiceMessage() } }
 export const VoiceMine: Story = { args: { item: voiceMessage({ mine: true }) } }
-export const VoiceWithQuote: Story = { args: { item: voiceMessage(), quote: quote() }, parameters: quoteRules }
+export const VoiceWithQuote: Story = { args: { item: voiceMessage(), quote: quote() } }
 export const VoiceRemoved: Story = { args: { item: voiceMessage({}, { removed: true }) } }
 
 // ----------------------------------------------------------- the app's own
@@ -246,12 +246,11 @@ export const GermanFailed: Story = {
 }
 export const GermanRead: Story = { args: { item: message({ mine: true, body: 'Bis um sieben.' }), read: true }, globals: { locale: 'de' } }
 export const GermanReaction: Story = {
-  parameters: pillTodo,
   args: { canReact: true, item: message({ body: 'Rate, wer die Erstausgabe gefunden hat.', reactions: [{ emoji: '❤️', count: 2, mine: true }] }) },
   globals: { locale: 'de' },
 }
 
-export const Night: Story = { args: { item: message({ mine: true, body: 'Not yet, tonight.' }), quote: quote(), read: true }, parameters: quoteRules, globals: { theme: 'night' } }
+export const Night: Story = { args: { item: message({ mine: true, body: 'Not yet, tonight.' }), quote: quote(), read: true }, globals: { theme: 'night' } }
 export const NightTheirs: Story = {
   args: { canReact: true, item: message({ reactions: [{ emoji: '🔥', count: 3, mine: false }] }) },
   globals: { theme: 'night' },
