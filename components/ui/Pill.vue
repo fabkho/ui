@@ -69,6 +69,13 @@ function onKeydown(event: KeyboardEvent) {
   transform: scale(0.97);
 }
 
+/* Reduce Motion: no press scale (the colours still change). */
+@media (prefers-reduced-motion: reduce) {
+  .pill:active:not(:disabled) {
+    transform: none;
+  }
+}
+
 .pill::after {
   position: absolute;
   inset: 50% 0 auto;

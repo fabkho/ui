@@ -32,4 +32,13 @@ export const TextFace: Story = {
   }),
 }
 
+/** The Glass setting (an app's `--glass-solid` 100 %, `--glass-scale` 0): no transparency, the sheet's own colour. An app that sets neither gets the glass above. */
+export const GlassOff: Story = {
+  render: args => ({
+    components: { UiRoundButton },
+    setup: () => ({ args }),
+    template: '<div style="--glass-solid: 100%; --glass-scale: 0"><UiRoundButton v-bind="args" /></div>',
+  }),
+}
+
 export const Night: Story = { globals: { theme: 'night' } }
