@@ -1,0 +1,40 @@
+{
+  "name": "@fabkho/ui",
+  "version": "0.0.0",
+  "description": "Bookretreats' and BetterReads' shared UI base: a Nuxt layer of components, composables, utils and a Tailwind v4 stylesheet, themed only through CSS variables.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabkho/ui.git"
+  },
+  "packageManager": "pnpm@10.34.7",
+  "main": "./nuxt.config.ts",
+  "files": [
+    "app.config.ts",
+    "assets",
+    "components",
+    "composables",
+    "nuxt.config.ts",
+    "plugins",
+    "router.options.ts",
+    "testing",
+    "utils"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "thumbhash": "0.1.1"
+  },
+  "peerDependencies": {
+    "nuxt": "^4.5.2",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  }
+}
