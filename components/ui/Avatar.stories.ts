@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, within } from 'storybook/test'
 import UiAvatar from './Avatar.vue'
 
 const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -19,6 +20,23 @@ type Story = StoryObj<typeof meta>
 
 /** Initials in mono inside a hairline ring. Drawing only: the button around it carries the label. */
 export const Initials: Story = {}
+
+/** `label`: an avatar that stands for someone says who: an image (`role="img"`) with that name. */
+export const Named: Story = {
+  args: { label: 'Mara Keller', initials: 'MK' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('img', { name: 'Mara Keller' })).toBeVisible()
+  },
+}
+
+/** `decorative`: the name is right beside it, so it is hidden from assistive tech even with a `label`. Without a `label` it always is. */
+export const Decorative: Story = {
+  args: { label: 'Mara Keller', decorative: true, initials: 'MK' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByRole('img')).toBeNull()
+    await expect(canvasElement.querySelector('[aria-hidden="true"]')).not.toBeNull()
+  },
+}
 
 /** A photo draws over the initials; they stay underneath, so nothing moves while it decodes. */
 export const Photo: Story = { args: { photo: PHOTO, size: 'lg' } }

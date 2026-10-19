@@ -17,6 +17,10 @@
 // too (a 404) is the photo dropped: the initials stay, nothing jumps.
 // `fallback` event (added for Bookretreats): emitted when `photo` was refused and `fallback` is drawn instead, so the
 // caller can remember a face is missing and not ask for it again (`MemberAvatar`, `faceToDraw`).
+// `label` / `decorative` (added for Bookretreats, accessibility): an avatar that stands for someone says who, as an
+// image (`role="img"`, named by `label`: "Mara"); one beside the name, or inside a button that already says it, is
+// decorative and hidden from assistive tech. Without a `label` it is decorative (as it always was), so nothing
+// in an app changes until it names its avatars; `decorative` hides it even with one.
 const props = withDefaults(
   defineProps<{
     initials: string
@@ -25,9 +29,14 @@ const props = withDefaults(
     size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
     solid?: boolean
     lazy?: boolean
+    /** Who it shows (the accessible name), when the avatar is meaningful on its own. */
+    label?: string
+    /** Hide it from assistive tech even though it has a `label`: the name is right beside it. */
+    decorative?: boolean
   }>(),
-  { photo: null, fallback: null, size: 'sm', solid: false, lazy: false },
+  { photo: null, fallback: null, size: 'sm', solid: false, lazy: false, label: undefined, decorative: undefined },
 )
+const hidden = computed(() => props.decorative ?? !props.label)
 
 const emit = defineEmits<{ fallback: [] }>()
 
@@ -72,7 +81,9 @@ function onError() {
   <span
     class="relative flex shrink-0 items-center justify-center overflow-hidden rounded-pill figures font-medium text-ink-muted"
     :class="[SIZES[size], solid ? 'solid' : 'bg-fill']"
-    aria-hidden="true"
+    :role="hidden ? undefined : 'img'"
+    :aria-label="hidden ? undefined : label"
+    :aria-hidden="hidden ? 'true' : undefined"
   >
     {{ initials }}
     <img
