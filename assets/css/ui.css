@@ -2,9 +2,14 @@
    keyframes and the global Reduce Motion rule (libellus web/app/assets/css/main.css,
    minus what is Libellus' own: its fonts and the profile push's view transition).
    Read through the app's Tailwind entry (`@import` after tailwindcss and the
-   app's tokens.generated.css, with `@source` on this layer), so the utilities
-   and every `var(--…)` resolve against the app's tokens. The variables it needs
-   are listed in ../../README.md. */
+   app's tokens.generated.css), so the utilities and every `var(--…)` resolve
+   against the app's tokens. The variables it needs are listed in ../../README.md. */
+
+/* Tailwind v4 does not scan `node_modules`, and the classes the components use
+   are written in them. `@source` resolves relative to this file, so wherever the
+   package lives (`node_modules/@fabkho/ui`, a `UI_LAYER` checkout) the one
+   `@import` of this file in the app's `main.css` is enough. */
+@source '../../components';
 
 /* The notch and the home indicator are the device's, not the design system's:
    read once here, and only the utilities below use them, so no screen inlines

@@ -1,21 +1,23 @@
-# The UI layer
+# @fabkho/ui
 
-Libellus' design system (fabkho/libellus, `web/app/components/ui/`, its composables, utils and
-`main.css`, at commit `f9764be`) as a Nuxt layer, so Bookretreats runs on it now and Libellus can
-move onto it later without renaming anything (issue #70; port plan step 2,
-`docs/design-variants/port-plan.md` on the prototype branch).
+The shared UI base of Bookretreats and BetterReads, as a Nuxt layer: Libellus' design system
+(fabkho/libellus, `web/app/components/ui/`, its composables, utils and `main.css`, at commit `f9764be`),
+which Bookretreats runs on and Libellus moves onto step by step without renaming anything (issue #70;
+port plan step 2, `docs/design-variants/port-plan.md` on the prototype branch). The plan this repo
+follows is `docs/ui-layer-plan.md` in fabkho/trappist.
 
 **Compatibility with Libellus comes first.** Component names, props, slots, emitted events, CSS
 utility names and token names are Libellus'. Improvements are additive (a new optional prop, a new
 slot, a new token, a fixed bug), never a renamed or reshaped API, and every one is listed under
 [Changes against Libellus](#changes-against-libellus), so Libellus' move is a checklist.
 
-Nuxt 4 picks the layer up from `~~/layers/ui` by itself (no `extends`). The layer has no `app/`
-folder: its root is its source directory.
+The layer has no `app/` folder: the package root is its source directory.
 
 ```
-layers/ui/
-  nuxt.config.ts        the `#ui` alias, nothing else
+@fabkho/ui
+  package.json          `main` is nuxt.config.ts, so `extends: '@fabkho/ui'` finds the layer
+  nuxt.config.ts        the `#ui` alias and the router options hook
+  testing/contract.mjs  the contract as a function, run by every app against its own tokens
   app.config.ts         the words the layer says itself (ui.text), in English
   router.options.ts     the system Back closes the top sheet (useBackDismiss)
   assets/css/ui.css     utilities, base styles, keyframes, Reduce Motion
@@ -34,7 +36,8 @@ layers/ui/
 2. **Design tokens only through CSS variables and Tailwind theme names.** The app supplies the
    values: its `design/tokens.json` generated into `app/assets/css/tokens.generated.css`
    (`design/build.mjs`, Libellus' generator). [Every variable the layer reads](#the-variables-the-layer-needs)
-   is listed below; `tests/ui-layer.test.ts` fails when the layer reads one the app does not define.
+   is listed below; the contract test ([Using the base](#using-the-base), step 6) fails when the layer
+   reads one the app's tokens do not define.
 3. **Decorations are theme properties.** Whether a cover lights the room (`UiAmbient`, the cover's
    halo and pool) is the theme's `--opacity-glow` / `--opacity-halo`, never a component's choice.
    Bookretreats sets both to 0 in Papier and Blau; Libellus keeps its values.
@@ -49,42 +52,148 @@ Both the layer and its users follow Libellus' motion rules (`docs/MOTION.md` the
 Bookretreats with its named exceptions, `docs/MOTION.md` here): durations and curves are tokens
 (`--duration-*`, `--ease-*`), read in JavaScript through `durationToken` / `easingToken`.
 
-## Using it in an app
+## Using the base
 
-- **Tailwind** (`app/assets/css/main.css`), after `tailwindcss` and the app's tokens:
+One form, in each app (plan §3, "Consumption: one form"). **Never float on a branch**
+(`github:fabkho/ui#main`): two deployed apps would pick up the base's newest state with no changelog
+and no way back. A tag per release (release-please makes them), the lockfile pins the commit.
 
-  ```css
-  @import 'tailwindcss';
-  @import './tokens.generated.css';
-  /* the app's fonts */
-  @import '../../../layers/ui/assets/css/ui.css';
-  @source '../../../layers/ui';
-  ```
+1. **`package.json`**: the tagged git dependency. Nothing is published to npm.
 
-  `@source` makes Tailwind read the layer's components for the classes they use; `ui.css` brings
-  the utilities and base styles listed below, resolved against the app's tokens.
-- **Fonts** are the app's: the layer names the families only through `--font-sans|mono|serif`.
-  Libellus' (and Bookretreats') are Geist, Geist Mono and Newsreader from Fontsource.
-- **Copy** (`app.config.ts`): the layer's own words are `ui.text.cancel` (a sheet's and a dialog's
-  way out), `ui.text.offline` (UiButton `offline`) and `ui.text.etAl` (a cover's authors). The
-  layer's defaults are English; an app overrides them in its `app.config.ts`:
+   ```json
+   "dependencies": { "@fabkho/ui": "github:fabkho/ui#v0.1.0" }
+   ```
 
-  ```ts
-  export default defineAppConfig({ ui: { text: { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.' } } })
-  ```
+   The app also has `nuxt`, `vue` and `vue-router` (peer dependencies; `thumbhash` comes with the
+   base). While the repo is private the machine installing it (CI included) needs read access to it.
+2. **`ui.config.ts`** (name free, one small file), and **`nuxt.config.ts`**:
 
-  An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
-  when the language changes (components read them through `useUiText()`).
-- **Router**: `router.options.ts` wraps the router's history so the system Back (Android's back
-  gesture, the browser's Back) closes the top sheet or dialog instead of leaving the page
-  (`useBackDismiss`). Nuxt merges it with the app's own `router.options.ts`; an app that sets its
-  own `history` must wrap it the same way (`listenForBack(); return keepsForeignLayers(createWebHistory(base))`).
-  Nuxt only looks for it in `<layer>/app/router.options.ts`, and this layer has no `app/` folder, so
-  the layer's `nuxt.config.ts` adds the file with the `pages:routerOptions` hook. Without it the
-  listener is added late, after the router's own, and a change of page made while a layer closes
-  navigates back to the page it left.
-- **Types** from the layer: `import type { IconName } from '#ui/components/ui/Icon.vue'`
-  (`UiTab` from `TabBar.vue`, `SheetRestore` from `Sheet.vue`).
+   ```ts
+   // ui.config.ts
+   export const uiLayer = () => process.env.UI_LAYER || '@fabkho/ui'
+   ```
+
+   ```ts
+   // nuxt.config.ts
+   import { uiLayer } from './ui.config'
+
+   export default defineNuxtConfig({
+     extends: uiLayer(),
+     vite: {
+       // The base's one runtime dependency: pre-bundled up front, so the dev server never re-optimises
+       // mid-run (the app's tests/vite-deps.test.ts scans node_modules/@fabkho/ui for it).
+       optimizeDeps: { include: ['@fabkho/ui > thumbhash'] },
+     },
+   })
+   ```
+
+   `UI_LAYER=/path/to/ui` points the app at a local checkout of this repo (no `pnpm link`, no
+   `overrides`). `extends: '@fabkho/ui'` resolves as a layer from `node_modules` because the
+   package's `main` is `nuxt.config.ts` (c12 resolves the package name, then loads that file).
+   `#ui` (`import type { IconName } from '#ui/components/ui/Icon.vue'`) is the base's folder, wherever
+   it lives.
+3. **`main.css`**, after `tailwindcss` and the app's tokens: one `@import` and nothing else.
+
+   ```css
+   @import 'tailwindcss';
+   @import './tokens.generated.css';
+   /* the app's fonts */
+   @import '@fabkho/ui/assets/css/ui.css';
+   ```
+
+   Tailwind v4 does not scan `node_modules`, so `ui.css` carries `@source '../../components'`,
+   relative to itself. **Checked**: a throwaway Nuxt 4.6.2 app under `/tmp`, the package installed with
+   `file:`, one `UiButton` on its page, `nuxt generate`: the built CSS holds `bg-ink`, `text-on-ink`,
+   `shadow-button` and the other classes that are written only in `components/ui/Button.vue`. With
+   the `@source` line taken out of `ui.css` they are gone (the negative control), so it is the line that
+   does it. It resolves the same through `UI_LAYER` and through `@import '#ui/assets/css/ui.css'`
+   (the alias follows `UI_LAYER`; `@fabkho/ui/assets/…` always reads the installed copy, which is
+   what to use in a checked-in `main.css`). **If it ever stops resolving** (a Tailwind change), the
+   fallback is one line per app, next to the import: `@source '../../../node_modules/@fabkho/ui/components';`
+   (path relative to `main.css`).
+4. **Fonts** are the app's: the base names the families only through `--font-sans|mono|serif`.
+   Libellus' (and Bookretreats') are Geist, Geist Mono and Newsreader from Fontsource.
+5. **Copy** (`app.config.ts`): the base's own words are `ui.text.cancel` (a sheet's and a dialog's
+   way out), `ui.text.offline` (UiButton `offline`) and `ui.text.etAl` (a cover's authors). The
+   base's defaults are English; an app overrides them in its `app.config.ts`:
+
+   ```ts
+   export default defineAppConfig({ ui: { text: { cancel: 'Abbrechen', offline: 'Offline', etAl: 'u. a.' } } })
+   ```
+
+   An app with translations keeps them current with `updateAppConfig({ ui: { text: { … } } })`
+   when the language changes (components read them through `useUiText()`).
+6. **The contract test** in the app: `testing/contract.mjs` is the contract as a function; it takes the
+   app's token CSS and returns what breaks it (empty lists mean it holds). This repo runs it against a
+   small fixture (`tests/fixtures/tokens.css`), each app against its own generated file:
+
+   ```ts
+   // tests/ui-layer.test.ts
+   import { readFileSync } from 'node:fs'
+   import { expect, it } from 'vitest'
+   import { layerContract } from '@fabkho/ui/testing/contract.mjs'
+
+   it('the base reads only what this app defines', () => {
+     const found = layerContract({ tokensCss: readFileSync('app/assets/css/tokens.generated.css', 'utf8') })
+     expect(found).toEqual({ importsFromApp: [], missingVariables: [], missingCloths: [], rawCurves: [] })
+   })
+   ```
+
+   The theme values stay the app's (for example "the glow is off in Papier and Blau" is Bookretreats'
+   own test against its `design/tokens.json`).
+7. **Router**: `router.options.ts` wraps the router's history so the system Back (Android's back
+   gesture, the browser's Back) closes the top sheet or dialog instead of leaving the page
+   (`useBackDismiss`). Nuxt merges it with the app's own `router.options.ts`; an app that sets its
+   own `history` must wrap it the same way (`listenForBack(); return keepsForeignLayers(createWebHistory(base))`).
+   Nuxt only looks for it in `<layer>/app/router.options.ts`, and this layer has no `app/` folder, so
+   the layer's `nuxt.config.ts` adds the file with the `pages:routerOptions` hook. Without it the
+   listener is added late, after the router's own, and a change of page made while a layer closes
+   navigates back to the page it left.
+8. **Types** from the base: `import type { IconName } from '#ui/components/ui/Icon.vue'`
+   (`UiTab` from `TabBar.vue`, `SheetRestore` from `Sheet.vue`).
+
+### The additive API policy
+
+A release never renames or reshapes what an app already uses: a component, a prop, a slot, an emitted
+event, a CSS utility or a token name. What changes is additive (a new optional prop, a new slot, a new
+token or utility, a fixed bug). A token the base starts to read is a new entry in
+[the variables list](#the-variables-the-layer-needs) and in the apps' tokens in the same bump, and the
+contract test turns red in an app that lacks it. Every change is in `CHANGELOG.md` (release-please writes
+it from the conventional commits), so an app's bump is a checklist. A breaking change is a major
+version and needs the owner's say.
+
+### Portable by default
+
+*Components should always be structured in the way that it's easy to move them to the shared layer if
+the need occurs* (owner's rule, plan §3). For every app component that could ever be generic:
+
+1. **No app state in a presentational component.** No `~/stores`, Pinia, Supabase or i18n calls
+   inside it. Data and copy arrive through props, slots, or `ui.text`-style text props. The page or
+   a container component does the fetching and the translating.
+2. **No app-coupled imports.** No `~/utils` or `~/composables` that themselves touch app state. Pure
+   helpers are fine, ideally colocated with the component or generic.
+3. **Role names, not domain names**, for anything generic (`SearchPalette`, not `BookSearchPalette`).
+4. **Styling only through the token CSS variables.** No hard-coded colours, radii, durations or other
+   theme values.
+5. **One component = one file**, with its own props and emits types.
+
+These apply to new and touched components in both apps; a component that follows them moves into this
+repo by copying the file.
+
+### Dependencies
+
+Peer dependencies `nuxt`, `vue`, `vue-router`; one dependency, `thumbhash` (`utils/cloth.ts`). The base
+uses Vue, Nuxt's auto-imports (`useAppConfig`, `useRoute`, `navigateTo`, …), vue-router's types and its
+own files. No `@nuxtjs/i18n`, Pinia or Supabase. A headless library (Reka UI, `@floating-ui/dom`,
+vaul) is allowed only inside one widget, behind the same `Ui*` API, tree-shakeable, tested here and
+recorded here as an exception. **Exceptions today: none.**
+
+### Developing it
+
+`pnpm install`, `pnpm test` (Vitest, plain Node: the pure utils and the contract against a fixture;
+components are checked in the apps). Commits are conventional (`feat:`, `fix:`, `perf:` …):
+release-please keeps a release pull request open from them and tags `vX.Y.Z` when it is merged; the
+first release is `0.1.0`, and while the version is `0.x` a `feat` bumps the minor.
 
 ## What is in it
 
@@ -214,7 +323,7 @@ for the chat and its sheets (issue t3-keyboard): no pan, no zoom, the field and 
 ## The variables the layer needs
 
 The app's `tokens.generated.css` has to define these (Tailwind theme names in brackets where the
-layer uses the utility rather than the variable). `tests/ui-layer.test.ts` fails when the layer
+layer uses the utility rather than the variable). The contract test (`testing/contract.mjs`) fails when the layer
 reads a variable the generated file lacks.
 
 - **Colour** (`--color-*`, `bg-*` / `text-*` / `border-*`): `surface`, `surface-raised`,
@@ -264,7 +373,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   the base layer (minus `color-scheme`, which the generated tokens set per theme), the scroll bars,
   the `page-*` keyframes and the Reduce Motion rule. Libellus keeps its fonts, its profile-push
   view transition (`html[data-profile-transition] …`) and the `color-scheme` rules of its dark
-  room (`[data-theme='dark']`, `prefers-color-scheme`), and adds `@import` + `@source` as above.
+  room (`[data-theme='dark']`, `prefers-color-scheme`), and adds the `@import` as above.
 - [ ] **`plugins/touch-active.client.ts`** comes from the layer; Libellus' copy goes.
 - [ ] **Tests** for the moved utils live here: `tests/ui-keyboard.test.ts`,
   `ui-hide-on-scroll.test.ts` and `ui-haptics.test.ts` are Libellus' own with the import paths
@@ -366,5 +475,5 @@ namespace, a `spring` group is unitless
   data or store. App-specific parts (the auth frame, the code input, the chat composer, profile and
   member components) stay in the app.
 - A new variable the layer reads goes into this README's list and into the app's tokens in the
-  same change (`tests/ui-layer.test.ts` holds the two together).
+  same bump (the contract test holds the two together).
 - Anything that differs from Libellus goes into [Changes against Libellus](#changes-against-libellus).
