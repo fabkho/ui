@@ -5,19 +5,52 @@
 // `size-touch`). The caller gives it the `data-testid`.
 //
 // `radio` (added for Bookretreats): one of a choice of one (a `radiogroup` around it), so it says
-// `role=radio` and `aria-checked` instead of `aria-pressed`.
+// `role=radio` and `aria-checked` instead of `aria-pressed`. And it moves like one (APG radio group): the
+// chosen one is the group's one tab stop (the first, while none is chosen), the arrow keys move the choice
+// and the focus to the next or previous radio and wrap, disabled ones are skipped. The move is a click on
+// that radio, so the caller's `@click` is how the choice changes, as for a tap. The group is the nearest
+// `[role=radiogroup]` (or the pill's parent).
 const props = defineProps<{ pressed: boolean; count?: number; radio?: boolean }>()
 const state = computed(() =>
-  props.radio ? { role: 'radio', 'aria-checked': props.pressed } : { 'aria-pressed': props.pressed },
+  props.radio ? { role: 'radio', 'aria-checked': props.pressed, tabindex: props.pressed ? 0 : -1 } : { 'aria-pressed': props.pressed },
 )
+
+const button = useTemplateRef<HTMLButtonElement>('button')
+const groupOf = (el: HTMLElement) => el.closest<HTMLElement>('[role="radiogroup"]') ?? el.parentElement
+const radiosOf = (group: HTMLElement | null) =>
+  Array.from(group?.querySelectorAll<HTMLButtonElement>('button[role="radio"]') ?? []).filter((el) => !el.disabled)
+
+/** One tab stop for the group: the chosen radio, or the first while none is chosen. */
+function rove() {
+  const radios = radiosOf(button.value && groupOf(button.value))
+  const chosen = radios.find((el) => el.getAttribute('aria-checked') === 'true') ?? radios[0]
+  for (const el of radios) el.tabIndex = el === chosen ? 0 : -1
+}
+onMounted(() => props.radio && rove())
+onUpdated(() => props.radio && rove())
+
+const STEPS: Record<string, 1 | -1> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
+function onKeydown(event: KeyboardEvent) {
+  const step = STEPS[event.key]
+  if (!props.radio || !step || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  const self = event.currentTarget as HTMLButtonElement
+  const radios = radiosOf(groupOf(self))
+  const next = radios[(radios.indexOf(self) + step + radios.length) % radios.length]
+  if (!next || next === self) return
+  event.preventDefault()
+  next.focus()
+  next.click()
+}
 </script>
 
 <template>
   <button
+    ref="button"
     type="button"
     v-bind="state"
     class="pill relative inline-flex h-(--size-button-sm) max-w-full items-center gap-xs rounded-pill px-md text-subhead whitespace-nowrap"
     :class="pressed ? 'on bg-ink text-on-ink' : 'edge text-ink-muted hover:bg-fill'"
+    @keydown="onKeydown"
   >
     <span class="truncate"><slot /></span>
     <span v-if="count !== undefined" class="count figures text-caption" :class="!pressed && 'text-ink-faint'">{{ count }}</span>

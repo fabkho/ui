@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, userEvent, within } from 'storybook/test'
 import { ref } from 'vue'
 import UiPill from './Pill.vue'
 
@@ -79,6 +80,54 @@ export const Radio: Story = {
         <UiPill v-for="option in options" :key="option" radio :pressed="chosen === option" @click="chosen = option">{{ option }}</UiPill>
       </div>`,
   }),
+}
+
+/**
+ * The keyboard pattern of a radio group (APG), for `radio` pills: Tab lands on the chosen one (one tab stop, the
+ * others are skipped), the arrows move the choice and the focus together and wrap, and with none chosen Tab
+ * lands on the first.
+ */
+export const RadioKeyboard: Story = {
+  render: Radio.render,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [title, author, , rating] = canvas.getAllByRole('radio')
+    await expect(title).toHaveAttribute('tabindex', '0')
+    await expect(author).toHaveAttribute('tabindex', '-1')
+    await userEvent.tab()
+    await expect(title).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(author).toHaveFocus()
+    await expect(author).toHaveAttribute('aria-checked', 'true')
+    await expect(title).toHaveAttribute('aria-checked', 'false')
+    await expect(author).toHaveAttribute('tabindex', '0')
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}')
+    await expect(rating).toHaveFocus()
+    await expect(rating).toHaveAttribute('aria-checked', 'true')
+    await userEvent.keyboard('{ArrowRight}')
+    await expect(title).toHaveFocus()
+  },
+}
+
+/** A choice not made yet (the GIF picker while a search is on): Tab still lands in the group, on the first radio. */
+export const RadioNoneChosen: Story = {
+  render: () => ({
+    components: { UiPill },
+    setup: () => ({ options: ['Cats', 'Books', 'Tea'], chosen: ref<string | null>(null) }),
+    template: `
+      <div class="flex flex-wrap gap-sm" role="radiogroup" aria-label="Topic">
+        <UiPill v-for="option in options" :key="option" radio :pressed="chosen === option" @click="chosen = option">{{ option }}</UiPill>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [cats, books] = canvas.getAllByRole('radio')
+    await userEvent.tab()
+    await expect(cats).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(books).toHaveFocus()
+    await expect(books).toHaveAttribute('aria-checked', 'true')
+  },
 }
 
 /** A radio choice with counts. */
