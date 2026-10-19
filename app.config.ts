@@ -13,8 +13,8 @@ export default defineAppConfig({
       etAl: 'et al.',
       /**
        * The chat's words (`utils/chat/*` and the chat components: UiChatThread, UiBubble, UiQuote,
-       * UiReactionBar, UiComposer, UiVoiceBubble, UiGifPicker, UiMediaViewer in the chat). Each app
-       * fills them from its own copy (Bookretreats from `copy/chat.ts`, BetterReads from i18n).
+       * UiReactionBar, UiComposer, UiVoiceBubble, UiGifPicker). Each app fills them from its own copy
+       * (a copy module, or i18n).
        * A word with a `{name}` in it is a template: the component fills the braces in (`fillWords`,
        * `utils/chat/words.ts`), so an app can hand over its own function's output for `'{name}'`.
        */
@@ -102,7 +102,7 @@ export default defineAppConfig({
           },
           bubble: {
             mine: 'Your voice message',
-            hers: 'Voice message',
+            theirs: 'Voice message',
             play: 'Play',
             pause: 'Pause',
             loading: 'Loading voice message',
@@ -115,11 +115,6 @@ export default defineAppConfig({
             position: '{now} of {total}',
           },
         },
-        /** A picture full screen. */
-        viewer: {
-          label: 'Picture',
-          close: 'Close',
-        },
         /** The GIF picker (a sheet). The provider's own words (placeholder, attribution, topics) are props. */
         gifPicker: {
           title: 'Send a GIF',
@@ -129,7 +124,9 @@ export default defineAppConfig({
           none: 'No GIF for “{q}”.',
           more: 'Load more',
           loading: 'Loading GIFs',
-          pick: 'Send',
+          /** A GIF in the grid, by its place (`{n}`), or by its title when the provider gives one (`{title}`). */
+          pick: 'Send GIF {n}',
+          pickTitled: 'Send GIF: {title}',
           retry: 'Try again',
         },
         /** Reactions on a message: the bar over a bubble and the pill on its corner. */
@@ -137,12 +134,14 @@ export default defineAppConfig({
           bar: 'Choose a reaction',
           open: 'React',
           /** What each emoji is called for a screen reader; an emoji without a name is read as itself. */
-          names: { '❤️': 'Heart', '😂': 'Laughing', '😮': 'Surprised', '😢': 'Sad', '🔥': 'Fire', '📚': 'Books' } as Record<string, string>,
+          names: { '❤️': 'Heart', '😂': 'Laughing', '😮': 'Surprised', '😢': 'Sad', '🔥': 'Fire' } as Record<string, string>,
           pick: 'React with {name}',
           takeBack: 'Take back {name}',
+          /** Who chose it: the reader alone, one other, the reader and one other, more (`{count}`). */
           byYou: '{name} from you',
-          byHer: '{name} from them',
+          byOther: '{name} from them',
           byBoth: '{name} from both of you',
+          byMany: '{name} from {count}',
           pill: 'Reactions: {parts}',
           copy: 'Copy',
           copied: 'Copied',

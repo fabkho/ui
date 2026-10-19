@@ -1,13 +1,14 @@
-<script setup lang="ts" generic="T extends { key: string; createdAt: string; id?: string | null; mine?: boolean }">
+<script setup lang="ts" generic="T extends { key: string; createdAt: string; id?: string | null; mine?: boolean; kind?: string }">
 import UiDaySeparator from './DaySeparator.vue'
 import UiSkeleton from './Skeleton.vue'
 import { useKeyboardViewport } from '../../composables/useKeyboardInset'
 import { useUiText } from '../../composables/useUiText'
 import { durationToken, prefersReducedMotion } from '../../utils/motion'
 import { endsRun, follows, timeline } from '../../utils/chat/timeline'
+import { sameSide } from '../../utils/chat/message'
 
-// A conversation's screen (moved from Bookretreats' chat page, `pages/friends/[id].vue`, unchanged in
-// look and behaviour): the thread fills the screen and scrolls under the floating chrome — the top
+// A conversation's screen (moved into the base from an app's chat page, unchanged in look and
+// behaviour): the thread fills the screen and scrolls under the floating chrome — the top
 // bar's row (the `top` slot: back, a title, a menu) over an opaque veil, and the composer (the
 // `composer` slot, UiComposer) docked at the bottom over an opaque floor, so no message shows through
 // the gaps between the glass. What is in the thread is the app's: the conversation's head (`head`), each
@@ -45,8 +46,13 @@ const props = withDefaults(
     items: readonly T[]
     /** `loading` and `ready` are the thread's own; anything else draws the `state` slot. */
     status: string
-    /** Whether two messages in a row are one run (they sit closer, only the last has the tail). */
+    /**
+     * Whether two messages in a row are one run (they sit closer, only the last has the tail). The
+     * default (`sameSide`): the same `mine`, and neither is a system line (`kind: 'system'`).
+     */
     sameRun?: (before: T, item: T) => boolean
+    /** The conversation shown: when it changes, an open reaction bar closes. */
+    conversationKey?: string | number | null
     /** There are earlier messages to load. */
     hasMore?: boolean
     olderStatus?: 'idle' | 'loading' | 'error'
@@ -66,7 +72,8 @@ const props = withDefaults(
     testid?: string
   }>(),
   {
-    sameRun: (before: T, item: T) => before.mine === item.mine,
+    sameRun: (before: T, item: T) => sameSide(before, item),
+    conversationKey: null,
     hasMore: false,
     olderStatus: 'idle',
     loadOlder: () => Promise.resolve(false),
@@ -153,15 +160,15 @@ async function older(): Promise<boolean> {
   return true
 }
 
-/** The thread's height as last seen: a scroll that comes with a new height is the browser's, not hers. */
+/** The thread's height as last seen: a scroll that comes with a new height is the browser's, not the reader's. */
 let listHeight = 0
 
 function onScroll() {
   const el = scroller.value
   if (!el) return
   // The keyboard changed the thread's height and the browser moved it along (Chrome's scroll
-  // anchoring fires this before the resize is observed): the reader stays where she was, at the
-  // newest if she was there.
+  // anchoring fires this before the resize is observed): the reader stays where they were, at the
+  // newest if they were there.
   if (el.clientHeight !== listHeight) {
     listHeight = el.clientHeight
     if (stick) return toBottom()
@@ -170,7 +177,7 @@ function onScroll() {
   if (el.scrollTop < 160 && props.hasMore && props.olderStatus === 'idle') void older()
 }
 
-// New at the bottom: stay at the newest if she was there, or if it is hers.
+// New at the bottom: stay at the newest if the reader was there, or if it is their own.
 watch(
   () => [props.items.length, props.items.at(-1)?.key, props.status] as const,
   (_, previous) => {
@@ -184,7 +191,7 @@ watch(
   { flush: 'post' },
 )
 
-// The head grows a little later than the rest (an app fetches what it shows): as long as she is at
+// The head grows a little later than the rest (an app fetches what it shows): as long as the reader is at
 // the newest message, the thread stays there while that happens, so a late card never pushes the
 // newest away.
 const threadEl = ref<HTMLElement | null>(null)
@@ -267,7 +274,7 @@ function onFocusChange() {
 }
 
 // The thread got shorter or taller (the keyboard came or went: on iOS the inset above, on Android the
-// page itself): the newest message stays in view if she was there.
+// page itself): the newest message stays in view if the reader was there.
 let listWatcher: ResizeObserver | null = null
 watch(scroller, (el) => {
   listWatcher?.disconnect()
@@ -317,6 +324,8 @@ watch(reactingKey, (key) => {
   else window.removeEventListener('keydown', onReactionKey)
 })
 onBeforeUnmount(() => window.removeEventListener('keydown', onReactionKey))
+// Another conversation in the same screen: the bar belonged to a message of the one before.
+watch(() => props.conversationKey, closeReactions)
 
 // ------------------------------------------------------------- jumping
 
@@ -398,7 +407,7 @@ defineExpose({
       </div>
 
       <ol v-else ref="threadEl" class="thread" :aria-label="label" :data-testid="`${testid}.thread`">
-        <!-- The head: the conversation begins with her, as a book page begins with its cover. -->
+        <!-- The head: the conversation begins with the other side, as a book page begins with its cover. -->
         <li v-if="headShown && $slots.head" class="head-row">
           <slot name="head" />
         </li>
@@ -443,7 +452,7 @@ defineExpose({
     <!-- While a reaction bar is open, a tap anywhere else only closes it. -->
     <div v-if="reactingKey" class="catcher" aria-hidden="true" :data-testid="`${testid}.reactionCatcher`" @pointerdown.prevent @click="closeReactions" />
 
-    <!-- Libellus' top bar over the page: the app's back, title and menu. -->
+    <!-- The top bar over the page: the app's back, title and menu. -->
     <div class="veil" aria-hidden="true" />
     <header ref="header" class="top bar-top safe-x pointer-events-none" :data-testid="`${testid}.head`">
       <div class="relative flex h-(--size-touch) items-center justify-between px-inset">
@@ -460,7 +469,7 @@ defineExpose({
          (the gaps between the chips, the strip down to the keyboard). -->
     <div class="floor" aria-hidden="true" :data-testid="`${testid}.floor`" />
 
-    <!-- The composer floats where Libellus floats its palette and its tab bar. -->
+    <!-- The composer floats where a palette or a tab bar floats. -->
     <div ref="dock" class="dock float-bottom">
       <div class="mx-auto max-w-(--size-max-content)">
         <p v-if="error && status === 'ready'" class="dockError" role="alert" :data-testid="`${testid}.mediaError`">
@@ -548,8 +557,17 @@ defineExpose({
   position: relative;
   margin-bottom: auto;
 }
+/* The marks under a bubble (the time, "Read", "Sending …") are mono, as every figure is: the chat
+   page's rule, moved here with the thread (UiBubble alone draws them in `caption`). */
+.thread :deep([data-testid$='.time']),
+.thread :deep([data-testid$='.read']),
+.thread :deep([data-testid$='.sending']) {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+}
 /* Everything under the head is positioned, so the head's light stays behind it
-   (as Libellus' book page keeps its content above UiAmbient). */
+   (content stays above UiAmbient). */
 .msg,
 .older {
   position: relative;

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fillWords } from '../utils/chat/words'
-import { mediaBox, reactionName, reactionsLabel, type BubbleReaction } from '../utils/chat/message'
+import { mediaBox, reactionName, reactionsLabel, reactionWho, sameSide, type BubbleReaction } from '../utils/chat/message'
+import { endsRun, follows, timeline } from '../utils/chat/timeline'
 import { gifColumns, latestRequest } from '../utils/chat/gif'
 import { LIVE_BARS, liveRow } from '../utils/chat/voice'
 
@@ -26,8 +27,9 @@ describe('the reaction pill', () => {
   const words = {
     names: { '❤️': 'Heart', '🔥': 'Fire' },
     byYou: '{name} from you',
-    byHer: '{name} from them',
+    byOther: '{name} from them',
     byBoth: '{name} from both of you',
+    byMany: '{name} from {count}',
     pill: 'Reactions: {parts}',
   }
   const r = (emoji: string, count: number, mine: boolean): BubbleReaction => ({ emoji, count, mine })
@@ -39,9 +41,41 @@ describe('the reaction pill', () => {
     )
   })
 
+  it('says "both" only for the reader and one other; more than that by the count (a group)', () => {
+    expect(reactionWho({ count: 1, mine: true })).toBe('byYou')
+    expect(reactionWho({ count: 1, mine: false })).toBe('byOther')
+    expect(reactionWho({ count: 2, mine: true })).toBe('byBoth')
+    expect(reactionWho({ count: 2, mine: false })).toBe('byMany')
+    expect(reactionWho({ count: 3, mine: true })).toBe('byMany')
+    expect(reactionsLabel([r('🔥', 3, false)], words)).toBe('Reactions: Fire from 3')
+  })
+
   it('reads an emoji without a name as itself', () => {
     expect(reactionName('📚', words.names)).toBe('📚')
     expect(reactionsLabel([r('📚', 1, false)], words)).toBe('Reactions: 📚 from them')
+  })
+})
+
+describe('runs in the thread (UiChatThread’s default `sameRun`)', () => {
+  type Item = { key: string; createdAt: string; mine?: boolean; kind?: string }
+  const at = (minute: number) => new Date(2026, 2, 11, 12, minute).toISOString()
+  const item = (key: string, minute: number, mine: boolean, kind?: string): Item => ({ key, createdAt: at(minute), mine, kind })
+  const words = { today: 'Today', yesterday: 'Yesterday', locale: 'en' }
+
+  it('joins messages from the same side, never across a system line', () => {
+    expect(sameSide({ mine: true }, { mine: true })).toBe(true)
+    expect(sameSide({ mine: true }, { mine: false })).toBe(false)
+    expect(sameSide({ mine: false, kind: 'system' }, { mine: false, kind: 'text' })).toBe(false)
+    expect(sameSide({ mine: false, kind: 'text' }, { mine: false, kind: 'system' })).toBe(false)
+    expect(sameSide({ mine: false, kind: 'media' }, { mine: false, kind: 'text' })).toBe(true)
+  })
+
+  it('gives the tail to the message before a system line, as the chat page did', () => {
+    const items = [item('a', 1, false, 'text'), item('s', 2, false, 'system'), item('b', 3, false, 'text'), item('c', 4, false, 'text')]
+    const rows = timeline(items, new Date(2026, 2, 11, 13), (i) => i.key, words)
+    // rows: day, a, s, b, c
+    expect(rows.map((_, i) => follows(rows, i, sameSide))).toEqual([false, false, false, false, true])
+    expect(rows.map((_, i) => endsRun(rows, i, sameSide))).toEqual([true, true, true, false, true])
   })
 })
 
@@ -111,11 +145,14 @@ describe('the English defaults of the components’ words', () => {
       'voice.bubble.position': ['now', 'total'],
       'gifPicker.results': ['q'],
       'gifPicker.none': ['q'],
+      'gifPicker.pick': ['n'],
+      'gifPicker.pickTitled': ['title'],
       'reactions.pick': ['name'],
       'reactions.takeBack': ['name'],
       'reactions.byYou': ['name'],
-      'reactions.byHer': ['name'],
+      'reactions.byOther': ['name'],
       'reactions.byBoth': ['name'],
+      'reactions.byMany': ['name', 'count'],
       'reactions.pill': ['parts'],
     }
     for (const [path, text] of strings(chat)) {

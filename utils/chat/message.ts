@@ -3,7 +3,7 @@ import { fillWords } from './words'
 
 /**
  * What the chat components draw a message from: the least an app's own message has to carry.
- * Bookretreats' `ChatItem` (its chat store) fits as it is; another app maps its rows onto it.
+ * An app's own message type can fit it as it is, or map onto it.
  * Domain kinds (a shared phone number, a system line) are the app's: it draws them in UiBubble's
  * `body` slot, or outside the bubble altogether.
  *
@@ -33,7 +33,7 @@ export interface BubbleMedia {
   mime?: VoiceMime | null
 }
 
-/** One emoji on a message: how many chose it, and whether one of them is the reader. */
+/** One emoji on a message: how many chose it, and whether the reader is one of them. */
 export interface BubbleReaction {
   emoji: string
   count: number
@@ -72,9 +72,14 @@ export interface BubbleQuote {
 /** The words a reaction pill says to a screen reader: a slice of `ui.text.chat.reactions`. */
 export interface ReactionWords {
   names: Record<string, string>
+  /** Only the reader chose it. */
   byYou: string
-  byHer: string
+  /** One other person chose it. */
+  byOther: string
+  /** The reader and one other person (two in all). */
   byBoth: string
+  /** More than one person, said with `{count}` (a group; also the reader and two or more others). */
+  byMany: string
   pill: string
 }
 
@@ -85,11 +90,29 @@ export function reactionName(emoji: string, names: Record<string, string>): stri
 
 /** What the pill says: each emoji and whose it is ("Reactions: Heart from you, Fire from both of you"). */
 export function reactionsLabel(reactions: readonly BubbleReaction[], words: ReactionWords): string {
-  const parts = reactions.map((r) => {
-    const name = reactionName(r.emoji, words.names)
-    return fillWords(r.count > 1 ? words.byBoth : r.mine ? words.byYou : words.byHer, { name })
-  })
+  const parts = reactions.map((r) => fillWords(words[reactionWho(r)], { name: reactionName(r.emoji, words.names), count: r.count }))
   return fillWords(words.pill, { parts: parts.join(', ') })
+}
+
+/**
+ * Which words say who chose an emoji: the reader alone, one other, the reader and one other (1:1's
+ * "both of you"), or more than that ("from 3", a group).
+ */
+export function reactionWho(reaction: Pick<BubbleReaction, 'count' | 'mine'>): 'byYou' | 'byOther' | 'byBoth' | 'byMany' {
+  if (reaction.count <= 1) return reaction.mine ? 'byYou' : 'byOther'
+  return reaction.mine && reaction.count === 2 ? 'byBoth' : 'byMany'
+}
+
+/** The kinds that are no one's message (a system line): they break a run. */
+export const NOT_A_MESSAGE: readonly string[] = ['system']
+
+/**
+ * The default rule of a run (UiChatThread `sameRun`): two messages in a row from the same side, neither
+ * of them a system line (`kind`, when an item has one). An app with senders passes its own rule.
+ */
+export function sameSide(before: { mine?: boolean; kind?: string }, item: { mine?: boolean; kind?: string }): boolean {
+  if (NOT_A_MESSAGE.includes(before.kind ?? '') || NOT_A_MESSAGE.includes(item.kind ?? '')) return false
+  return before.mine === item.mine
 }
 
 /**

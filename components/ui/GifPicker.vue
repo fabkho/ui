@@ -7,17 +7,18 @@ import { useUiText } from '../../composables/useUiText'
 import { gifColumns, latestRequest, type GifFeed, type GifItem, type GifSearch } from '../../utils/chat/gif'
 import { fillWords } from '../../utils/chat/words'
 
-// The GIF picker (moved from Bookretreats' `ChatGifPicker.vue`, unchanged in look and behaviour): a tall
-// sheet with a search field, and while it is empty the GIFs of a topic, chosen by chips under the field
-// (`feeds`: Bookretreats' „BookTok“ — where it opens, the first —, „Lesen“, „Bücher“, „Trending“; each is
-// one search of the provider, shown as the provider ranks it). A search leaves the chips unchosen, a
-// chip clears the search. A grid of two columns, "Load more" and the provider's attribution
-// (`attribution`, „Powered by KLIPY“) at the foot. A tap picks the GIF (`pick`, with the words that found
-// it — a chip's `query` too — for a provider's share count) and closes the sheet.
+// The GIF picker (moved into the base unchanged in look and behaviour): a tall sheet with a search
+// field, and while it is empty the GIFs of a topic, chosen by chips under the field (`feeds`, where it
+// opens on the first; each is one search of the provider, shown as the provider ranks it; no feeds, no
+// chips). A search leaves the chips unchosen, a chip clears the search. A grid of two columns, "Load
+// more" and the provider's attribution (`attribution`, or the slot) at the foot. A tap picks the GIF
+// (`pick`, with the words that found it — a chip's `query` too — for a provider's share count) and
+// closes the sheet. Each GIF's button is named by its title when the provider gives one, else by its
+// place in the grid.
 //
-// The provider is the app's (`search`: Bookretreats' KLIPY, asked from the phone itself, as KLIPY's terms
-// want; its key, its filters and its page size are the app's), and so are its own words: the field's
-// `placeholder` (KLIPY requires „Search KLIPY“) and the attribution. Typing waits 400 ms before it
+// The provider is the app's (`search`: asked from the phone itself, as some providers' terms want; its
+// key, its filters and its page size are the app's), and so are its own words: the field's
+// `placeholder` (a provider may prescribe it) and the attribution. Typing waits 400 ms before it
 // searches; a slow answer to an earlier search never replaces a newer one (`latestRequest`).
 const open = defineModel<boolean>('open', { required: true })
 const props = withDefaults(
@@ -43,6 +44,8 @@ const DEBOUNCE_MS = 400
 
 const query = ref('')
 const firstFeed = () => props.feeds[0]?.key ?? ''
+/** The search field's id: one per picker, so two pickers on a screen never share one. */
+const searchId = useId()
 /** What shows while nothing is searched. */
 const feed = ref<string>(firstFeed())
 const items = ref<GifItem[]>([])
@@ -102,7 +105,7 @@ async function choose(next: string) {
   void load()
 }
 
-/** The chip that is showing: none while she searches. */
+/** The chip that is showing: none during a search. */
 const chosen = computed(() => (searched.value || query.value.trim() ? null : feed.value))
 
 watch(open, (isOpen) => {
@@ -127,6 +130,8 @@ function pick(gif: GifItem) {
 
 // Two columns, each GIF in the next shorter one, so the grid stays even.
 const columns = computed(() => gifColumns(items.value))
+/** Each GIF's place in the grid's order (1, 2, …): its button's name when it has no title. */
+const placeOf = computed(() => new Map(items.value.map((gif, i) => [gif.id, i + 1])))
 </script>
 
 <template>
@@ -138,9 +143,9 @@ const columns = computed(() => gifColumns(items.value))
       <!-- The field stays under the title row while the grid scrolls past it (the offset
            is the body's own padding, which a sticky box keeps clear). -->
       <div class="sticky -top-md z-10 -mx-ml -mt-md bg-surface-sheet px-ml pt-md pb-sm">
-        <label :for="`${testid}-gif-search`" class="sr-only">{{ words.search }}</label>
+        <label :for="searchId" class="sr-only">{{ words.search }}</label>
         <input
-          :id="`${testid}-gif-search`"
+          :id="searchId"
           v-model="query"
           type="search"
           enterkeyhint="search"
@@ -151,6 +156,7 @@ const columns = computed(() => gifColumns(items.value))
         />
         <!-- The feeds while nothing is searched: one of them is chosen. -->
         <div
+          v-if="feeds.length"
           role="radiogroup"
           :aria-label="words.feedsLabel"
           class="scrollbar-none -mx-ml flex gap-xs overflow-x-auto px-ml pt-sm"
@@ -195,7 +201,7 @@ const columns = computed(() => gifColumns(items.value))
                 role="listitem"
                 class="relative block w-full overflow-hidden rounded-md bg-fill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 :style="{ aspectRatio: `${gif.width} / ${gif.height}` }"
-                :aria-label="words.pick"
+                :aria-label="gif.title ? fillWords(words.pickTitled, { title: gif.title }) : fillWords(words.pick, { n: placeOf.get(gif.id) ?? 0 })"
                 :data-testid="`${testid}.gif`"
                 :data-gif-id="gif.id"
                 @click="pick(gif)"
@@ -211,7 +217,7 @@ const columns = computed(() => gifColumns(items.value))
         <UiButton tone="plain" size="md" :data-testid="`${testid}.gifMore`" @click="load(true)">{{ words.more }}</UiButton>
       </div>
 
-      <!-- The provider's attribution (KLIPY's guidelines: "Powered by KLIPY" where its content is
+      <!-- The provider's attribution (some providers' guidelines ask for one wherever their content is
            shown). It stays in view at the foot of the body, as the grid scrolls under it. -->
       <div v-if="attribution || $slots.attribution" class="sticky -bottom-md z-10 -mx-ml -mb-md mt-auto flex justify-center border-t-(length:--stroke-hairline) border-hairline bg-surface-sheet px-ml py-sm">
         <slot name="attribution">

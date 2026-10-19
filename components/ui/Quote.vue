@@ -13,7 +13,7 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // quote whose message is gone — an answer that survived the message it answered — has nowhere to go
 // and says so (`ui.text.chat.reply.deleted`) instead of being a button. `mine`: the bubble it sits on
 // is ink (the reader's own), so the type is on-ink. `testid` names the screen (`chat` → `chat.quote`).
-// Moved from Bookretreats' `ChatQuote.vue`.
+// Moved into the base unchanged.
 const props = withDefaults(defineProps<{ quote: BubbleQuote; mine?: boolean; testid?: string }>(), {
   mine: false,
   testid: 'chat',
@@ -21,7 +21,7 @@ const props = withDefaults(defineProps<{ quote: BubbleQuote; mine?: boolean; tes
 const emit = defineEmits<{ tap: [id: string, event: Event] }>()
 const uiText = useUiText()
 
-/** The tint: on her ink bubble a lift, on the paper card a quiet fill. */
+/** The tint: on an ink bubble a lift, on the paper card a quiet fill. */
 const ground = computed(() => (props.mine ? 'bg-on-ink/10' : 'bg-fill'))
 </script>
 

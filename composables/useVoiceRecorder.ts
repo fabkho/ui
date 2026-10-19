@@ -19,7 +19,7 @@ import {
  * - `idle` → `start()` asks for the microphone (the phone's own permission sheet; a refusal is
  *   `problem`, `'denied'` and the others, worded by `chat.voice.problems`) → `recording`.
  * - `recording`: `elapsedMs` counts, `bars` are the latest loudness readings (0 – 1). At `maxMs`
- *   (the app's limit, Bookretreats' two minutes) it stops itself (`limitReached`): the state is `stopped`, the recording is kept and can
+ *   (the app's limit, e.g. two minutes) it stops itself (`limitReached`): the state is `stopped`, the recording is kept and can
  *   still be sent or thrown away.
  * - `finish()` resolves to the recording (stopping it first), or null when there is none; the
  *   recorder is `idle` again. `cancel()` throws it away. Leaving the page does the same.

@@ -4,7 +4,7 @@ import { useUiText } from '../../composables/useUiText'
 import { reactionName } from '../../utils/chat/message'
 import { fillWords } from '../../utils/chat/words'
 
-// The reaction bar (a chat bubble's and a Feed post's; `testid` names the screen): a small glass capsule
+// The reaction bar (a chat bubble's, or a post's; `testid` names the screen): a small glass capsule
 // over what it belongs to, as iMessage and WhatsApp float theirs — not a sheet. The app's emoji
 // (`emojis`, in the bar's order), the reader's own lit (`current`); a tap picks one (the same again takes
 // it back) and closes the bar. A text message also offers "Copy" here (`copyable`), since the long press
@@ -17,14 +17,14 @@ import { fillWords } from '../../utils/chat/words'
 // closes it and the focus goes back to where it came from (UiBubble). It rises a little and fades in over
 // `standard`, leaves over `exit` (the Transition is the caller's); with Reduce Motion it is simply there.
 // The emoji are named for a screen reader by `ui.text.chat.reactions.names` (an emoji without a name is
-// read as itself). Moved from Bookretreats' `ReactionBar.vue`.
+// read as itself). Moved into the base unchanged.
 const props = withDefaults(
   defineProps<{
     /** The emoji on offer, in the bar's order. */
     emojis: readonly string[]
     current: string | null
     copyable?: boolean
-    /** May this message be answered; a Feed post passes nothing. */
+    /** May this message be answered; a post passes nothing. */
     replyable?: boolean
     focusOnOpen?: boolean
     testid?: string

@@ -1,6 +1,6 @@
 /**
  * The GIF picker's data (UiGifPicker): what a provider answers with and how the grid is laid out.
- * The provider itself (KLIPY in Bookretreats, its key, its terms) is the app's: it comes in as the
+ * The provider itself (its key, its terms) is the app's: it comes in as the
  * picker's `search` prop.
  *
  * Not auto-imported: import from `#ui/utils/chat/gif`.
@@ -14,6 +14,8 @@ export type GifItem = {
   height: number
   /** The preview in the grid. */
   preview: string
+  /** What it shows, when the provider says (it names the GIF's button for a screen reader). */
+  title?: string
   /** The rendition the message holds, and its size. */
   url: string
   sentWidth: number
@@ -28,7 +30,6 @@ export type GifResult = { data: GifPage; error: null } | { data: null; error: st
 
 /**
  * The provider: the GIFs for `q` (or, while `q` is empty, for the chosen feed), page `page`.
- * Bookretreats' is `store.gifs`.
  */
 export type GifSearch = (q: string, page: number, feed: string) => Promise<GifResult>
 

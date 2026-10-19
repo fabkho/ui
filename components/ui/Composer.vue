@@ -7,14 +7,13 @@ import { clock, liveRow, type PreparedVoice } from '../../utils/chat/voice'
 import { fillWords } from '../../utils/chat/words'
 import type { BubbleQuote } from '../../utils/chat/message'
 
-// The composer (moved from Bookretreats' `ChatComposer.vue`, unchanged in look and behaviour):
-// Libellus' search palette's query row — a glass capsule floating over the page where the tab bar
+// The composer (moved into the base unchanged in look and behaviour): a search palette's query
+// row — a glass capsule floating over the page where the tab bar
 // floats, holding only the field and send (the one lit action: ink on the glass, nothing drawn while
 // there is nothing to send). "Photo" (the phone's own picker; with `photoAccept`), "GIF" (the app's
 // GIF picker, UiGifPicker; with `gifs` — keyboard GIFs cannot work, Chrome on Android refuses
 // inserting images from the keyboard into a web page) and the app's own chips (the `actions` slot,
-// UiComposerChip: Bookretreats' "Share number") float above it as small glass pills, as Libellus floats
-// its filter chips. While the field has the keyboard they fold away: the row's room goes to the thread
+// UiComposerChip: "Share number", say) float above it as small glass pills, as filter chips float. While the field has the keyboard they fold away: the row's room goes to the thread
 // and the capsule stands alone on the keyboard, as in iMessage. They come back when the field is left
 // (a drag on the thread closes the keyboard, UiChatThread). Sending never waits: the app shows the
 // message at once.
@@ -30,11 +29,11 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // keyboard only (a fine pointer that can hover); on a phone it is a new line, and the button sends. A
 // tap on the button keeps the keyboard up (the field keeps the focus), so the next one can be written.
 //
-// `comment` (Bookretreats' Feed comment bar: the same component, not a new field): the capsule with
-// the field and send and nothing else, no photo chip and no microphone; its one chip is "GIF". What it
-// says (`placeholder`, `label`), how much it takes (`max`) and what its test ids start with (`testid`)
-// come from the caller, and `note` is the one glass pill above it ("Reply to Dana ×" / "Editing ×") in
-// the place of the chips, its ✕ named by `noteLabel`.
+// `compact` (a comment bar: the same component, not a new field): the capsule with the field and send,
+// no microphone, and send always drawn. Above it, `note` is a glass pill ("Reply to Sam ×" / "Editing ×",
+// its ✕ named by `noteLabel`) beside the chips it is given (`gifs`, `photoAccept`, `actions`); the row
+// folds with the keyboard only while there is no note. What it says (`placeholder`, `label`), how much
+// it takes (`max`) and what its test ids start with (`testid`) come from the caller.
 //
 // Answering one message (as in WhatsApp): while it is answered, the quote (`quote`) stands over the
 // capsule — the accent stripe, who wrote it ("You" for one's own) and its first words — with the ✕ that
@@ -49,15 +48,15 @@ const props = withDefaults(
     photoAccept?: string
     /** The microphone, and the longest recording in milliseconds. */
     voiceMaxMs?: number
-    /** The Feed's comment bar: only the field and send. */
-    comment?: boolean
+    /** A comment bar: the field and send, the note and the chips it is given, no microphone. */
+    compact?: boolean
     placeholder?: string
     label?: string
     /** The most characters the field takes. */
     max?: number
     /** The test ids' start: `chat` → `chat.input`, `chat.send`, `chat.composer`. */
     testid?: string
-    /** A pill over the capsule (the comment bar's reply / edit mode) and what its ✕ says. */
+    /** A pill over the capsule (a compact bar's reply / edit mode) and what its ✕ says. */
     note?: string | null
     noteLabel?: string
     /** The message being answered, as the quote over the capsule; null when it answers nothing. */
@@ -67,7 +66,7 @@ const props = withDefaults(
     gifs: false,
     photoAccept: undefined,
     voiceMaxMs: undefined,
-    comment: false,
+    compact: false,
     placeholder: undefined,
     label: undefined,
     max: undefined,
@@ -172,14 +171,14 @@ function onKey(event: KeyboardEvent) {
 
 /**
  * Closes the keyboard, as a drag on the thread does (iMessage): not while a voice message is being
- * recorded or waits to be sent (the field is not there, and nothing may close under her thumb).
+ * recorded or waits to be sent (the field is not there, and nothing may close under the thumb).
  */
 function blur() {
   if (recording.value) return
   if (document.activeElement === field.value) field.value?.blur()
 }
 
-/** The ✕ takes the quote back and puts the focus where she is writing. */
+/** The ✕ takes the quote back and puts the focus where the text is written. */
 function dropQuote() {
   emit('cancelQuote')
   void nextTick(() => field.value?.focus())
@@ -192,7 +191,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
   <div class="flex flex-col">
     <!-- The ways of sending something that is not words, floating above the field. -->
     <div
-      v-if="comment && (note || gifs || $slots.actions)"
+      v-if="compact && (note || photoAccept || gifs || $slots.actions)"
       class="actions"
       :data-folded="(!note && focused) || undefined"
       :inert="(!note && focused) || undefined"
@@ -205,14 +204,17 @@ defineExpose({ focus: () => field.value?.focus(), blur })
             <UiIcon name="close" :size="14" />
           </button>
         </p>
-        <!-- The comment bar's one chip: a GIF from the picker (the caller leaves `gifs` off while a comment is changed). -->
+        <!-- The chips it is given (a comment bar: GIF only, left off while a comment is changed). -->
+        <UiComposerChip v-if="photoAccept" :label="chat.composer.photoLabel" icon="camera" :data-testid="`${testid}.photo`" @click="picker?.click()">
+          {{ chat.composer.photo }}
+        </UiComposerChip>
         <UiComposerChip v-if="gifs" :label="chat.composer.gifLabel" mono :data-testid="`${testid}.gifButton`" @click="emit('gif')">
           {{ chat.composer.gif }}
         </UiComposerChip>
         <slot name="actions" />
       </div>
     </div>
-    <div v-else-if="comment" />
+    <div v-else-if="compact" />
     <div v-else-if="recording" class="status flex" :data-testid="`${testid}.recordingStatus`">
       <p class="pill glass edge" role="status">
         <span class="dot" aria-hidden="true" />
@@ -315,7 +317,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         @blur="focused = false"
       />
       <button
-        v-if="!recording && (canSend || comment || !voiceOffered)"
+        v-if="!recording && (canSend || compact || !voiceOffered)"
         type="submit"
         class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill"
         :class="canSend ? 'bg-ink text-on-ink shadow-button' : 'text-ink-ghost'"
@@ -328,7 +330,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       </button>
       <!-- Nothing to send yet: the microphone takes its place. -->
       <button
-        v-else-if="!recording && !comment && voiceOffered"
+        v-else-if="!recording && !compact && voiceOffered"
         type="button"
         class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill text-ink-muted"
         :aria-label="chat.voice.record"
@@ -451,7 +453,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
   color: var(--color-ink);
   transform: scale(0.97);
 }
-/* The ✕ of the comment bar's note: a finger's 44 around the small mark. */
+/* The ✕ of the note: a finger's 44 around the small mark. */
 .note-close {
   position: relative;
   /* Over the pill's own ::after (its finger-sized hit area), or that would take the tap. */

@@ -2,7 +2,7 @@
 // A day in a thread ("Today", "Yesterday", "Monday", "March 4"): centred, quiet, in the mono
 // eyebrow type. The label comes from `dayLabel` (utils/chat/timeline.ts; UiChatThread draws one per
 // `day` row of `timeline`). A list item by default (`tag`), since a thread is a list.
-// Moved from Bookretreats' chat page (`friends/[id].vue`, `.day`).
+// Moved into the base with the thread.
 withDefaults(defineProps<{ label: string; tag?: string; testid?: string }>(), { tag: 'li', testid: 'chat' })
 </script>
 

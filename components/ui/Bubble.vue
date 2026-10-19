@@ -9,14 +9,14 @@ import { canStartSwipe, gestureAxis, replyArmed, replyProgress, replyTravel } fr
 import { clockTime } from '../../utils/chat/timeline'
 import { mediaBox, reactionsLabel, type BubbleMessage, type BubbleQuote } from '../../utils/chat/message'
 
-// One message of the thread (moved from Bookretreats' `ChatMessage.vue`, unchanged in look and
-// behaviour). Hers is a raised paper card on the left (`surface-raised`, a hairline edge,
-// `shadow-raised`, `body` in ink); mine is ink with `on-ink` type on the right; both 78 % wide at
+// One message of the thread (moved into the base unchanged in look and behaviour). Theirs is a
+// raised paper card on the left (`surface-raised`, a hairline edge, `shadow-raised`, `body` in ink);
+// mine is ink with `on-ink` type on the right; both 78 % wide at
 // most, radius `lg`. The corner towards the speaker's side is small (`tail`) on the last message of a
 // run only (`endsRun`, the thread decides), the earlier ones stay round. A photo or GIF is the card's
-// content: the image fills the same shape (hers keeps the hairline over the picture). A voice message
-// is UiVoiceBubble. Any other kind (Bookretreats' shared phone number) is the app's: it draws it in
-// the `body` slot (`wide` for a card as wide as a voice message). A system line is not a bubble: the
+// content: the image fills the same shape (theirs keeps the hairline over the picture). A voice message
+// is UiVoiceBubble. Any other kind (an app's own, such as a shared contact card) is the app's: it
+// draws it in the `body` slot (`wide` for a card as wide as a voice message). A system line is not a bubble: the
 // app draws it outside. The time shows on a long press only.
 //
 // Slots over defaults that stand alone: `sender` (the name over the first bubble of a run: `sender`
@@ -26,7 +26,7 @@ import { mediaBox, reactionsLabel, type BubbleMessage, type BubbleQuote } from '
 //
 // Mine on its way is a touch lighter; held up long enough, "Sending …" shows under it. Mine that did
 // not go out sends again on a tap: the bubble, or the reason under it, which is the named button.
-// "Read" goes under my last message once she has read it (the thread decides which: `read`).
+// "Read" goes under my last message once the other side has read it (the thread decides which: `read`).
 //
 // Reactions: a long press on a stored message opens the reaction bar (UiReactionBar, the app's
 // `emojis`) over it (`reacting`, the thread keeps one open at a time and says whether it fits above,
@@ -51,9 +51,9 @@ import { mediaBox, reactionsLabel, type BubbleMessage, type BubbleQuote } from '
 // jumps to the original (`quoteTap`; UiChatThread's `jumpTo`), which lights up for a moment
 // (`highlight`).
 //
-// Double tap (a double click with a mouse) on a bubble puts my like (`like`, ❤️) on it, or takes it
-// back when it is there: the same path as the bar's (`react`), on hers and on mine, only on a message
-// she may react to. A short heart pops on the bubble (`heart-pop`) with a haptic tick. Taps are
+// Double tap (a double click with a mouse) on a bubble puts my like (`like`, else the first of `emojis`) on it, or takes it
+// back when it is there: the same path as the bar's (`react`), on theirs and on mine, only on a message
+// the reader may react to. A short heart pops on the bubble (`heart-pop`) with a haptic tick. Taps are
 // counted on `click`, so a finger and a mouse go the same way; a single tap on text waits for nothing.
 // A photo or GIF opens full screen on a single tap as before, but where it can be liked it waits one
 // double-tap window for a second tap first. A link, a button (in the `body` slot) or the pill is never
@@ -69,11 +69,11 @@ const props = withDefaults(
     sender?: string | null
     /** The last message of a run from the same person: only it has the small corner. */
     endsRun?: boolean
-    /** She may react here (a stored message, not a system line, nobody departed). */
+    /** The reader may react here (a stored message, not a system line, nobody departed). */
     canReact?: boolean
     /** The emoji of the reaction bar, in its order (the app's set). */
-    emojis?: readonly string[]
-    /** What a double tap puts on the bubble (and takes back): the like. */
+    emojis: readonly string[]
+    /** What a double tap puts on the bubble (and takes back); the first of `emojis` when not given. */
     like?: string
     /** The message this one answers, or null: the quote on top of the bubble. */
     quote?: BubbleQuote | null
@@ -91,8 +91,7 @@ const props = withDefaults(
     sender: null,
     endsRun: true,
     canReact: false,
-    emojis: () => ['❤️', '😂', '😮', '😢', '🔥'],
-    like: '❤️',
+    like: undefined,
     reacting: false,
     placement: 'above',
     quote: null,
@@ -107,7 +106,7 @@ const emit = defineEmits<{
   reactOpen: [key: string, element: HTMLElement]
   reactClose: []
   react: [messageId: string, emoji: string]
-  /** She answered this message (the swipe, or the bar's entry): the composer quotes it. */
+  /** The reader answers this message (the swipe, or the bar's entry): the composer quotes it. */
   reply: [key: string]
   /** A tap on the bubble's quote: find that message and light it up. */
   quoteTap: [id: string]
@@ -177,7 +176,7 @@ function tapVoice(event: Event) {
 }
 
 const at = computed(() => new Date(props.item.createdAt))
-const time = computed(() => clockTime(at.value))
+const time = computed(() => clockTime(at.value, chat.value.locale))
 
 const failed = computed(() => props.item.delivery === 'failed')
 const failedText = computed(() => (props.item.error ? `${props.item.error} ${chat.value.retryHint}` : chat.value.failed))
@@ -316,6 +315,8 @@ function pressEnd() {
 
 // Double tap: a second tap within the window likes (or un-likes) with ❤️.
 const DOUBLE_TAP_MS = 300
+/** The like: the app's own, or the first emoji of its set. */
+const like = computed(() => props.like ?? props.emojis[0] ?? '')
 let lastTapAt = 0
 let openTimer: ReturnType<typeof setTimeout> | undefined
 const pop = ref(0)
@@ -327,8 +328,8 @@ function registerTap(): boolean {
     return false
   }
   lastTapAt = 0
-  const adding = props.item.myReaction !== props.like
-  if (props.item.id) emit('react', props.item.id, props.like)
+  const adding = props.item.myReaction !== like.value
+  if (props.item.id && like.value) emit('react', props.item.id, like.value)
   if (adding) {
     tick()
     pop.value++
@@ -507,7 +508,7 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
             @pointerdown.stop
           />
         </Transition>
-        <!-- The app's own kinds (Bookretreats' phone card): the slot draws the whole card, the quote
+        <!-- The app's own kinds (a contact card, say): the slot draws the whole card, the quote
              in it with `tapQuote`. -->
         <slot name="body" :item="item" :tail="tail" :quote="quote" :tap-quote="tapQuote">
           <!-- A picture: gone with its sender, or the image (tap: full screen). -->
@@ -517,7 +518,7 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
             :class="tail"
             :data-testid="`${testid}.mediaRemoved`"
           >
-            <!-- A quiet `fill` ground, hers and mine alike: no on-ink type here either. -->
+            <!-- A quiet `fill` ground, theirs and mine alike: no on-ink type here either. -->
             <slot name="quote" :quote="quote" :mine="false" :tap="tapQuote">
               <UiQuote v-if="quote" class="mb-xs not-italic" :quote="quote" :testid="testid" @tap="tapQuote" />
             </slot>
@@ -534,7 +535,7 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
           <div
             v-else-if="item.kind === 'media' && item.media"
             class="relative w-fit overflow-hidden rounded-lg bg-fill"
-            :class="[tail, item.mine ? 'bg-ink' : 'media-hers shadow-raised']"
+            :class="[tail, item.mine ? 'bg-ink' : 'media-theirs shadow-raised']"
           >
             <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
               <UiQuote v-if="quote" class="m-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
@@ -654,7 +655,7 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
 
       <time
         :datetime="item.createdAt"
-        class="mark px-xs pt-xs text-caption text-ink-faint tabular-nums"
+        class="px-xs pt-xs text-caption text-ink-faint tabular-nums"
         :class="showTime ? '' : 'sr-only'"
         :data-testid="`${testid}.time`"
       >
@@ -670,10 +671,10 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
       >
         <span role="status" :data-testid="`${testid}.failed`">{{ failedText }}</span>
       </button>
-      <p v-else-if="item.delivery === 'sending' && slow" class="mark px-xs pt-xs text-caption text-ink-faint" :data-testid="`${testid}.sending`">
+      <p v-else-if="item.delivery === 'sending' && slow" class="px-xs pt-xs text-caption text-ink-faint" :data-testid="`${testid}.sending`">
         {{ chat.sending }}
       </p>
-      <p v-else-if="read" class="mark px-xs pt-xs text-caption text-ink-faint" :data-testid="`${testid}.read`">
+      <p v-else-if="read" class="px-xs pt-xs text-caption text-ink-faint" :data-testid="`${testid}.read`">
         {{ chat.read }}
       </p>
     </slot>
@@ -681,12 +682,6 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
 </template>
 
 <style scoped>
-/* The marks under a bubble (the time, "Read", "Sending …") are mono, as every figure is. */
-.mark {
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  line-height: var(--text-meta--line-height);
-}
 /* A long press opens the reaction bar on a phone: no text selection, no callout
    in its way (the bar has "Copy"). A mouse still selects. */
 .holder {
@@ -737,9 +732,9 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
     user-select: none;
   }
 }
-/* Hers: the card's hairline over the picture too (an inset shadow on the button itself
+/* Theirs: the card's hairline over the picture too (an inset shadow on the button itself
    would sit under the image). */
-.media-hers::after {
+.media-theirs::after {
   content: '';
   position: absolute;
   inset: 0;

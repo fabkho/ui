@@ -59,8 +59,13 @@ export function dayLabel(at: Date, now: Date, words: DayWords): string {
   return format(words.locale, { day: 'numeric', month: 'long', ...(withYear ? { year: 'numeric' } : {}) }).format(at)
 }
 
-/** The time of a message, 24 hours: "9:05", "14:30". */
-export function clockTime(at: Date): string {
+/**
+ * The time of a message. With a `locale` (`ui.text.chat.locale`) it is that language's clock through
+ * `Intl` ("9:05" and "14:30" in German, "9:05 AM" in American English); without one, 24 hours with the
+ * hour unpadded ("9:05", "14:30").
+ */
+export function clockTime(at: Date, locale?: string): string {
+  if (locale) return format(locale, { hour: 'numeric', minute: '2-digit' }).format(at)
   return `${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')}`
 }
 

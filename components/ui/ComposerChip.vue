@@ -2,13 +2,28 @@
 import UiIcon from './Icon.vue'
 import type { IconName } from './Icon.vue'
 
-// A floating action over UiComposer's capsule (Libellus' filter chip on glass, 34 px drawn, the
-// finger's 44 around it): "Photo", "GIF", and the app's own in the composer's `actions` slot
-// (Bookretreats' "Share number"). `label` is its name for a screen reader; the visible words (the
-// default slot) are hidden from it, so it is named once. `icon` draws one of the base's glyphs before
-// the words, the `icon` slot any other; `mono` sets the words in the mono label type (the "GIF" mark).
-// The caller gives it its `data-testid`. Moved out of Bookretreats' `ChatComposer.vue` (`.pill`).
-withDefaults(defineProps<{ label: string; icon?: IconName; mono?: boolean }>(), { icon: undefined, mono: false })
+// A floating action over UiComposer's capsule (a filter chip on glass, 34 px drawn, the finger's 44
+// around it): "Photo", "GIF", and an app's own in the composer's `actions` slot ("Share number", say).
+// The visible words (the default slot) name it; `label` gives it a longer name for a screen reader
+// instead, which has to contain the visible words (WCAG 2.5.3, Label in Name: a voice-control user says
+// what they see) — in development a `label` that does not is warned about. `icon` draws one of the
+// base's glyphs before the words, the `icon` slot any other; `mono` sets the words in the mono label
+// type (the "GIF" mark). The caller gives it its `data-testid`.
+const props = withDefaults(defineProps<{ label?: string; icon?: IconName; mono?: boolean }>(), {
+  label: undefined,
+  icon: undefined,
+  mono: false,
+})
+
+const words = ref<HTMLElement | null>(null)
+if (import.meta.dev) {
+  onMounted(() => {
+    const visible = words.value?.textContent?.trim().toLowerCase() ?? ''
+    if (props.label && visible && !props.label.toLowerCase().includes(visible)) {
+      console.warn(`[UiComposerChip] label "${props.label}" does not contain the visible words "${visible}" (WCAG 2.5.3)`)
+    }
+  })
+}
 </script>
 
 <template>
@@ -16,7 +31,7 @@ withDefaults(defineProps<{ label: string; icon?: IconName; mono?: boolean }>(), 
     <slot name="icon">
       <UiIcon v-if="icon" :name="icon" :size="16" />
     </slot>
-    <span :class="mono && 'mono'" aria-hidden="true"><slot /></span>
+    <span ref="words" :class="mono && 'mono'" :aria-hidden="label ? 'true' : undefined"><slot /></span>
   </button>
 </template>
 
@@ -38,9 +53,10 @@ withDefaults(defineProps<{ label: string; icon?: IconName; mono?: boolean }>(), 
   line-height: 1;
   white-space: nowrap;
 }
+/* The finger's 44 around the 34 drawn. */
 .chip::after {
   position: absolute;
-  inset: -5px 0;
+  inset: calc((34px - var(--size-touch)) / 2) 0;
   content: '';
 }
 .chip:active {
@@ -53,8 +69,8 @@ withDefaults(defineProps<{ label: string; icon?: IconName; mono?: boolean }>(), 
 }
 .mono {
   font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--text-meta);
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.08em;
 }
 </style>

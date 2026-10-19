@@ -6,7 +6,7 @@ import { clock, PEAK_COUNT } from '../../utils/chat/voice'
 import { fillWords } from '../../utils/chat/words'
 import type { BubbleMessage } from '../../utils/chat/message'
 
-// A voice message in the thread: the same card as a text bubble (mine ink with `on-ink` type, hers the
+// A voice message in the thread: the same card as a text bubble (mine ink with `on-ink` type, theirs the
 // raised paper card with its hairline), holding a play button (inverted: paper on ink, ink on paper)
 // whose corners are concentric with the bubble's (the bubble's radius less the inset between them; next
 // to the tail corner the tail radius less the inset, see the style below), the waveform that is also
@@ -20,7 +20,7 @@ import type { BubbleMessage } from '../../utils/chat/message'
 //
 // A quote slot on top (`#quote`): a recording that answers a message shows it inside the same card, over
 // the play row, as a text bubble does. `tail` is the bubble's tail class (UiBubble decides it).
-// Moved from Bookretreats' `ChatVoiceBubble.vue`.
+// Moved into the base unchanged.
 const props = withDefaults(defineProps<{ item: BubbleMessage; tail: string; testid?: string }>(), { testid: 'chat' })
 const emit = defineEmits<{ press: [event: Event] }>()
 const uiText = useUiText()
@@ -44,7 +44,7 @@ const bars = computed(() => {
 const played = computed(() => Math.round(progress.value * bars.value.length))
 const shown = computed(() => (active.value && player.current.positionMs > 0 ? clock(player.current.positionMs / 1000) : clock(total.value / 1000, true)))
 const tailAtButton = computed(() => !mine.value && props.tail !== '')
-const label = computed(() => (mine.value ? words.value.mine : words.value.hers))
+const label = computed(() => (mine.value ? words.value.mine : words.value.theirs))
 const status = computed(() =>
   fillWords(words.value.position, {
     now: clock(active.value ? player.current.positionMs / 1000 : 0),
@@ -125,7 +125,7 @@ defineExpose({ toggle })
 
 <style scoped>
 /* The play button's corners follow the bubble's: the bubble's radius less the inset between them, so
-   the two curves are concentric. The bubble's small tail corner (hers, bottom left, last of a run) is next
+   the two curves are concentric. The bubble's small tail corner (theirs, bottom left, last of a run) is next
    to the button; there it is the tail radius less the inset, never below square. */
 .bubble {
   --voice-inset: var(--spacing-xs);
