@@ -204,6 +204,23 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
 8. **Types** from the base: `import type { IconName } from '#ui/components/ui/Icon.vue'`
    (`UiTab` from `TabBar.vue`; `SheetRestore` from `#ui/utils/sheetRestore`, not from `Sheet.vue`).
 
+### How an app learns about a release
+
+Nothing pushes a release into an app. Each app pulls it, with a bump pull request of its own that its owner
+reviews and merges (plan §5, wave 7):
+
+1. This repo tags `vX.Y.Z` (release-please) and publishes a GitHub release with the notes from `CHANGELOG.md`.
+2. Each app's workflow `ui-bump.yml` runs weekly (Monday morning, UTC). It reads the tag the app pins in
+   `package.json` and the newest non-draft, non-pre-release of this repo. A newer release opens the bump: the app's
+   `package.json` and lockfile move to the tag, the release notes go in the pull request body, and the app's checks
+   run on it (the job dispatches them, since a pull request opened with `GITHUB_TOKEN` starts none by itself).
+   Nothing newer, nothing opened; a branch that already has a pull request is left alone.
+3. The owner merges the bump when the app's checks, its contract test (step 6 above) and its screens are green.
+   An app runs the tag it pinned until that merge, and it can pin an older tag again (the rollback).
+
+Until the owner merges a bump, the app keeps its old tag, so a release here never reaches a deployed app unreviewed.
+To try a release by hand: `DRY_RUN=1 bash .github/scripts/ui-bump.sh` in an app's repository (no push, no pull request).
+
 ### The additive API policy
 
 A release never renames or reshapes what an app already uses: a component, a prop, a slot, an emitted
