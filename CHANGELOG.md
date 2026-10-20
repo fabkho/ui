@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.6.0](https://github.com/fabkho/ui/compare/v0.5.0...v0.6.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* import paths. '#ui/utils/x' is '#layers/ui/app/utils/x', '#ui/components/ui/X.vue' is '#layers/ui/app/components/ui/X.vue', '@import "#ui/assets/css/ui.css"' is '@import "#layers/ui/app/assets/css/ui.css"' and '@fabkho/ui/assets/...' is '@fabkho/ui/app/assets/...'. '@fabkho/ui/pure/*' and '@fabkho/ui/testing/*' keep their paths. An app's vitest.config.ts aliases '#layers/ui' itself (plain Node does not know it).
+
+### Features
+
+* UiAmbient grain as a choice (image or inline SVG), set once in the app config ([bff6388](https://github.com/fabkho/ui/commit/bff6388ce5a89d07d23f98d7aad053085447c046))
+* UiCover identity, srcset and artwork-aware fallbacks, UiAmbient grain choice ([924fe65](https://github.com/fabkho/ui/commit/924fe659210842a80aa45c54c5c7694e06cf4e74))
+* UiCover identity, srcset, sizes and artwork-aware fallbacks; UiAmbient grain as inline SVG ([f49cf72](https://github.com/fabkho/ui/commit/f49cf728114671bbbb73c1ed72c1d18839c3bcdf))
+
+
+### Fixes
+
+* **a11y:** Tab and Shift+Tab stay inside the top-most modal layer ([bda3b2c](https://github.com/fabkho/ui/commit/bda3b2c7796cc910462e5c5bf268a9571fda1991))
+* **a11y:** Tab and Shift+Tab stay inside the top-most modal layer ([f4a6ec5](https://github.com/fabkho/ui/commit/f4a6ec59b1ad7bc0ad304c16bd8234592608311f))
+
+
+### Refactoring
+
+* give the layer an app/ folder and reach it as #layers/ui, and make overrides visible ([0dd3f95](https://github.com/fabkho/ui/commit/0dd3f95f981640a89154d27b19b5d9c6f3f7d208))
+
 ## [0.5.0](https://github.com/fabkho/ui/compare/v0.4.0...v0.5.0) (2026-10-19)
 
 
