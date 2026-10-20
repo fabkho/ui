@@ -3,7 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiVoiceBubble from './VoiceBubble.vue'
 import UiQuote from './Quote.vue'
 import { useVoicePlayer } from '../../composables/useVoicePlayer'
-import { quote, voiceMessage } from '../../.storybook/chat-fixtures'
+import { quote, voiceMessage } from '../../../.storybook/chat-fixtures'
 
 /**
  * What the player says is shared by the whole app (`useVoicePlayer`: one voice at a time, `current.key` is

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { hapticsKind, isRatingStep, STEP_GAP_MS, stepTick, tick, TICK_MS } from '../utils/haptics'
+import { hapticsKind, isRatingStep, STEP_GAP_MS, stepTick, tick, TICK_MS } from '../app/utils/haptics'
 
 describe('a haptic tick on the rating', () => {
   it('ticks when the Rating moves to another step, not when it stays', () => {

@@ -2,7 +2,7 @@
  * Voice messages: what a phone records, how a recording is described and when it can be played.
  * Framework-free: the rules and the pure helpers run anywhere (Vitest, plain Node); `MediaRecorder`
  * and `Audio` belong to the recorder and the player (composables). Not auto-imported: import from
- * `#ui/utils/chat/voice`, or from `@fabkho/ui/pure/voice` in plain Node.
+ * `#layers/ui/app/utils/chat/voice`, or from `@fabkho/ui/pure/voice` in plain Node.
  *
  * Plain ESM with JSDoc types (no build step): TypeScript reads the JSDoc, so consumers get the types
  * without a compile of their own.

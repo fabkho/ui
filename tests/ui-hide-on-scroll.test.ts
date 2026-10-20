@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { barAfterScroll, barHeld, barShown, INTENT_PX, MIN_END_PX, type BarScroll } from '../utils/hideOnScroll'
+import { barAfterScroll, barHeld, barShown, INTENT_PX, MIN_END_PX, type BarScroll } from '../app/utils/hideOnScroll'
 
 /**
  * The tab bar on a pushed screen (issue #82, utils/hideOnScroll.ts): it hides

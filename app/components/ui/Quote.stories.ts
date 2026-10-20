@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, within } from 'storybook/test'
 import UiQuote from './Quote.vue'
-import { quote } from '../../.storybook/chat-fixtures'
+import { quote } from '../../../.storybook/chat-fixtures'
 
 // A quote sits on top of a bubble, so the stories draw it on the ground it has there: the paper card for
 // theirs, the ink bubble for mine (`mine` turns the type to on-ink).

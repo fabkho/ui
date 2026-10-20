@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { fillWords } from '../utils/chat/words'
-import { mediaBox, reactionName, reactionsLabel, reactionWho, sameSide, type BubbleReaction } from '../utils/chat/message'
-import { endsRun, follows, timeline } from '../utils/chat/timeline'
-import { gifColumns, latestRequest } from '../utils/chat/gif'
-import { LIVE_BARS, liveRow } from '../utils/chat/voice'
+import { fillWords } from '../app/utils/chat/words'
+import { mediaBox, reactionName, reactionsLabel, reactionWho, sameSide, type BubbleReaction } from '../app/utils/chat/message'
+import { endsRun, follows, timeline } from '../app/utils/chat/timeline'
+import { gifColumns, latestRequest } from '../app/utils/chat/gif'
+import { LIVE_BARS, liveRow } from '../app/utils/chat/voice'
 
 // The pure parts the chat components draw with (UiBubble, UiReactionBar, UiComposer, UiGifPicker,
 // UiVoiceBubble): the words with a blank, the reaction pill's label, a picture's shape before it loads,
@@ -129,7 +129,7 @@ describe('the English defaults of the components’ words', () => {
   let chat: Words
   beforeAll(async () => {
     ;(globalThis as { defineAppConfig?: unknown }).defineAppConfig = (config: unknown) => config
-    chat = ((await import('../app.config')).default as { ui: { text: { chat: Words } } }).ui.text.chat
+    chat = ((await import('../app/app.config')).default as { ui: { text: { chat: Words } } }).ui.text.chat
   })
 
   /** Every string under `ui.text.chat`, with its path. */

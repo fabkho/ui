@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import UiReactionBar from './ReactionBar.vue'
-import { EMOJIS } from '../../.storybook/chat-fixtures'
+import { EMOJIS } from '../../../.storybook/chat-fixtures'
 
 // The glass capsule is drawn over a bubble, so the stories sit it on a busy backdrop (the glass blurs it).
 const meta = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { heightKeyframes, isCut } from '../utils/clampText'
+import { heightKeyframes, isCut } from '../app/utils/clampText'
 
 /** The pure rules behind components/ui/ClampText.vue (UiClampText): when "more" shows, and how the height glides. */
 

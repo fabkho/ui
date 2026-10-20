@@ -7,7 +7,7 @@
  * An app whose copy is functions hands them over filled with the placeholder itself:
  * `pick: chat.reactions.pick('{name}')`.
  *
- * Not auto-imported: import from `#ui/utils/chat/words`.
+ * Not auto-imported: import from `#layers/ui/app/utils/chat/words`.
  */
 export function fillWords(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole))

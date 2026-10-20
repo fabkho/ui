@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { dayLabel, timeline } from '../utils/chat/timeline'
-import { quoteName, quotePreview } from '../utils/chat/reply'
+import { dayLabel, timeline } from '../app/utils/chat/timeline'
+import { quoteName, quotePreview } from '../app/utils/chat/reply'
 
 // The layer's own chat words (`ui.text.chat` in app.config.ts): English, like the rest of
 // `ui.text`, and usable as they are as the words the chat utils take. `defineAppConfig` is a
@@ -10,7 +10,7 @@ type Chat = any
 let chat: Chat
 beforeAll(async () => {
   ;(globalThis as { defineAppConfig?: unknown }).defineAppConfig = (config: unknown) => config
-  chat = ((await import('../app.config')).default as { ui: { text: { chat: Chat } } }).ui.text.chat
+  chat = ((await import('../app/app.config')).default as { ui: { text: { chat: Chat } } }).ui.text.chat
 })
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h)

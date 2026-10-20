@@ -1,21 +1,10 @@
-import { fileURLToPath } from 'node:url'
-
-// The shared UI layer (README.md): Libellus' design system as a Nuxt layer.
-// Nuxt picks it up from `~~/layers/ui` by itself; its components register as
-// `Ui*` (components/ui/Button.vue → UiButton), its composables and utils are
-// auto-imported, and app.config.ts carries the few words it says itself.
-// `#ui` reaches its files from the app (`import type { IconName } from '#ui/components/ui/Icon.vue'`).
-//
-// The router options (`router.options.ts`, the system Back closing the top sheet)
-// are not found by themselves: Nuxt looks for `<layer>/app/router.options.ts`, and
-// this layer has no `app/` folder (its root is its source directory). The hook adds
-// the file right behind Nuxt's own, so the app's options still come after it.
+// The shared UI layer (README.md): Libellus' design system as a Nuxt layer, in the shape Nuxt documents
+// (https://nuxt.com/docs/4.x/guide/going-further/layers): the source is `app/`, which Nuxt scans by itself.
+// Its components register as `Ui*` (app/components/ui/Button.vue → UiButton), its composables and utils are
+// auto-imported, `app/app.config.ts` carries the few words it says itself, `app/router.options.ts` the system
+// Back that closes the top sheet, and `modules/overrides.ts` logs what an app replaces of the base. The layer's
+// name (`$meta`) makes `#layers/ui` the way to reach its files from an app or a test
+// (`import type { IconName } from '#layers/ui/app/components/ui/Icon.vue'`); it follows `UI_LAYER`, as the layer does.
 export default defineNuxtConfig({
   $meta: { name: 'ui' },
-  alias: { '#ui': fileURLToPath(new URL('./', import.meta.url)) },
-  hooks: {
-    'pages:routerOptions'(context) {
-      context.files.splice(1, 0, { path: fileURLToPath(new URL('./router.options.ts', import.meta.url)) })
-    },
-  },
 })

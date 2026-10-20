@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverCrop, flipTransform, morphFrames } from '../utils/flip'
+import { coverCrop, flipTransform, morphFrames } from '../app/utils/flip'
 
 describe('flipTransform', () => {
   it('draws the large box where the small one is', () => {

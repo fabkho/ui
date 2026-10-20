@@ -4,7 +4,7 @@
  * hold them (tests/chat-reply.test.ts); a bubble draws with them, the app builds the quotes with
  * them. The words come in (the layer's `ui.text.chat`, see `ReplyWords`).
  *
- * Not auto-imported: import from `#ui/utils/chat/reply`, or in plain Node from `@fabkho/ui/pure/reply`.
+ * Not auto-imported: import from `#layers/ui/app/utils/chat/reply`, or in plain Node from `@fabkho/ui/pure/reply`.
  * Plain ESM with JSDoc types (no build step).
  */
 

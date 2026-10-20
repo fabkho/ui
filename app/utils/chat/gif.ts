@@ -3,7 +3,7 @@
  * The provider itself (its key, its terms) is the app's: it comes in as the
  * picker's `search` prop.
  *
- * Not auto-imported: import from `#ui/utils/chat/gif`.
+ * Not auto-imported: import from `#layers/ui/app/utils/chat/gif`.
  */
 
 /** A GIF in the picker: the provider's id, the grid's preview and its size, and what a tap sends. */

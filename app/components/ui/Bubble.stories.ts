@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, waitFor, within } from 'storybook/test'
 import UiBubble from './Bubble.vue'
 import UiButton from './Button.vue'
-import { EMOJIS, message, photoMessage, picturesMedia, quote, voiceMessage } from '../../.storybook/chat-fixtures'
+import { EMOJIS, message, photoMessage, picturesMedia, quote, voiceMessage } from '../../../.storybook/chat-fixtures'
 
 // axe's `label-content-name-mismatch` wants the numbers a pill draws side by side ("5 3") to sit side by side in its name.
 // A pill with two counts says both ("Heart from 5, Surprised from 3": every drawn number is in the name, in order,

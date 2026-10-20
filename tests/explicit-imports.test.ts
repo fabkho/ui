@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
  */
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
-const SCANNED_DIRS = ['components', 'composables', 'utils', 'plugins']
+const SCANNED_DIRS = ['app/components', 'app/composables', 'app/utils', 'app/plugins']
 const SOURCE = /\.(vue|ts|mts)$/
 
 function walk(dir: string): string[] {
@@ -43,9 +43,9 @@ function stripComments(text: string): string {
 /** Names a base file exports (composables, utils, types) or is a component of. */
 const definedBy = new Map<string, string>()
 for (const file of files) {
-  if (file.rel.startsWith('components/')) {
+  if (file.rel.startsWith('app/components/')) {
     const base = file.rel.split('/').pop()!.replace(/\.vue$/, '')
-    const folder = file.rel.split('/').slice(1, -1).map((s) => s[0].toUpperCase() + s.slice(1))
+    const folder = file.rel.split('/').slice(2, -1).map((s) => s[0].toUpperCase() + s.slice(1))
     definedBy.set([...folder, base].join(''), file.rel)
     continue
   }

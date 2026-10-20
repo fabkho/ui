@@ -17,8 +17,8 @@ import { fileURLToPath } from 'node:url'
 export const LAYER_ROOT = fileURLToPath(new URL('../', import.meta.url))
 
 /** What the layer ships and the contract reads: the Nuxt layer's folders and its root files, not tests or tooling. */
-const FOLDERS = ['assets', 'components', 'composables', 'plugins', 'utils']
-const ROOT_FILES = ['app.config.ts', 'nuxt.config.ts', 'router.options.ts']
+const FOLDERS = ['assets', 'components', 'composables', 'plugins', 'utils'].map((folder) => `app/${folder}`)
+const ROOT_FILES = ['nuxt.config.ts', 'app/app.config.ts', 'app/router.options.ts']
 
 /** Variables the layer sets itself (component styles, the safe-area frame) rather than reads from the tokens. */
 export const OWN_VARIABLES = [
@@ -224,7 +224,7 @@ export function layerContract({ tokensCss, root = LAYER_ROOT }) {
   }
 
   // 3. Every cloth a generated cover can pick has its colour.
-  const count = Number(/CLOTH_COUNT\s*=\s*(\d+)/.exec(code(join(root, 'utils/cloth.ts')))?.[1])
+  const count = Number(/CLOTH_COUNT\s*=\s*(\d+)/.exec(code(join(root, 'app/utils/cloth.ts')))?.[1])
   const missingCloths = []
   for (let n = 1; n <= count; n++) if (!defined.has(`--color-cloth${n}`)) missingCloths.push(`--color-cloth${n}`)
 

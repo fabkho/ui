@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FLAT, TILT_MAX_DEG, between, leanAt, leanTransform, mayLean, stillCovers } from '../utils/coverTilt'
-import { progressAt, timeAt } from '../utils/motion'
+import { FLAT, TILT_MAX_DEG, between, leanAt, leanTransform, mayLean, stillCovers } from '../app/utils/coverTilt'
+import { progressAt, timeAt } from '../app/utils/motion'
 
 /**
  * The hero cover's lean (utils/coverTilt.ts; docs/MOTION.md, Hero cover): the arithmetic and the

@@ -9,7 +9,7 @@ import { layerFiles, stripFileComments } from '../testing/contract.mjs'
  * never writes either, and gives fields their 16 px in CSS, on iOS only. The rule's effect is checked in a real
  * WebKit (Bookretreads' iPhone project); here it is pinned as text.
  */
-const css = readFileSync(fileURLToPath(new URL('../assets/css/ui.css', import.meta.url)), 'utf8')
+const css = readFileSync(fileURLToPath(new URL('../app/assets/css/ui.css', import.meta.url)), 'utf8')
 const ios = css.slice(css.indexOf('@supports (-webkit-touch-callout: none) {\n  @layer base'), css.indexOf('/* Safari has no `scrollbar-color`'))
 
 describe('no zoom on focus', () => {

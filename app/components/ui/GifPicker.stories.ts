@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiGifPicker from './GifPicker.vue'
 import UiButton from './Button.vue'
-import { brokenGifSearch, fakeGifSearch, GIF_FEEDS, slowGifSearch } from '../../.storybook/chat-fixtures'
+import { brokenGifSearch, fakeGifSearch, GIF_FEEDS, slowGifSearch } from '../../../.storybook/chat-fixtures'
 
 // The picker is a sheet, so it is a modal layer: while it is open the rest of the page is `inert` and focus is
 // inside it. Every story shows a button that opens it, and (as for UiSheet) the docs page draws them in an

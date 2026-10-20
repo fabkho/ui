@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
  * (a template branch), no branch is for a name the type lacks, and the icons story shows each of them.
  * Static scan of the files; nothing is rendered here.
  */
-const read = (name: string) => readFileSync(fileURLToPath(new URL(`../components/ui/${name}`, import.meta.url)), 'utf8')
+const read = (name: string) => readFileSync(fileURLToPath(new URL(`../app/components/ui/${name}`, import.meta.url)), 'utf8')
 const icon = read('Icon.vue')
 const story = read('Icon.stories.ts')
 

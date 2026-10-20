@@ -1,7 +1,7 @@
 /* What an app's main.css is: Tailwind, the app's tokens, then the layer. */
 @import 'tailwindcss';
 @import './tokens.css';
-@import '../assets/css/ui.css';
+@import '../app/assets/css/ui.css';
 
 /* A story on the docs page sits on the theme's room, so the dark theme is seen dark there too. */
 .docs-story {

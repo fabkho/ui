@@ -24,7 +24,7 @@ describe('optional variables', () => {
   })
 
   it('are what the glass utility reads: the Glass setting, and an app without it gets the design', () => {
-    const css = readFileSync(fileURLToPath(new URL('../assets/css/ui.css', import.meta.url)), 'utf8')
+    const css = readFileSync(fileURLToPath(new URL('../app/assets/css/ui.css', import.meta.url)), 'utf8')
     const glass = css.slice(css.indexOf('@utility glass'), css.indexOf('@utility veil-tint'))
     expect(glass).toContain('var(--glass-solid, 0%)')
     expect(glass).toContain('var(--glass-scale, 1)')
