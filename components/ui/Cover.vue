@@ -18,7 +18,14 @@ import { clothOf, formatAuthors, glowOf, thumbhashDataUrl } from '../../utils/cl
 // The sheet (`data-cover`: image or cloth, without the glow) is what flies
 // between a list and the book page (composables/useBookFlight.ts).
 // `fallbacks` are tried in turn when the image fails or comes back blank (a
-// source's 1 × 1 stand-in), before the Placeholder.
+// source's 1 × 1 stand-in), before the Placeholder: for a CDN that renders any
+// size, the same artwork at its other sizes, so a row and a page never show two pictures.
+// A cover shows its subject's cover and follows it (utils/coverShowing.ts): a new `src` starts it
+// afresh, unless `artworkOf` says it is another size of the image in view, which stays in view
+// until the new size has loaded; another `identity` always starts it afresh. `srcset` and `sizes`
+// (for `src`) let the browser pick the narrowest sharp size; the halo and the backing say the same,
+// so all three are one download. None of it is set by default: a cover is `src` and its fallbacks. An app that
+// has the same rule for all its covers says it once, as `ui.cover.sources` and `ui.cover.artworkOf` in its app config.
 // `whole` (an ebook file's own cover, #131: files carry covers of any shape):
 // an image clearly off the book's 2:3 (more than WHOLE_TOLERANCE either way)
 // is shown whole, fitted into the slot (object-fit: contain), on a blurred
@@ -30,14 +37,30 @@ import { clothOf, formatAuthors, glowOf, thumbhashDataUrl } from '../../utils/cl
 // is untouched; off with Reduce Motion and while anything moves.
 import { isBlankCover, type CoverColors } from '../../utils/cloth'
 import { attachCoverTilt } from '../../utils/coverTilt'
+import { coverFailed, coverInputChanged, coverNow, coverShown, startCover } from '../../utils/coverShowing'
 
 const props = withDefaults(
   defineProps<{
     title: string
     authors?: readonly string[]
     src?: string | null
-    /** The images to try, in order, after `src` fails or is blank. */
+    /** The images to try, in order, after `src` fails or is blank. Default: the app's (`ui.cover.sources`), else none. */
     fallbacks?: readonly string[]
+    /** The sizes `src` is offered at (an `img` `srcset`, by width), used for `src` only and not after a size of it failed. Default: the app's. */
+    srcset?: string | null
+    /** What width the cover renders at, for `srcset` (an `img` `sizes`). Default: the app's. */
+    sizes?: string
+    /**
+     * What the cover is of: an edition's ISBN, say. Another `identity` starts the cover afresh,
+     * even at the same artwork (a change of edition). Default: the title and authors.
+     */
+    identity?: string
+    /**
+     * Which artwork a URL is of, whatever size it is asked at. A new `src` of the artwork in view
+     * is another size of it: the cover keeps that image until the size has loaded. Default: the app's (`ui.cover.artworkOf`),
+     * else every URL is its own artwork.
+     */
+    artworkOf?: (url: string) => string
     thumbhash?: string | null
     colors?: CoverColors | null
     size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -59,7 +82,7 @@ const props = withDefaults(
     /** The sheet leans under the finger (the Book page's hero). */
     tilt?: boolean
   }>(),
-  { authors: () => [], src: null, fallbacks: () => [], thumbhash: null, colors: null, size: 'sm', glow: false, eager: false, priority: false, decorative: false, whole: false, kind: 'book', tilt: false },
+  { authors: () => [], src: null, fallbacks: () => [], srcset: null, sizes: undefined, identity: undefined, artworkOf: undefined, thumbhash: null, colors: null, size: 'sm', glow: false, eager: false, priority: false, decorative: false, whole: false, kind: 'book', tilt: false },
 )
 
 /** How far an image's shape may be from 2:3 (as a share of it) and still fill the slot when `whole`. */
@@ -83,22 +106,45 @@ const RADII = { xxs: 'rounded-cover-sm', xs: 'rounded-cover-sm', sm: 'rounded-co
 const loaded = ref(false)
 /** The showing image is of another shape than 2:3 and `whole`: fitted, not cropped. */
 const fitted = ref(false)
-/** Which image is showing: `src`, then each of `fallbacks` after one that failed or came back blank. */
-const attempt = ref(0)
+/** What shows: `src`, then its fallbacks after one that failed or came back blank (`CoverShowing`). */
+const identityKey = computed(() => props.identity ?? `${props.title}\n${props.authors.join('\n')}`)
+// The app says once, for every cover, how its sources work (`ui.cover` in the app config); a prop wins over it.
+const config = useAppConfig()
+const sources = computed(() => (props.src ? config.ui.cover?.sources?.(props.src, props.size) : null))
+const fallbackList = computed(() => (props.fallbacks.length ? props.fallbacks : (sources.value?.fallbacks ?? [])))
+const input = () => ({ src: props.src, fallbacks: fallbackList.value, identity: identityKey.value })
+const artwork = (url: string) => (props.artworkOf ?? config.ui.cover?.artworkOf)?.(url) ?? url
+const showing = ref(startCover(input()))
+const current = computed(() => coverNow(showing.value))
+
+/** Without an image in view the cover starts over (not loaded, not fitted). */
+function settle() {
+  if (showing.value.shown !== null) return
+  loaded.value = false
+  fitted.value = false
+}
+
 watch(
-  () => props.src,
+  () => [props.src ?? '', ...fallbackList.value, identityKey.value].join('\0'),
   () => {
-    loaded.value = false
-    fitted.value = false
-    attempt.value = 0
+    showing.value = coverInputChanged(showing.value, input(), artwork)
+    settle()
   },
 )
-const current = computed(() => (props.src ? ([props.src, ...props.fallbacks][attempt.value] ?? null) : null))
 
-function next() {
+function failed(image: HTMLImageElement) {
+  showing.value = coverFailed(showing.value, image.currentSrc || image.src, artwork)
+  // A size of what was in view failing: it loads again from the size that loaded, and fades in again.
   loaded.value = false
-  attempt.value++
+  if (showing.value.shown === null) fitted.value = false
 }
+
+// What the three images (the halo, the backing, the cover) ask for: one `src`, and `src`'s sizes while it is the one tried.
+const imageSet = computed(() => {
+  const srcset = props.srcset ?? sources.value?.srcset
+  const offered = srcset && showing.value.srcset && showing.value.attempt === 0 && current.value === props.src
+  return { src: current.value!, srcset: offered ? srcset : undefined, sizes: offered ? (props.sizes ?? sources.value?.sizes) : undefined }
+})
 
 const showImage = computed(() => Boolean(current.value))
 watch(showImage, (shown) => emit('fallback', !shown), { immediate: true })
@@ -110,7 +156,8 @@ watch(showImage, (shown) => emit('fallback', !shown), { immediate: true })
 function onLoad(event: Event) {
   const image = event.target as HTMLImageElement
   // A blank stand-in (OpenLibrary's 1×1 "no cover") moves on to the next source.
-  if (isBlankCover(image.naturalWidth, image.naturalHeight)) return next()
+  if (isBlankCover(image.naturalWidth, image.naturalHeight)) return failed(image)
+  showing.value = coverShown(showing.value, image.currentSrc || image.src)
   fitted.value = props.whole && Math.abs(image.naturalWidth / image.naturalHeight / (2 / 3) - 1) > WHOLE_TOLERANCE
   const shown = current.value
   const reveal = () => {
@@ -158,16 +205,16 @@ watch(
 <template>
   <div ref="root" class="relative shrink-0 aspect-2/3" :class="[WIDTHS[size], tilt && 'tilt']">
     <template v-if="glow">
-      <img v-if="showImage" :src="current!" alt="" class="halo" :class="!loaded && 'out'" :loading="eager ? 'eager' : 'lazy'" aria-hidden="true" />
+      <img v-if="showImage" v-bind="imageSet" alt="" class="halo" :class="!loaded && 'out'" :loading="eager ? 'eager' : 'lazy'" decoding="async" aria-hidden="true" />
       <span class="pool" :class="showImage && loaded && 'out'" :style="glowStyle" aria-hidden="true" />
     </template>
 
     <div class="sheet relative size-full overflow-hidden shadow-cover" :class="RADII[size]" :style="underlay" data-cover>
       <!-- Behind a fitted image only; the fitted image is positioned to paint over it. A cover that fills its slot stays unpositioned, as the flight expects. -->
-      <img v-if="showImage && fitted" :src="current!" alt="" class="backing" :class="loaded ? 'opacity-100' : 'opacity-0'" aria-hidden="true" />
+      <img v-if="showImage && fitted" v-bind="imageSet" alt="" class="backing" :class="loaded ? 'opacity-100' : 'opacity-0'" :loading="eager ? 'eager' : 'lazy'" decoding="async" aria-hidden="true" />
       <img
         v-if="showImage"
-        :src="current!"
+        v-bind="imageSet"
         :alt="decorative ? '' : title"
         :loading="eager ? 'eager' : 'lazy'"
         :fetchpriority="priority ? 'high' : undefined"
@@ -177,7 +224,7 @@ watch(
         :class="[loaded ? 'opacity-100' : 'opacity-0', fitted ? 'relative object-contain' : 'object-cover']"
         :data-fitted="fitted || undefined"
         @load="onLoad"
-        @error="next"
+        @error="failed($event.target as HTMLImageElement)"
       />
       <div
         v-else

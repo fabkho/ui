@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, waitFor, within } from 'storybook/test'
+import { reactive } from 'vue'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import UiCover from './Cover.vue'
 
 const SIZES = ['xxs', 'xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -22,6 +23,8 @@ const meta = {
     authors: ['Frank Herbert'],
     src: IMAGE,
     fallbacks: [],
+    srcset: null,
+    sizes: undefined,
     thumbhash: null,
     colors: COLORS,
     size: 'lg',
@@ -76,6 +79,140 @@ export const Loading: Story = {
 /** `fallbacks` are tried in turn when `src` fails, before the Placeholder. */
 export const Fallbacks: Story = {
   args: { src: 'data:image/png;base64,broken', fallbacks: [IMAGE] },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(within(canvasElement).getByRole('img', { name: 'Dune' })).toHaveAttribute('src', IMAGE))
+  },
+}
+
+const BROKEN = 'data:image/png;base64,broken'
+/** A source's blank stand-in (OpenLibrary's 1 × 1 GIF): it loads, but it is no cover. */
+const BLANK = svg(1, 1, '#ffffff', '#ffffff', '')
+
+/** A chain: the first fails, the second is a blank stand-in, the third is the cover. Each is tried in turn. */
+export const FallbackChain: Story = {
+  args: { src: BROKEN, fallbacks: [BLANK, IMAGE] },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(within(canvasElement).getByRole('img', { name: 'Dune' })).toHaveAttribute('src', IMAGE))
+  },
+}
+
+/** Every image of the chain failed (or was blank): the Placeholder, still named by the title. */
+export const AllFailed: Story = {
+  args: { src: BROKEN, fallbacks: [BLANK] },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('img')).toBeNull())
+    await expect(within(canvasElement).getByRole('img', { name: 'Dune' })).toHaveClass('cloth')
+  },
+}
+
+const FRAME = (box: string) => svg(Number(box.split('x')[0]), Number(box.split('x')[1]), '#c2410c', '#fde7c8', box)
+const NARROW = FRAME('120x180')
+const MEDIUM = FRAME('240x360')
+const WIDE = FRAME('600x900')
+
+/**
+ * `srcset` and `sizes`: the sizes `src` is offered at and the width the cover renders at, so the browser takes the
+ * narrowest one that is sharp (a 140 px cover on a 1× screen gets 240 w here, not 600 w). The halo and the backing
+ * ask for the same set, so all three are one download. A source that cannot render sizes (Open Library) sets neither.
+ */
+export const Srcset: Story = {
+  args: { src: NARROW, srcset: `${NARROW} 120w, ${MEDIUM} 240w, ${WIDE} 600w`, sizes: '140px', size: 'xl', glow: true },
+  play: async ({ canvasElement }) => {
+    const image = within(canvasElement).getByRole('img', { name: 'Dune' }) as HTMLImageElement
+    await expect(image).toHaveAttribute('sizes', '140px')
+    await waitFor(() => expect(image.currentSrc).not.toBe(''))
+    await expect(image.getAttribute('srcset')).toContain('600w')
+    await expect(canvasElement.querySelector('.halo')).toHaveAttribute('srcset', image.getAttribute('srcset')!)
+  },
+}
+
+/** The srcset is for `src` only: once `src` fails the cover falls back to a plain image of the chain. */
+export const SrcsetThenFallback: Story = {
+  args: { src: BROKEN, srcset: `${BROKEN} 120w, ${BROKEN} 600w`, sizes: '140px', fallbacks: [IMAGE], size: 'xl' },
+  play: async ({ canvasElement }) => {
+    const image = () => within(canvasElement).getByRole('img', { name: 'Dune' })
+    await waitFor(() => expect(image()).toHaveAttribute('src', IMAGE))
+    await expect(image()).not.toHaveAttribute('srcset')
+    await expect(image()).not.toHaveAttribute('sizes')
+  },
+}
+
+/**
+ * `ui.cover.sources` (app config): an app that has one rule for all its covers says it once, instead of at every call
+ * site. The cover below is given only `src` and `size`; the app's rule offers the fallbacks and the srcset. A prop wins.
+ */
+export const AppSources: Story = {
+  args: { src: BROKEN, size: 'xl' },
+  render: args => ({
+    components: { UiCover },
+    setup: () => {
+      updateAppConfig({
+        ui: {
+          cover: {
+            sources: (src: string) => (src === BROKEN ? { fallbacks: [NARROW], srcset: null } : { fallbacks: [], srcset: null }),
+            artworkOf: (url: string) => url,
+          },
+        },
+      })
+      // The layer's own default is empty: the next story starts without the app's rule.
+      onBeforeUnmount(() => {
+        const config = useAppConfig().ui.cover as Record<string, unknown>
+        for (const key of Object.keys(config)) delete config[key]
+      })
+      return { args }
+    },
+    template: `<UiCover v-bind="args" />`,
+  }),
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(within(canvasElement).getByRole('img', { name: 'Dune' })).toHaveAttribute('src', NARROW))
+  },
+}
+
+/**
+ * `identity` and `artworkOf`: a cover shows its subject's cover and follows it. The artwork's size lives in the URL's
+ * fragment here: another size of the artwork in view takes over once it has loaded (the image never goes blank in
+ * between); another artwork, or another `identity` at the same artwork (a new edition), starts the cover afresh.
+ */
+export const Identity: Story = {
+  render: args => ({
+    components: { UiCover },
+    setup: () => {
+      const state = reactive({ src: `${IMAGE}#small`, identity: 'edition-1' })
+      const other = svg(200, 300, '#1d4e89', '#d6e6f7', 'OTHER')
+      return {
+        args,
+        state,
+        artworkOf: (url: string) => url.split('#')[0]!,
+        sizeUp: () => (state.src = `${IMAGE}#large`),
+        newEdition: () => (state.identity = 'edition-2'),
+        otherArtwork: () => (state.src = other),
+      }
+    },
+    template: `
+      <div class="flex flex-col items-start gap-md">
+        <UiCover v-bind="args" :src="state.src" :identity="state.identity" :artwork-of="artworkOf" />
+        <div class="flex gap-sm text-caption text-ink">
+          <button type="button" class="min-h-11 rounded-md border border-line px-md" @click="sizeUp">Another size</button>
+          <button type="button" class="min-h-11 rounded-md border border-line px-md" @click="newEdition">New edition</button>
+          <button type="button" class="min-h-11 rounded-md border border-line px-md" @click="otherArtwork">Another artwork</button>
+        </div>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const sheet = () => canvasElement.querySelector<HTMLElement>('[data-cover]')!
+    const image = () => canvas.getByRole('img', { name: 'Dune' })
+    await waitFor(() => expect(image()).toHaveClass('opacity-100'))
+    // Another size of the artwork in view: the image stays in view while it swaps.
+    await userEvent.click(canvas.getByRole('button', { name: 'Another size' }))
+    await expect(image()).toHaveClass('opacity-100')
+    await waitFor(() => expect(image()).toHaveAttribute('src', `${IMAGE}#large`))
+    // Another artwork replaces it once it has loaded.
+    await userEvent.click(canvas.getByRole('button', { name: 'Another artwork' }))
+    await waitFor(() => expect(image().getAttribute('src')).not.toContain('#'))
+    await waitFor(() => expect(image()).toHaveClass('opacity-100'))
+    await expect(sheet()).toBeTruthy()
+  },
 }
 
 /** `whole`: an image clearly off 2:3 is fitted into the slot on a blurred copy of itself, so nothing is cut off. */
