@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/fabkho/ui/compare/v0.4.0...v0.5.0) (2026-10-19)
+
+
+### Features
+
+* app-supplied icon drawings and a text area footer slot ([7c8bc95](https://github.com/fabkho/ui/commit/7c8bc95afa2c2cd212ba75fb0451b00bf8c42466))
+* app-supplied icon drawings and a text area footer slot ([63324bc](https://github.com/fabkho/ui/commit/63324bc98307bdb5a26f84a97ca68371244d29b6))
+* UiListMotion's still prop, for lists that only add and remove items ([e6bfd86](https://github.com/fabkho/ui/commit/e6bfd86aaab3c57cee97781f220e3791bc592bcd))
+* UiListMotion's still prop, for lists that only add and remove items ([99c1638](https://github.com/fabkho/ui/commit/99c163840709feff53ed756c1074c4ea5fee1240))
+
 ## [0.4.0](https://github.com/fabkho/ui/compare/v0.3.0...v0.4.0) (2026-10-19)
 
 
