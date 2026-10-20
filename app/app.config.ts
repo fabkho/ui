@@ -62,6 +62,8 @@ export default defineAppConfig({
         read: 'Read',
         /** Under a message that is taking a while on its way. */
         sending: 'Sending …',
+        /** What a screen reader says when a message from the other side arrives while the thread is open ("{name}: the text"). */
+        incoming: 'New message from {name}',
         /** Under a message that did not go out; the bubble is the button. */
         failed: 'Not sent. Tap to try again.',
         /** After the app's own sentence for a refused message (`error` on the message). */

@@ -70,6 +70,12 @@ const props = withDefaults(
     signed?: boolean
     /** Who wrote it, above the first bubble of a run (`signed`); null: no name (1:1, as today). */
     sender?: string | null
+    /**
+     * Who wrote it, for a screen reader: read in front of the message ("Sam: …") when no name is drawn
+     * over it (a 1:1 chat, or the rest of a run). One's own message says "You" (`ui.text.chat.reply.you`)
+     * whatever this is. Default: `sender`, else nothing.
+     */
+    author?: string | null
     /** The last message of a run from the same person: only it has the small corner. */
     endsRun?: boolean
     /** The reader may react here (a stored message, not a system line, nobody departed). */
@@ -94,6 +100,7 @@ const props = withDefaults(
   {
     signed: false,
     sender: null,
+    author: null,
     endsRun: true,
     canReact: false,
     like: undefined,
@@ -440,6 +447,15 @@ onBeforeUnmount(() => {
 })
 
 const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-own' : 'chat-arrive') : ''))
+/**
+ * Who a screen reader says wrote it, in front of the message: "You" for one's own, else the name
+ * (`author`, or the group's `sender`), unless the name is drawn over the bubble and read there.
+ */
+const spokenAuthor = computed(() => {
+  if (props.item.mine) return chat.value.reply.you
+  if (props.signed && props.sender) return null
+  return props.author ?? props.sender
+})
 </script>
 
 <template>
@@ -454,6 +470,8 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
     :data-id="item.id || undefined"
     :data-highlight="highlight || undefined"
   >
+    <!-- Who wrote it, for a screen reader (the side is only drawn). -->
+    <span v-if="spokenAuthor" class="sr-only" :data-testid="`${testid}.author`">{{ spokenAuthor }}:</span>
     <!-- Who wrote it, over the first bubble of a run. -->
     <slot name="sender" :signed="signed" :sender="sender">
       <p v-if="signed && sender" class="px-xs pb-xs text-caption text-ink-faint" :data-testid="`${testid}.sender`">
@@ -477,7 +495,7 @@ const entrance = computed(() => (props.fresh ? (props.item.mine ? 'chat-arrive-o
         class="holder relative max-w-[78%]"
         :class="[
           wide || isVoice ? 'w-[78%]' : '',
-          item.delivery === 'sending' ? 'opacity-70' : '',
+          item.delivery === 'sending' ? 'opacity-80' : '',
           failed ? 'cursor-pointer' : '',
           item.reactions.length ? 'mb-ms' : '',
           highlight ? 'quote-flash rounded-lg' : '',

@@ -296,10 +296,10 @@ function onAfterLeave() {
              top edge; the title row 44 pt high, 16 pt below the top edge (so
              the title sits 38 pt down), ending 60 pt down. Both sides are as
              wide as the wider of Cancel and the action (each holds an invisible
-             copy of the other), so the title stays centred and a long one
-             truncates instead of pushing Cancel aside. -->
+             copy of the other), so the title stays centred and a long one wraps
+             (more lines at large text, WCAG 1.4.4) instead of pushing Cancel aside. -->
         <header
-          class="relative box-content grid h-(--size-touch) shrink-0 touch-none grid-cols-[minmax(max-content,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-sm px-ml pt-md"
+          class="relative box-content grid min-h-(--size-touch) shrink-0 touch-none grid-cols-[minmax(max-content,1fr)_minmax(0,auto)_minmax(max-content,1fr)] items-center gap-sm px-ml pt-md"
         >
           <span
             class="pointer-events-none absolute inset-x-0 top-(--spacing-grabber) mx-auto h-(--size-grabber-height) w-(--size-grabber) rounded-pill bg-ink-ghost"
@@ -317,7 +317,7 @@ function onAfterLeave() {
             </button>
             <span v-if="action" class="invisible col-start-1 row-start-1 -ml-sm px-sm text-body font-semibold" aria-hidden="true">{{ action }}</span>
           </div>
-          <h2 :id="titleId" class="min-w-0 truncate text-center text-body font-semibold" :data-testid="`${testid}.sheetTitle`">{{ title }}</h2>
+          <h2 :id="titleId" class="min-w-0 py-xs text-center text-body font-semibold wrap-anywhere" :data-testid="`${testid}.sheetTitle`">{{ title }}</h2>
           <div class="grid justify-items-end">
             <button
               v-if="action"

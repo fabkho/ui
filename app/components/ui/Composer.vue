@@ -208,7 +208,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       :inert="(!note && focused) || undefined"
       :data-testid="`${testid}.actions`"
     >
-      <div ref="chips" class="actions-row flex gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
+      <div ref="chips" class="actions-row flex flex-wrap gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
         <p v-if="note" class="pill glass edge" role="status" :data-testid="`${testid}.note`">
           <span>{{ note }}</span>
           <button type="button" class="note-close" :aria-label="noteLabel" :data-testid="`${testid}.noteClose`" @click="emit('dismissNote')">
@@ -234,7 +234,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
     </div>
     <!-- The row folds (its room goes to 0) while the field has the keyboard. -->
     <div v-else-if="photoAccept || gifs || $slots.actions" class="actions" :data-folded="focused || undefined" :inert="focused || undefined" :data-testid="`${testid}.actions`">
-      <div ref="chips" class="actions-row flex gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
+      <div ref="chips" class="actions-row flex flex-wrap gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
         <UiComposerChip v-if="photoAccept" :label="chat.composer.photoLabel" icon="camera" :data-testid="`${testid}.photo`" @click="picker?.click()">
           {{ chat.composer.photo }}
         </UiComposerChip>
