@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { wrapTab } from '../utils/focusWrap'
 import { useBackDismiss } from './useBackDismiss'
 
 /**
@@ -7,6 +8,10 @@ import { useBackDismiss } from './useBackDismiss'
  * sheet under a dialog — `inert`, so neither a tap nor Tab nor VoiceOver
  * reaches it), the page stops scrolling under it, focus moves into it and
  * goes back to whatever opened it once it closes.
+ *
+ * Tab stays in the top-most layer (WAI-ARIA dialog): past its last control it
+ * comes round to its first, Shift+Tab the other way (`utils/focusWrap.ts`), where
+ * a native modal dialog hands it on to the browser's own controls.
  *
  * Layers stack: a dialog over a sheet makes the sheet inert too, and closing
  * the dialog gives the sheet back. Every layer is teleported to `<body>`, so
@@ -36,9 +41,28 @@ const madeInert = new Set<HTMLElement>()
 /** The root's own `overflow` before the first layer locked it; null while unlocked. */
 let lockedOverflow: string | null = null
 
+let listening = false
+
+/** Tab in the top-most layer comes round; a Tab with focus elsewhere (a viewer over the layer) is not ours. */
+function onKeydown(event: KeyboardEvent) {
+  const top = stack.at(-1)
+  if (!top) return
+  const active = document.activeElement
+  if (active && active !== document.body && !contains(top, active)) return
+  wrapTab(event, top.elements().filter((el): el is HTMLElement => Boolean(el)))
+}
+
+/** The one Tab listener, there while any layer is. */
+function listen(on: boolean) {
+  if (on === listening) return
+  listening = on
+  document[on ? 'addEventListener' : 'removeEventListener']('keydown', onKeydown)
+}
+
 /** Brings `inert` and the scroll lock in line with the stack. */
 function apply() {
   const top = stack.at(-1)
+  listen(Boolean(top))
   const keep = (top?.elements() ?? []).filter((el): el is HTMLElement => Boolean(el))
   for (const child of Array.from(document.body.children)) {
     if (!(child instanceof HTMLElement) || child instanceof HTMLScriptElement) continue

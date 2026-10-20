@@ -3,6 +3,7 @@ import UiIcon from './Icon.vue'
 import { useSwipeDown } from '../../composables/useSwipeDown'
 import { durationToken, easingToken, prefersReducedMotion } from '../../utils/motion'
 import { morphFrames } from '../../utils/flip'
+import { wrapTab } from '../../utils/focusWrap'
 
 // A picture full screen: dark veil, the picture as large as the screen allows, a close
 // button in the corner. Esc, a tap beside the picture and a swipe down close it (no system-Back
@@ -87,9 +88,14 @@ function afterLeave() {
 function onKey(event: KeyboardEvent) {
   if (!visible.value) return
   if (event.key === 'Tab') {
-    // The dialog's one tabbable element: Tab (either way) stays on it.
-    event.preventDefault()
-    closer.value?.focus({ preventScroll: true })
+    // Tab (either way) stays in the dialog, as in every layer (utils/focusWrap.ts): past its last control it
+    // comes round to the first, which here is the close button, its one control. Focus that is somewhere else
+    // altogether is brought back to it.
+    const active = document.activeElement
+    if (!active || active === document.body || !root.value?.contains(active)) {
+      event.preventDefault()
+      closer.value?.focus({ preventScroll: true })
+    } else wrapTab(event, [root.value])
     return
   }
   if (event.key !== 'Escape') return

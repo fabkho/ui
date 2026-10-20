@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import UiMediaViewer from './MediaViewer.vue'
 import UiButton from './Button.vue'
+import UiSheet from './Sheet.vue'
 
 // The viewer covers the whole screen. Every story shows a button that opens it, and the stories are drawn in an
 // iframe in the docs page (`inline: false`).
@@ -99,6 +100,38 @@ export const FocusTrap: Story = {
     await expect(closer).toHaveFocus()
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(opener).toHaveFocus(), { timeout: 3000 })
+  },
+}
+
+/** The viewer opened from inside a sheet: Tab stays on the viewer's close button, not the sheet's controls, and Escape gives focus back to the one that opened it. */
+export const TabStaysOverASheet: Story = {
+  render: args => ({
+    components: { UiMediaViewer, UiButton, UiSheet },
+    setup: () => ({ args, sheet: ref(false), open: ref(false) }),
+    template: `
+      <div class="flex min-h-[520px] items-center justify-center bg-surface">
+        <UiButton tone="secondary" @click="sheet = true">Open sheet</UiButton>
+        <UiSheet v-model:open="sheet" title="Retreat photos" testid="photosSheet">
+          <UiButton tone="secondary" @click="open = true">View photo</UiButton>
+        </UiSheet>
+        <UiMediaViewer v-bind="args" :open="open" @close="open = false" />
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const sheet = await within(document.body).findByRole('dialog', { name: 'Retreat photos' })
+    const opener = within(sheet).getByRole('button', { name: 'View photo' })
+    await userEvent.click(opener)
+    const dialog = await within(document.body).findByRole('dialog', { name: 'Photo viewer' })
+    const closer = within(dialog).getByRole('button', { name: 'Close photo' })
+    await waitFor(() => expect(closer).toHaveFocus())
+    for (const shift of [false, true, false]) {
+      await userEvent.tab({ shift })
+      await expect(closer).toHaveFocus()
+    }
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(opener).toHaveFocus(), { timeout: 3000 })
+    await userEvent.keyboard('{Escape}')
   },
 }
 

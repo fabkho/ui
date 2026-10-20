@@ -152,6 +152,47 @@ export const OverASheet: Story = {
   },
 }
 
+/**
+ * A dialog over a sheet traps Tab in itself, not in the sheet (the sheet under it is inert): forwards and
+ * backwards it cycles Remove book, Cancel; when it closes focus returns to the button in the sheet, and Tab then
+ * cycles inside the sheet again.
+ */
+export const TabStaysInTheTopLayer: Story = {
+  render: OverASheet.render,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const sheet = await within(document.body).findByRole('dialog', { name: 'Reading goal' })
+    const remove = within(sheet).getByRole('button', { name: 'Remove goal' })
+    await waitFor(() => expect(sheet).toHaveFocus())
+    await userEvent.click(remove)
+    const dialog = await within(document.body).findByRole('alertdialog', { name: /Remove this book/ })
+    await waitFor(() => expect(dialog).toHaveFocus())
+    await expect(sheet.closest('[inert]'), 'the sheet under it is out of reach').not.toBeNull()
+    const confirm = within(dialog).getByRole('button', { name: 'Remove book' })
+    const cancel = within(dialog).getByRole('button', { name: 'Cancel' })
+    // From the panel: Tab to the first, on to the last, past it to the first again.
+    await userEvent.tab()
+    await expect(confirm).toHaveFocus()
+    await userEvent.tab()
+    await expect(cancel).toHaveFocus()
+    await userEvent.tab()
+    await expect(confirm, 'forwards past the last control').toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(cancel, 'backwards from the first control').toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(within(document.body).queryByRole('alertdialog')).toBeNull())
+    await waitFor(() => expect(remove).toHaveFocus())
+    // Back in the sheet: its controls cycle, the page behind stays out of reach.
+    const stops = Array.from(sheet.querySelectorAll<HTMLElement>('button, input, [tabindex="0"]'))
+    stops.at(-1)!.focus()
+    await userEvent.tab()
+    await expect(stops[0]).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(stops.at(-1)).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+  },
+}
+
 /** Starts open, for looking at the dialog at rest. */
 export const Open: Story = {
   play: async () => {
