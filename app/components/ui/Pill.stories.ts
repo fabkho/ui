@@ -6,6 +6,14 @@ import UiPill from './Pill.vue'
 const meta = {
   title: 'Base/Pill',
   component: UiPill,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A toggle for filters and choices: a hairline pill that fills with ink when it is on, with an optional count in mono beside its words (a toggle, or one radio of a group).',
+      },
+    },
+  },
   args: { pressed: false, count: undefined, radio: false },
   render: args => ({
     components: { UiPill },

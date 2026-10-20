@@ -14,8 +14,18 @@
 // land on the `<a>`.
 import type { RouteLocationRaw } from 'vue-router'
 
-const props = defineProps<{ to: RouteLocationRaw }>()
-const emit = defineEmits<{ press: [link: HTMLElement]; navigate: [link: HTMLElement] }>()
+const props = defineProps<{
+  /** Where the link goes, as a router location (resolved to the anchor's `href`). */
+  to: RouteLocationRaw
+}>()
+const emit = defineEmits<{
+  /** On touch-down (or on the press of a mouse), with the link: preload the destination and start its data. */
+  press: [link: HTMLElement]
+  /** Just before the link takes its destination, with the link (hand it to a transition). */
+  navigate: [link: HTMLElement]
+}>()
+/** The link's content; the anchor gets the classes and attributes given to the component. */
+defineSlots<{ default?: () => unknown }>()
 
 const router = useRouter()
 const href = computed(() => router.resolve(props.to).href)

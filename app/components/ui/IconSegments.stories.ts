@@ -14,6 +14,7 @@ const FORMATS: IconSegment<string>[] = [
 const meta = {
   title: 'Base/IconSegments',
   component: UiIconSegments,
+  parameters: { docs: { description: { component: 'A radio group of icon segments in which the chosen one unfolds its name beside its icon while the others stay icons.' } } },
   args: { options: FORMATS, value: 'paperback', labelledby: 'format-label', testid: 'format', required: false, invalid: false, disabled: false },
   render: args => ({
     components: { UiIconSegments },

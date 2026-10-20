@@ -3,7 +3,15 @@
 // inside draw their own inset dividers (Row.vue). Forms in sheets, the avatar
 // menu, settings-like lists. `as` (added for Bookretreats): `ul` for a list of
 // rows that are list items.
-withDefaults(defineProps<{ as?: 'div' | 'ul' }>(), { as: 'div' })
+withDefaults(
+  defineProps<{
+    /** The element around the rows: `ul` when its rows are list items. */
+    as?: 'div' | 'ul'
+  }>(),
+  { as: 'div' },
+)
+/** The rows (`Row`s), which draw their own dividers. */
+defineSlots<{ default?: () => unknown }>()
 </script>
 
 <template>

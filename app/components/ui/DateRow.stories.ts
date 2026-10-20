@@ -7,7 +7,10 @@ import UiRowGroup from './RowGroup.vue'
 const meta = {
   title: 'Base/DateRow',
   component: UiDateRow,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: 'A row whose day is picked with the platform date picker: a label, the day in words and an invisible date input over the whole row.' } },
+  },
   args: { label: 'Finished on', testid: 'finished', modelValue: '2025-10-03' },
   render: args => ({
     components: { UiDateRow, UiRowGroup },

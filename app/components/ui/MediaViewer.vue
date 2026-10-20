@@ -19,18 +19,23 @@ import { wrapTab } from '../../utils/focusWrap'
 // signed URLs, and the app signs one anew (added with the chat, which shows its pictures here).
 // Added for Bookretreats (no Libellus counterpart).
 const props = defineProps<{
+  /** Whether the viewer is open. */
   open: boolean
+  /** The picture to show full screen; nothing shows without one. Default: null. */
   url: string | null
   /** The picture's alt text. */
   label: string
   /** The dialog's name for assistive tech. */
   dialogLabel: string
+  /** The close button's name. */
   closeLabel: string
   /** The face it grows out of (a round avatar, or a rounded tile such as a photo in the Feed); read when it opens and again when it closes. */
   origin?: HTMLElement | null
+  /** The prefix of its test ids. Default: 'viewer'. */
   testid?: string
 }>()
 const emit = defineEmits<{
+  /** The viewer was asked to close (the button, Esc, a tap beside the picture or a swipe down). */
   close: []
   /** The picture did not load (a signed URL that ran out): the app signs it anew and passes the new `url`. */
   failed: []

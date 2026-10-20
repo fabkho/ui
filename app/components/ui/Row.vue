@@ -11,18 +11,36 @@ import type { IconName } from './Icon.vue'
 
 const props = withDefaults(
   defineProps<{
+    /** The row's name, on the left. */
     label: string
+    /** The value on the right. */
     value?: string
+    /** Stands in the value's place while there is none, in the quiet colour. */
     placeholder?: string
+    /** An icon before the label; the `lead` slot takes its place when given. */
     icon?: IconName
+    /** A chevron after the value: this row leads somewhere. */
     chevron?: boolean
+    /** The value in tabular figures at the caption size (a number, a code). */
     mono?: boolean
+    /** `danger` for a destructive row: the type in the error colour. */
     tone?: 'default' | 'danger'
+    /** An in-app destination: the row becomes a `NuxtLink`. */
     to?: RouteLocationRaw
+    /** The element the row is: a `div`, a `button`, or an `a` (a link out of the app). */
     as?: 'div' | 'button' | 'a'
   }>(),
   { value: undefined, placeholder: undefined, icon: undefined, chevron: false, mono: false, tone: 'default', to: undefined, as: 'div' },
 )
+
+defineSlots<{
+  /** Stands in the icon's place (a face, a mark of the app's own). */
+  lead?: () => unknown
+  /** The value's place: anything shown on the right instead of `value` or `placeholder`. */
+  default?: () => unknown
+  /** After the value, before the chevron (a star, a badge). */
+  trailing?: () => unknown
+}>()
 
 const NuxtLink = resolveComponent('NuxtLink')
 const tag = computed(() => (props.to ? NuxtLink : props.as))

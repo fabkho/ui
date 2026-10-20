@@ -13,7 +13,17 @@ import { durationToken, easingToken, prefersReducedMotion } from '../../utils/mo
 import { heightKeyframes, isCut } from '../../utils/clampText'
 import { useUiText } from '../../composables/useUiText'
 
-const props = withDefaults(defineProps<{ text: string; lines?: number; testid?: string }>(), { lines: 2, testid: 'clamp' })
+const props = withDefaults(
+  defineProps<{
+    /** The text to show, clamped with CSS line clamping. */
+    text: string
+    /** How many lines the folded text keeps. Default: `2`. */
+    lines?: number
+    /** The test id of the text; the button is `<testid>.more`. Default: `clamp`. */
+    testid?: string
+  }>(),
+  { lines: 2, testid: 'clamp' },
+)
 
 const uiText = useUiText()
 const root = ref<HTMLElement | null>(null)

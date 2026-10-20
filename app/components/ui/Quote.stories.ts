@@ -8,6 +8,14 @@ import { quote } from '../../../.storybook/chat-fixtures'
 const meta = {
   title: 'Chat/Quote',
   component: UiQuote,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The message a chat bubble answers: a stripe in the accent, who wrote it and a one-line preview, which taps through to the original (or says it is gone when it was deleted).',
+      },
+    },
+  },
   args: { quote: quote(), mine: false, testid: 'chat', onTap: fn() },
   render: args => ({
     components: { UiQuote },

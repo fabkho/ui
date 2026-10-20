@@ -6,7 +6,7 @@ import UiSwitchRow from './SwitchRow.vue'
 const meta = {
   title: 'Base/SwitchRow',
   component: UiSwitchRow,
-  parameters: { layout: 'padded' },
+  parameters: { layout: 'padded', docs: { description: { component: 'A setting that is on or off, as a row in a row group: the label (and an icon), the switch at the right, the whole row the control.' } } },
   args: { label: 'Dark mode', icon: 'moon', modelValue: false },
   render: args => ({
     components: { UiSwitchRow, UiRowGroup },

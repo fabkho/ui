@@ -7,7 +7,12 @@
 // Motion it is a short fade and no travel (docs/MOTION.md). Attributes (the
 // test id) land on the room's element. While it moves it carries `data-moving`,
 // like a list's room, so the flows tap only once what sits under it has landed.
-defineProps<{ show: boolean }>()
+defineProps<{
+  /** Whether it is there: on, it opens its room and fades in; off, it closes and leaves nothing. */
+  show: boolean
+}>()
+/** The content that is revealed, in a room that opens to its height. */
+defineSlots<{ default?: () => unknown }>()
 
 const moving = ref(false)
 </script>

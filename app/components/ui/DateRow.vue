@@ -13,17 +13,25 @@ import UiRow from './Row.vue'
 import UiIcon from './Icon.vue'
 import type { IconName } from './Icon.vue'
 
+/** The chosen day, as YYYY-MM-DD, or '' when the picker was cleared. */
 const model = defineModel<string>({ required: true })
 withDefaults(
   defineProps<{
+    /** The row's label, which is also the date input's accessible name. */
     label: string
+    /** The prefix of the tids the row and its mark carry. */
     testid: string
     /** The day as it reads (the app formats it); the ISO day without. */
     text?: string
+    /** The mark before the day. Default: 'calendar'. */
     icon?: IconName
+    /** The earliest day the picker offers, as YYYY-MM-DD. Default: none. */
     min?: string
+    /** The latest day the picker offers, as YYYY-MM-DD. Default: none. */
     max?: string
+    /** The day is impossible: it shows in the error colour with a struck-through calendar. Default: false. */
     invalid?: boolean
+    /** What an empty day reads as. Default: ''. */
     placeholder?: string
   }>(),
   { text: undefined, icon: 'calendar', min: undefined, max: undefined, invalid: false, placeholder: '' },

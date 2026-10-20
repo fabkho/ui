@@ -15,7 +15,22 @@
 import UiReveal from './Reveal.vue'
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{ id: string; label: string; hint?: string; error?: string | null; errorTestid?: string }>()
+const props = defineProps<{
+  /** The field's id: what the label points at, and the base of the hint's and the error's ids. */
+  id: string
+  /** The field's name, on the label above the text. */
+  label: string
+  /** A short hint after the label ("optional"), part of the field's description. */
+  hint?: string
+  /** The message under the text, in the error colour; it sets `aria-invalid` and comes first in the description. */
+  error?: string | null
+  /** The error message's `data-testid`. */
+  errorTestid?: string
+}>()
+defineSlots<{
+  /** A line under the text for a control that belongs to it, shown once there is text. */
+  footer?: () => unknown
+}>()
 const attrs = useAttrs()
 const described = computed(
   () =>

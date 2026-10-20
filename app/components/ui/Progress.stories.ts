@@ -6,7 +6,15 @@ import UiButton from './Button.vue'
 const meta = {
   title: 'Base/Progress',
   component: UiProgress,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'A hairline progress bar for how far through a book the reader is: it draws the fill, and carries the same value for assistive tech, while the words beside it are the caller\'s.',
+      },
+    },
+  },
   args: { fraction: 0.45, label: 'Reading progress', valueText: 'Page 216 of 480' },
   argTypes: { fraction: { control: { type: 'range', min: 0, max: 1, step: 0.01 } } },
   render: args => ({

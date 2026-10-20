@@ -23,11 +23,17 @@
 // in an app changes until it names its avatars; `decorative` hides it even with one.
 const props = withDefaults(
   defineProps<{
+    /** The initials shown in mono, and what stays under a photo. */
     initials: string
+    /** The photo URL drawn over the initials. Default: `null` (initials only). */
     photo?: string | null
+    /** A second URL tried when `photo` fails, before falling back to the initials. Default: `null`. */
     fallback?: string | null
+    /** The circle's size: `xs` 30, `sm` 32, `md` 40, `lg` 40 on a cover, `xl` 72. Default: `sm`. */
     size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    /** The quiet fill on the room colour, so the circle is opaque where it overlaps something. Default: `false`. */
     solid?: boolean
+    /** Load the photo lazily, for third-party photos in lists. Default: `false`. */
     lazy?: boolean
     /** Who it shows (the accessible name), when the avatar is meaningful on its own. */
     label?: string
@@ -38,7 +44,10 @@ const props = withDefaults(
 )
 const hidden = computed(() => props.decorative ?? !props.label)
 
-const emit = defineEmits<{ fallback: [] }>()
+const emit = defineEmits<{
+  /** `photo` was refused and `fallback` was drawn instead, so the caller can remember the face is missing. */
+  fallback: []
+}>()
 
 const SIZES = {
   xs: 'size-(--size-cover-xs) text-meta',

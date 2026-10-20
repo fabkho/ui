@@ -6,7 +6,15 @@ import UiRowGroup from './RowGroup.vue'
 const meta = {
   title: 'Base/Row',
   component: UiRow,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'One row in a RowGroup: an optional icon (or `lead` slot), the label, the value or a placeholder on the right, and an optional chevron; a plain div, a button, or a link (in-app with `to`, or out of the app with `as="a"`).',
+      },
+    },
+  },
   args: { label: 'Language', value: 'English', chevron: false, mono: false, tone: 'default', as: 'div' },
   render: args => ({
     components: { UiRow, UiRowGroup },

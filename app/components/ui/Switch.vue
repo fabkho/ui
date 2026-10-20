@@ -4,7 +4,10 @@
 // the state carries `role="switch"` and `aria-checked` (UiSwitchRow, or a row
 // of one's own). The knob's lift is a hairline and a tight contact shadow that
 // stays inside the 24 px track (the button shadow spread outside it on paper).
-defineProps<{ on: boolean }>()
+defineProps<{
+  /** Whether it is on: the track in the lamp colour, the knob at the right. */
+  on: boolean
+}>()
 </script>
 
 <template>

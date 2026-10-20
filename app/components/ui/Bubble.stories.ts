@@ -16,6 +16,14 @@ const twoCounts = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch
 const meta = {
   title: 'Chat/Bubble',
   component: UiBubble,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'One message of a chat thread: theirs as a raised paper card on the left, mine in ink on the right, with long press, swipe-to-reply, quote, reactions and delivery state. Slots override its parts: `sender`, `body`, `quote`, `reactions` and `meta`.',
+      },
+    },
+  },
   args: {
     item: message(),
     read: false,

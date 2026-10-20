@@ -92,7 +92,16 @@ const meta = {
     testid: 'search',
     status: '',
   },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 560 } } },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'An over-the-page search palette: a raised card above the keyboard whose query row (glyph, field, clear, Cancel) sits at the bottom and whose answers, the default slot, stand above it, the nearest last.',
+      },
+      story: { inline: false, iframeHeight: 560 },
+    },
+  },
   render: renderPalette(false),
 } satisfies Meta<typeof UiSearchPalette>
 export default meta

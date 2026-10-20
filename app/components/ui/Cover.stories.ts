@@ -18,6 +18,7 @@ const COLORS = { dominant: '#c2410c', secondary: '#fde7c8' }
 const meta = {
   title: 'Base/Cover',
   component: UiCover,
+  parameters: { docs: { description: { component: 'The cover of a book in its 2:3 shape at one of the token widths, with a cloth Placeholder when there is no image.' } } },
   args: {
     title: 'Dune',
     authors: ['Frank Herbert'],

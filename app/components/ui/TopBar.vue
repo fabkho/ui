@@ -9,8 +9,22 @@ import UiRoundButton from './RoundButton.vue'
 // the column on a wide screen; the root keeps its place in the page, so content
 // starts below it. Only the buttons take taps: the page under the rest of the
 // row stays reachable.
-defineProps<{ title?: string; backLabel: string; backTestid: string }>()
-defineEmits<{ back: [] }>()
+defineProps<{
+  /** A small title in the middle of the bar; it is the screen's own heading (an `h1`). */
+  title?: string
+  /** The back button's name for assistive tech. */
+  backLabel: string
+  /** The back button's `data-testid`. */
+  backTestid: string
+}>()
+defineEmits<{
+  /** The back button was pressed. */
+  back: []
+}>()
+defineSlots<{
+  /** The actions at the right, as `UiRoundButton`s. */
+  trailing?: () => unknown
+}>()
 </script>
 
 <template>

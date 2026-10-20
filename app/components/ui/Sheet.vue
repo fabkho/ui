@@ -40,10 +40,15 @@ const open = defineModel<boolean>('open', { required: true })
 
 const props = withDefaults(
   defineProps<{
+    /** The title in the middle of the header row, which is also the sheet's name for assistive tech. */
     title: string
+    /** Names the sheet in `data-testid`; Cancel and the action get `<testid>.cancel` and `<testid>.action`. */
     testid: string
+    /** The sheet's one action, at the right in the lamp colour; without it, nothing on the right. */
     action?: string
+    /** The action is shown but not yet available (the form is not valid). */
     actionDisabled?: boolean
+    /** The sheet is put back as it was left, without rising (its list scrolled where it was); `null` for a fresh open. */
     restore?: SheetRestore | null
     /** Added for Bookretreats: `false` leaves Cancel out, for a sheet only read (its action closes it). */
     cancel?: boolean
@@ -52,7 +57,14 @@ const props = withDefaults(
   }>(),
   { action: undefined, actionDisabled: false, restore: null, cancel: true, deferFocus: true },
 )
-const emit = defineEmits<{ action: [] }>()
+const emit = defineEmits<{
+  /** The action at the right was pressed; the sheet's owner decides what it does (usually closes the sheet). */
+  action: []
+}>()
+defineSlots<{
+  /** The sheet's content, in the body under the header (a body that scrolls, if what is in it is long). */
+  default?: () => unknown
+}>()
 
 const uiText = useUiText()
 

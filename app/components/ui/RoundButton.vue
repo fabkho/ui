@@ -5,7 +5,14 @@ import UiIcon from './Icon.vue'
 // not an icon (the reader's Aa); `label` is what assistive tech says.
 import type { IconName } from './Icon.vue'
 
-defineProps<{ icon?: IconName; label: string }>()
+defineProps<{
+  /** The icon drawn as the face (an `Icon` name); the default slot takes its place when given. */
+  icon?: IconName
+  /** What assistive tech says (`aria-label`): the button's only name, since its face is an icon. */
+  label: string
+}>()
+/** A face that is not an icon (the reader's Aa); it replaces the icon. */
+defineSlots<{ default?: () => unknown }>()
 </script>
 
 <template>

@@ -13,6 +13,7 @@ const OPTIONS = [
 const meta = {
   title: 'Base/Segmented',
   component: UiSegmented,
+  parameters: { docs: { description: { component: 'A choice of a few options side by side in one group, a radiogroup whose chosen option is lit by a surface that slides to it.' } } },
   args: { options: OPTIONS, label: 'Reading mode', modelValue: 'pages', compact: false, disabled: false },
   render: args => ({
     components: { UiSegmented },

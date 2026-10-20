@@ -31,12 +31,20 @@ const props = withDefaults(
     placeholder?: string
     /** The provider's attribution at the foot of the sheet. */
     attribution?: string
+    /** The prefix of its test ids. Default: 'chat'. */
     testid?: string
   }>(),
   { placeholder: undefined, attribution: undefined, testid: 'chat' },
 )
 /** `q`: the words that found it (a topic chip's search too), for a provider's share count. */
-const emit = defineEmits<{ pick: [gif: GifItem, q: string] }>()
+const emit = defineEmits<{
+  /** A GIF was picked: it, and the words that found it or its topic, for a provider's share count. */
+  pick: [gif: GifItem, q: string]
+}>()
+defineSlots<{
+  /** The provider's attribution at the foot of the sheet, in place of the attribution text. */
+  attribution?: () => unknown
+}>()
 const uiText = useUiText()
 const words = computed(() => uiText.value.chat.gifPicker)
 

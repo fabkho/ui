@@ -25,12 +25,15 @@ import { durationToken, easingToken, prefersReducedMotion, timeAt } from '../../
 
 defineOptions({ inheritAttrs: false })
 
+/** Whether the palette is open (`v-model:open`); closing it is the caller's to see here. */
 const open = defineModel<boolean>('open', { required: true })
+/** The query (`v-model:query`): the field's text, and the app filters its answers by it. */
 const query = defineModel<string>('query', { required: true })
 const props = withDefaults(
   defineProps<{
     /** The dialog's name, also the field's. */
     label: string
+    /** The field's placeholder, in the app's words. */
     placeholder: string
     /** The clear button's name. */
     clear: string
@@ -43,7 +46,12 @@ const props = withDefaults(
   }>(),
   { cancel: undefined, status: '' },
 )
-const emit = defineEmits<{ cleared: [] }>()
+const emit = defineEmits<{
+  /** A tap on clear emptied the query (the app clears its answers). */
+  cleared: []
+}>()
+/** The answers, drawn above the query row, the nearest at the bottom. */
+defineSlots<{ default?: () => unknown }>()
 
 const uiText = useUiText()
 const cancelWord = computed(() => props.cancel ?? uiText.value.cancel)

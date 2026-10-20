@@ -5,7 +5,14 @@ import UiRowGroup from './RowGroup.vue'
 const meta = {
   title: 'Base/RowGroup',
   component: UiRowGroup,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component: 'Inset grouped rows on a quiet fill with a hairline edge, iOS style: the rows inside draw their own inset dividers.',
+      },
+    },
+  },
   args: { as: 'div' },
   render: args => ({
     components: { UiRowGroup, UiRow },

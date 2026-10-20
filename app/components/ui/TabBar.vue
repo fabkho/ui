@@ -7,6 +7,7 @@ export type UiTab = {
   key: string
   /** The tab's page. */
   to: string
+  /** The tab's icon, unless the tab draws its own in the `icon-<key>` slot. */
   icon: IconName
   /** What assistive tech says (and the tests read): the tab's name. */
   label: string
@@ -66,11 +67,15 @@ const props = withDefaults(
     label: string
     /** Only the exact path counts as the tab's (Libellus); otherwise its sub-pages count too. */
     exact?: boolean
+    /** Slides the bar away as the member reads down and back on a short scroll up; `true` by default. */
     hideOnScroll?: boolean
   }>(),
   { exact: false, hideOnScroll: true },
 )
-const emit = defineEmits<{ reselect: [key: string] }>()
+const emit = defineEmits<{
+  /** The tab already showing was tapped again: the bar scrolled its page back to the top; the key says which tab. */
+  reselect: [key: string]
+}>()
 const slots = useSlots()
 const drawn = (tab: UiTab) => !!slots[`icon-${tab.key}`]
 

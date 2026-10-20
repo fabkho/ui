@@ -100,7 +100,17 @@ export type IconName =
 // control around it carries the label. `bold` is the active tab's weight.
 // An app draws its own version of a named icon with `ui.icons` (app.config.ts): the SVG markup of its
 // shapes, in the same 24-unit grid, replaces the layer's drawing for that name. It is app code, not user input.
-const props = withDefaults(defineProps<{ name: IconName; size?: number; bold?: boolean }>(), { size: 22, bold: false })
+const props = withDefaults(
+  defineProps<{
+    /** Which icon of the set to draw. */
+    name: IconName
+    /** Its width and height in px. Default: 22. */
+    size?: number
+    /** The heavier stroke of an active tab. Default: false. */
+    bold?: boolean
+  }>(),
+  { size: 22, bold: false },
+)
 const appIcons = computed(() => (useAppConfig().ui as { icons?: Partial<Record<IconName, string>> }).icons)
 const override = computed(() => appIcons.value?.[props.name])
 </script>

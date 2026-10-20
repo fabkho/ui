@@ -12,6 +12,14 @@ const meta = {
     size: { control: 'inline-radio', options: SIZES },
     type: { control: 'inline-radio', options: ['button', 'submit'] },
   },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The pill action of the app, in five tones and three sizes, whose touch target never shrinks below 44 px; its label goes in the default slot.',
+      },
+    },
+  },
   args: { tone: 'primary', size: 'lg', block: false, disabled: false, offline: false, type: 'button' },
   render: args => ({
     components: { UiButton },

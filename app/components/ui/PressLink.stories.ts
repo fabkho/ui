@@ -5,6 +5,14 @@ import UiPressLink from './PressLink.vue'
 const meta = {
   title: 'Base/PressLink',
   component: UiPressLink,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A router link that starts early: it preloads the destination and emits `press` when a finger or the mouse goes down, and `navigate` just before it takes its destination.',
+      },
+    },
+  },
   args: { to: '#dune', onPress: fn(), onNavigate: fn() },
   render: args => ({
     components: { UiPressLink },

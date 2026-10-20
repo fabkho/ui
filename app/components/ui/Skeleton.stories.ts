@@ -4,6 +4,7 @@ import UiSkeleton from './Skeleton.vue'
 const meta = {
   title: 'Base/Skeleton',
   component: UiSkeleton,
+  parameters: { docs: { description: { component: 'A placeholder block where content will be once it has loaded, hidden from assistive tech.' } } },
   args: { wave: 0, as: 'span' },
   argTypes: { as: { control: 'inline-radio', options: ['span', 'div'] }, wave: { control: { type: 'range', min: 0, max: 1, step: 0.05 } } },
   render: args => ({

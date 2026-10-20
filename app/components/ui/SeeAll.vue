@@ -12,7 +12,19 @@
 import type { RouteLocationRaw } from 'vue-router'
 import UiIcon from './Icon.vue'
 
-withDefaults(defineProps<{ to?: RouteLocationRaw; dialog?: boolean }>(), { to: undefined, dialog: false })
+withDefaults(
+  defineProps<{
+    /** A page to go to instead: the control is then a link. */
+    to?: RouteLocationRaw
+    /** The button opens a sheet, and says so to a screen reader (`aria-haspopup="dialog"`). */
+    dialog?: boolean
+  }>(),
+  { to: undefined, dialog: false },
+)
+defineSlots<{
+  /** The words on it, a count among them ("See all 11"). */
+  default?: () => unknown
+}>()
 </script>
 
 <template>

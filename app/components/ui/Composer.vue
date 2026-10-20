@@ -51,7 +51,9 @@ const props = withDefaults(
     voiceMaxMs?: number
     /** A comment bar: the field and send, the note and the chips it is given, no microphone. */
     compact?: boolean
+    /** The field's placeholder; when not given, `ui.text.chat.composer.placeholder`. */
     placeholder?: string
+    /** The field's accessible name; when not given, `ui.text.chat.composer.label`. */
     label?: string
     /** The most characters the field takes. */
     max?: number
@@ -78,9 +80,13 @@ const props = withDefaults(
   },
 )
 const emit = defineEmits<{
+  /** The ✕ on a compact bar's note was tapped: the reply or edit mode is over. */
   dismissNote: []
+  /** The send button was tapped with text in the field. */
   send: []
+  /** A photo was picked from the phone's own picker. */
   photo: [file: File]
+  /** The GIF chip was tapped: open the app's GIF picker. */
   gif: []
   /** A finished recording, to send. */
   voice: [voice: PreparedVoice]

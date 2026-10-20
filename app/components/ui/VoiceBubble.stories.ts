@@ -20,6 +20,7 @@ function playerAt(key: string, state: { playing: boolean; positionMs: number; fa
 const meta = {
   title: 'Chat/VoiceBubble',
   component: UiVoiceBubble,
+  parameters: { docs: { description: { component: 'A voice message in the thread: a play button, the waveform as progress and the length, in the same card as a text bubble, with a `quote` slot on top for the message it answers.' } } },
   args: { item: voiceMessage(), tail: 'rounded-bl-tail', testid: 'chat', onPress: fn() },
   render: args => ({
     components: { UiVoiceBubble },

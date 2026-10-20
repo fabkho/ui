@@ -23,24 +23,38 @@ import { useUiText } from '../../composables/useUiText'
 import { revealDelta, sheetLift } from '../../utils/keyboard'
 import { useKeyboardInset } from '../../composables/useKeyboardInset'
 
+/** Whether the dialog is open (a two-way `open` model). */
 const open = defineModel<boolean>('open', { required: true })
 
 const props = withDefaults(
   defineProps<{
+    /** The question, in the serif; it names the dialog (`aria-labelledby`). */
     title: string
+    /** What is lost, under the question; also the dialog's description. */
     text?: string
+    /** The destructive button's label. */
     action: string
+    /** The action is running: it is disabled and the dialog cannot be closed. Default: `false`. */
     busy?: boolean
+    /** The action was refused: the sentence stays in the dialog and the same button tries again. Default: `null`. */
     error?: string | null
+    /** The device is offline: the action stays disabled and says "Offline"; Cancel still closes. Default: `false`. */
     offline?: boolean
+    /** A safe way out offered above the action ("Sync first"). */
     alternative?: string
     /** `primary` (added for Bookretreats): an action that can be taken back (Freigeben) in ink, not red. */
     tone?: 'danger' | 'primary'
+    /** The test ids' start: `<testid>`, `<testid>.confirm`, `<testid>.cancel`, `<testid>.error`. */
     testid: string
   }>(),
   { text: undefined, busy: false, error: null, offline: false, alternative: undefined, tone: 'danger' },
 )
-const emit = defineEmits<{ confirm: []; alternative: [] }>()
+const emit = defineEmits<{
+  /** The action was chosen: do the thing. */
+  confirm: []
+  /** The safe way out was chosen instead of the action. */
+  alternative: []
+}>()
 
 const uiText = useUiText()
 

@@ -5,6 +5,7 @@ import UiSwitch from './Switch.vue'
 const meta = {
   title: 'Base/Switch',
   component: UiSwitch,
+  parameters: { docs: { description: { component: 'The switch\'s picture, a track and a knob that slides, drawn only: the control that owns the state carries role="switch" and aria-checked.' } } },
   args: { on: false },
 } satisfies Meta<typeof UiSwitch>
 export default meta

@@ -47,7 +47,7 @@ const meta = {
   title: 'Base/TabBar',
   component: UiTabBar,
   args: { items: TABS, label: 'Tabs', exact: false, hideOnScroll: true },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 240 } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'A floating glass tab bar of icon links to the app\'s pages, sliding away as the member reads down; the slot `icon-<key>` ({ active }) draws a tab\'s own face in place of its icon, the slot `label-<key>` names a tab by its content, and the default slot adds a control after the tabs.' }, story: { inline: false, iframeHeight: 240 } } },
   render: args => ({
     components: { UiTabBar },
     setup() {

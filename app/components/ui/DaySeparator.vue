@@ -9,11 +9,23 @@
 // rotor) instead of through every bubble. A `role="separator"` would only say "a line here" and, as an item
 // of the thread's list, break its list semantics. The heading sits inside the list item, so the list keeps
 // counting messages and days. `level` (added for Bookretreats) is its level; 2 under a page's title.
-withDefaults(defineProps<{ label: string; tag?: string; testid?: string; level?: 2 | 3 | 4 | 5 | 6 }>(), {
-  tag: 'li',
-  testid: 'chat',
-  level: 2,
-})
+withDefaults(
+  defineProps<{
+    /** The day in words ("Today", "March 4"). */
+    label: string
+    /** The element it renders as. Default: 'li'. */
+    tag?: string
+    /** The prefix of its test ids. Default: 'chat'. */
+    testid?: string
+    /** The heading level the day is announced at. Default: 2. */
+    level?: 2 | 3 | 4 | 5 | 6
+  }>(),
+  {
+    tag: 'li',
+    testid: 'chat',
+    level: 2,
+  },
+)
 </script>
 
 <template>

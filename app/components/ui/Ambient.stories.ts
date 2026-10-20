@@ -9,7 +9,15 @@ const COLORS = { dominant: '#c2410c', secondary: '#1d4e89' }
 const meta = {
   title: 'Base/Ambient',
   component: UiAmbient,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'Soft light thrown into a card or page header from a cover\'s colours, drawn behind the content of a positioned parent.',
+      },
+    },
+  },
   args: { colors: COLORS, cloth: null, shape: 'card', pool: null, strength: '1' },
   render: args => ({
     components: { UiAmbient },

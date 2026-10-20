@@ -5,6 +5,14 @@ import UiRoundButton from './RoundButton.vue'
 const meta = {
   title: 'Base/RoundButton',
   component: UiRoundButton,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A round glass button for chrome that floats over content (a back arrow, a close, the reader\'s Aa), with the icon or the slot as its face and `label` as its name for assistive tech.',
+      },
+    },
+  },
   args: { icon: 'back', label: 'Back' },
   decorators: [
     () => ({

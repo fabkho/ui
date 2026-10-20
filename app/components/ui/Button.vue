@@ -13,12 +13,19 @@ import type { RouteLocationRaw } from 'vue-router'
 
 const props = withDefaults(
   defineProps<{
+    /** How it is drawn: `primary` (the lit one, one per screen), `secondary`, `quiet`, `plain` or `danger`. Default: `primary`. */
     tone?: 'primary' | 'secondary' | 'quiet' | 'plain' | 'danger'
+    /** The drawn height: `lg`, `md` or `sm`; the touch target stays 44 px. Default: `lg`. */
     size?: 'lg' | 'md' | 'sm'
+    /** Fill the width of its container instead of hugging its label. Default: `false`. */
     block?: boolean
+    /** A route to link to: with it the pill is a `NuxtLink` instead of a button. Default: `undefined`. */
     to?: RouteLocationRaw
+    /** The button's `type` attribute, `button` or `submit`. Default: `button`. */
     type?: 'button' | 'submit'
+    /** Disabled, and drawn at half opacity. Default: `false`. */
     disabled?: boolean
+    /** The device has no connection: the pill stays disabled and says "Offline" instead of its label. Default: `false`. */
     offline?: boolean
   }>(),
   { tone: 'primary', size: 'lg', block: false, to: undefined, type: 'button', disabled: false, offline: false },

@@ -5,6 +5,7 @@ import UiField from './Field.vue'
 const meta = {
   title: 'Base/Field',
   component: UiField,
+  parameters: { docs: { description: { component: 'A labelled text field with a rule that lights up in the accent colour while it has the keyboard and turns to the error colour when the value is rejected.' } } },
   args: { id: 'field', label: 'Your name', modelValue: '' },
   argTypes: { modelValue: { control: 'text' } },
   render: args => ({

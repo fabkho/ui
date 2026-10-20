@@ -5,6 +5,7 @@ import UiSeeAll from './SeeAll.vue'
 const meta = {
   title: 'Base/SeeAll',
   component: UiSeeAll,
+  parameters: { docs: { description: { component: 'The pill at the right of a section\'s head that opens the rest of it, as a button that opens a sheet or a link to a page.' } } },
   args: { dialog: false, onClick: fn() },
   render: args => ({
     components: { UiSeeAll },

@@ -6,7 +6,7 @@ const meta = {
   title: 'Base/TopBar',
   component: UiTopBar,
   args: { backLabel: 'Back', backTestid: 'backButton' },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 240 } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The top of a pushed screen: a round glass back button on the left, actions in the `trailing` slot on the right and an optional small centred title, floating over the page as it scrolls.' }, story: { inline: false, iframeHeight: 240 } } },
   render: args => ({
     components: { UiTopBar },
     setup: () => ({ args }),

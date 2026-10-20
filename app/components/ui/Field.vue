@@ -9,7 +9,19 @@
 // the field is for; the error takes its place while there is one.
 defineOptions({ inheritAttrs: false })
 
-const props = defineProps<{ id: string; label: string; error?: string | null; errorTestid?: string; hint?: string }>()
+const props = defineProps<{
+  /** The id the label points at, and the prefix of the error and hint ids. */
+  id: string
+  /** The small label above the field. */
+  label: string
+  /** The message under the rule while the value is wrong; it turns the rule to the error colour. Default: null. */
+  error?: string | null
+  /** The test id of the error message. Default: none. */
+  errorTestid?: string
+  /** A quiet line under the rule that says what the field is for, shown while there is no error. */
+  hint?: string
+}>()
+/** The field's value. */
 const value = defineModel<string>({ required: true })
 
 const focused = ref(false)
