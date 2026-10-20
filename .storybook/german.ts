@@ -17,6 +17,7 @@ export const GERMAN = {
     olderRetry: 'Erneut versuchen',
     read: 'Gelesen',
     sending: 'Wird gesendet …',
+    incoming: 'Neue Nachricht von {name}',
     failed: 'Nicht gesendet. Zum erneuten Versuch tippen.',
     retryHint: 'Zum erneuten Versuch tippen.',
     composer: {

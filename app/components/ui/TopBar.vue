@@ -34,7 +34,16 @@ defineSlots<{
       <div class="relative flex h-(--size-touch) items-center justify-between px-inset">
         <UiRoundButton class="pointer-events-auto" icon="back" :label="backLabel" :data-testid="backTestid" @click="$emit('back')" />
         <!-- A title in the bar is the screen's own (Your shelf): its heading. -->
-        <h1 v-if="title" class="absolute left-1/2 -translate-x-1/2 truncate text-body font-medium">{{ title }}</h1>
+        <!-- It is centred on the bar and stays clear of the buttons: a long one wraps (WCAG 1.4.4, 1.4.10) rather
+             than running under them or out of the screen. Room kept on each side: the inset, one button (two when
+             the bar has actions) and a gap. -->
+        <h1
+          v-if="title"
+          class="absolute left-1/2 w-max -translate-x-1/2 text-center text-body font-medium wrap-anywhere"
+          :style="{ maxWidth: `calc(100% - 2 * (var(--spacing-inset) + var(--size-touch) * ${$slots.trailing ? 2 : 1} + var(--spacing-sm) * ${$slots.trailing ? 2 : 1}))` }"
+        >
+          {{ title }}
+        </h1>
         <span class="pointer-events-auto flex gap-sm"><slot name="trailing" /></span>
       </div>
     </header>

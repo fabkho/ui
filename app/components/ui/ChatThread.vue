@@ -6,6 +6,7 @@ import { useUiText } from '../../composables/useUiText'
 import { durationToken, prefersReducedMotion } from '../../utils/motion'
 import { endsRun, follows, timeline } from '../../utils/chat/timeline'
 import { sameSide } from '../../utils/chat/message'
+import { fillWords } from '../../utils/chat/words'
 
 // A conversation's screen (moved into the base from an app's chat page, unchanged in look and
 // behaviour): the thread fills the screen and scrolls under the floating chrome — the top
@@ -61,6 +62,8 @@ const props = withDefaults(
     loadOlder?: () => Promise<boolean>
     /** The thread's name for a screen reader (the conversation's title). */
     label: string
+    /** Who an incoming message is announced as coming from ("New message from {name}"); default: `label`. Groups: leave it, the message is read with its sender. */
+    author?: string | null
     /** The device is offline: a quiet line under the top bar. Default: `false`. */
     offline?: boolean
     /** A sentence over the composer (a photo that could not be sent, a reaction that did not arrive). Default: `null`. */
@@ -84,6 +87,7 @@ const props = withDefaults(
     hasMore: false,
     olderStatus: 'idle',
     loadOlder: () => Promise.resolve(false),
+    author: null,
     offline: false,
     error: null,
     notice: null,
@@ -197,6 +201,23 @@ watch(
     }
   },
   { flush: 'post' },
+)
+
+// A message from the other side arrives while the thread is open: a polite status says so (WCAG 4.1.3), with
+// the text when it is words. Not for the first load, nor for earlier pages coming in above (the newest is the
+// same then), nor for one's own or a system line.
+const announcement = ref('')
+watch(
+  () => [props.items.at(-1)?.key, props.status] as const,
+  ([key, status], [previousKey, previousStatus]) => {
+    const last = props.items.at(-1)
+    if (!last || status !== 'ready' || previousStatus !== 'ready' || key === previousKey) return
+    if (last.mine || last.kind === 'system') return
+    const said = fillWords(chat.value.incoming, { name: props.author ?? props.label })
+    const body = (last as { body?: string }).body
+    announcement.value = ''
+    void nextTick(() => (announcement.value = last.kind === 'text' && body ? `${said}: ${body}` : said))
+  },
 )
 
 // The head grows a little later than the rest (an app fetches what it shows): as long as the reader is at
@@ -401,6 +422,21 @@ defineExpose({
     :data-testid="`${testid}.screen`"
     :data-status="status"
   >
+    <!-- The top bar over the page: the app's back, title and menu. -->
+    <div class="veil" aria-hidden="true" />
+    <header ref="header" class="top bar-top safe-x pointer-events-none" :role="landmark ? 'none' : undefined" :data-testid="`${testid}.head`">
+      <div class="relative flex h-(--size-touch) items-center justify-between px-inset">
+        <slot name="top" />
+      </div>
+    </header>
+
+    <!-- No connection: one quiet line under the buttons. -->
+    <Transition name="chat-offline">
+      <p v-if="offline" class="offline glass edge" role="status" :data-testid="`${testid}.offline`">{{ chat.offline }}</p>
+    </Transition>
+
+    <p class="sr-only" role="status" :data-testid="`${testid}.announce`">{{ announcement }}</p>
+
     <!-- The thread: the whole screen, scrolling under the glass. -->
     <div
       ref="scroller"
@@ -470,19 +506,6 @@ defineExpose({
 
     <!-- While a reaction bar is open, a tap anywhere else only closes it. -->
     <div v-if="reactingKey" class="catcher" aria-hidden="true" :data-testid="`${testid}.reactionCatcher`" @pointerdown.prevent @click="closeReactions" />
-
-    <!-- The top bar over the page: the app's back, title and menu. -->
-    <div class="veil" aria-hidden="true" />
-    <header ref="header" class="top bar-top safe-x pointer-events-none" :role="landmark ? 'none' : undefined" :data-testid="`${testid}.head`">
-      <div class="relative flex h-(--size-touch) items-center justify-between px-inset">
-        <slot name="top" />
-      </div>
-    </header>
-
-    <!-- No connection: one quiet line under the buttons. -->
-    <Transition name="chat-offline">
-      <p v-if="offline" class="offline glass edge" role="status" :data-testid="`${testid}.offline`">{{ chat.offline }}</p>
-    </Transition>
 
     <!-- Under the composer the thread disappears: the glass blurs what is behind it, this takes the rest
          (the gaps between the chips, the strip down to the keyboard). -->

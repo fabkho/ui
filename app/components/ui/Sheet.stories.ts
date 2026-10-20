@@ -5,6 +5,7 @@ import UiButton from './Button.vue'
 import UiField from './Field.vue'
 import UiRow from './Row.vue'
 import UiRowGroup from './RowGroup.vue'
+import { fitsTheScreen, largeText, textIsWhole } from '../../../.storybook/large-text'
 
 // The sheet is a modal layer: while it is open the rest of the page is `inert` and focus is inside it. Every
 // story therefore shows a button that opens it, and the ones that cover the viewport are drawn in an iframe in
@@ -41,9 +42,58 @@ export const ActionDisabled: Story = { args: { action: 'Save', actionDisabled: t
 /** `cancel: false` leaves Cancel out, for a sheet that is only read: its action closes it. Escape, the scrim and a swipe down still close it. */
 export const WithoutCancel: Story = { args: { action: 'Done', cancel: false, title: 'What’s new' } }
 
-/** A long title truncates between Cancel and the action instead of pushing them aside. */
+/** A long title wraps between Cancel and the action instead of pushing them aside. */
 export const LongTitle: Story = {
   args: { action: 'Save', title: 'A very long title that cannot possibly fit between the two buttons' },
+}
+
+/**
+ * The text at 200 % (WCAG 1.4.4): the title wraps onto more lines and is whole (no "…"), Cancel and the action stay
+ * where they are, and nothing runs out of the screen.
+ */
+export const LargeText: Story = {
+  args: { action: 'Save', title: 'Reading goal for the year' },
+  decorators: [largeText],
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const dialog = await dialogOf('Reading goal for the year')
+    await waitFor(() => expect(textIsWhole(within(dialog).getByRole('heading', { name: 'Reading goal for the year' }))).toBe(true))
+    await expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(within(dialog).getByRole('button', { name: 'Save' })).toBeVisible()
+    await expect(fitsTheScreen()).toBe(true)
+  },
+}
+
+/**
+ * Every way to close the sheet is one tap (WCAG 2.5.7, no drag needed): Cancel, and the action of a sheet that has
+ * no Cancel. The swipe down is only the faster way, and the scrim and Escape close it too.
+ */
+export const ClosesWithATap: Story = {
+  args: { action: 'Save' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const opening = canvas.getByRole('button', { name: 'Open sheet' })
+    await userEvent.click(opening)
+    const dialog = await dialogOf('Reading goal')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull())
+    await userEvent.click(opening)
+    await dialogOf('Reading goal')
+    await userEvent.click(within(document.body).getByTestId('goalSheet.scrim'))
+    await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull())
+  },
+}
+
+/** A sheet without Cancel (`cancel: false`) is closed by its action, in one tap. */
+export const ActionClosesWithoutCancel: Story = {
+  args: { action: 'Done', cancel: false, title: 'What’s new' },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const dialog = await dialogOf('What’s new')
+    await expect(within(dialog).queryByRole('button', { name: 'Cancel' })).toBeNull()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }))
+    await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull())
+  },
 }
 
 /** The same layout in German, where Cancel (`ui.text.cancel`) and the action are longer; the title stays centred. */

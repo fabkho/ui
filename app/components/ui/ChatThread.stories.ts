@@ -6,6 +6,7 @@ import UiChatThread from './ChatThread.vue'
 import UiComposer from './Composer.vue'
 import UiRoundButton from './RoundButton.vue'
 import UiSkeleton from './Skeleton.vue'
+import { fitsTheScreen, largeText } from '../../../.storybook/large-text'
 import { ago, EMOJIS, message, photoMessage, picture, quote, voiceMessage } from '../../../.storybook/chat-fixtures'
 import type { BubbleMessage, BubbleQuote } from '../../utils/chat/message'
 
@@ -46,7 +47,7 @@ function group(): Item[] {
 }
 
 /** The screen as an app builds it: a top bar, the conversation's head, a bubble per message, the composer docked below. */
-const render = (extra: { composer?: boolean; head?: boolean } = {}): Story['render'] => args => ({
+const render = (extra: { composer?: boolean; head?: boolean; answer?: string } = {}): Story['render'] => args => ({
   components: { UiAvatar, UiBubble, UiChatThread, UiComposer, UiRoundButton, UiSkeleton },
   setup() {
     const items = ref<Item[]>(args.items as Item[])
@@ -94,6 +95,8 @@ const render = (extra: { composer?: boolean; head?: boolean } = {}): Story['rend
         text.value = ''
         replyTo.value = null
         setTimeout(() => patch(sent.key, { delivery: 'sent', id: `sent-${sent.key}` }), 900)
+        // The other side answers (the stories that check what a screen reader is told about it).
+        if (extra.answer) setTimeout(() => (items.value = [...items.value, sam({ body: extra.answer, id: `sam-${Date.now()}`, createdAt: new Date().toISOString() })]), 1500)
       },
       showHead: extra.head ?? true,
       showComposer: extra.composer ?? true,
@@ -105,14 +108,14 @@ const render = (extra: { composer?: boolean; head?: boolean } = {}): Story['rend
         <UiRoundButton icon="back" label="Back" class="pointer-events-auto" />
         <div class="pointer-events-auto flex items-center gap-sm">
           <UiAvatar initials="SM" size="sm" />
-          <span class="text-subhead font-medium text-ink">{{ args.label }}</span>
+          <h1 class="text-subhead font-medium text-ink">{{ args.label }}</h1>
         </div>
         <span class="size-(--size-touch)" aria-hidden="true" />
       </template>
       <template #head>
         <div class="flex flex-col items-center gap-xs px-lg py-xl text-center">
           <UiAvatar initials="SM" size="lg" />
-          <p class="text-headline text-ink">{{ args.label }}</p>
+          <h2 class="text-headline text-ink">{{ args.label }}</h2>
           <p class="text-subhead text-ink-muted">Reading Persuasion together since October.</p>
         </div>
       </template>
@@ -128,6 +131,7 @@ const render = (extra: { composer?: boolean; head?: boolean } = {}): Story['rend
           :fresh="false"
           :signed="signed"
           :sender="item.sender"
+          :author="item.sender ?? args.label"
           :ends-run="endsRun"
           :can-react="!!item.id"
           :emojis="emojis"
@@ -227,6 +231,53 @@ export const SendingAMessage: Story = {
     await userEvent.click(canvas.getByTestId('chat.send'))
     // Stored after a moment; the check runs on the settled bubble, not on its fade.
     await waitFor(() => expect(canvas.getByText('See you on Friday!').closest('[data-delivery]')).toHaveAttribute('data-delivery', 'sent'), { timeout: 4000 })
+  },
+}
+
+/**
+ * What a screen reader is told (WCAG 1.3.1, 1.3.2): every message says who wrote it ("You", or the name), in
+ * front of it, and the top bar (Back, the name) comes before the thread, not after the whole history.
+ */
+export const ReadsWhoWrote: Story = {
+  args: { items: conversation().slice(4, 8) },
+  render: render({ composer: false }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const thread = await canvas.findByTestId('chat.thread')
+    const authors = within(thread).getAllByTestId('chat.author')
+    await expect(authors.map(one => one.textContent)).toEqual(['Sam:', 'Sam:', 'You:', 'Sam:'])
+    await expect(canvas.getByTestId('chat.head').compareDocumentPosition(thread) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  },
+}
+
+/** A message from the other side is announced politely, with its words, once the thread is open (WCAG 4.1.3). */
+export const AnnouncesAnIncomingMessage: Story = {
+  args: { items: conversation().slice(4, 6) },
+  render: render({ answer: 'Lovely, see you there!' }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const announce = await canvas.findByTestId('chat.announce')
+    await expect(announce).toHaveAttribute('role', 'status')
+    await expect(announce).toHaveTextContent('')
+    await userEvent.type(await canvas.findByTestId('chat.input'), 'Friday?')
+    await userEvent.click(canvas.getByTestId('chat.send'))
+    await waitFor(() => expect(announce).toHaveTextContent('New message from Sam: Lovely, see you there!'), { timeout: 5000 })
+  },
+}
+
+/**
+ * The text at 200 % (WCAG 1.4.4, 1.4.10): bubbles wrap, the composer's chips wrap, nothing runs out of the screen
+ * and the newest message is still above the composer.
+ */
+export const LargeText: Story = {
+  args: { items: conversation() },
+  decorators: [largeText],
+  globals: { viewport: { value: 'iphone', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await canvas.findByTestId('chat.thread')
+    await expect(fitsTheScreen()).toBe(true)
+    await expect(canvas.getByRole('button', { name: 'Send a photo from your gallery' }).getBoundingClientRect().right).toBeLessThanOrEqual(document.documentElement.clientWidth)
   },
 }
 

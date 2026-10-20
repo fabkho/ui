@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { expect, within } from 'storybook/test'
 import UiTopBar from './TopBar.vue'
 import UiRoundButton from './RoundButton.vue'
+import { fitsTheScreen, largeText } from '../../../.storybook/large-text'
 
 const meta = {
   title: 'Base/TopBar',
@@ -50,10 +52,29 @@ export const WithTrailingActions: Story = {
   }),
 }
 
-/** A long title truncates before it runs into the buttons. */
+/**
+ * A long title wraps, centred between the buttons: it never runs under them or out of the screen (WCAG 1.4.4,
+ * 1.4.10). The play function measures it against the buttons.
+ */
 export const LongTitle: Story = {
   args: { title: 'Wanderings through the collected works of Ursula K. Le Guin' },
   render: WithTrailingActions.render,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const title = canvas.getByRole('heading', { level: 1 }).getBoundingClientRect()
+    const back = canvas.getByRole('button', { name: 'Back' }).getBoundingClientRect()
+    const actions = canvas.getByRole('button', { name: 'More' }).getBoundingClientRect()
+    await expect(title.left).toBeGreaterThanOrEqual(back.right)
+    await expect(title.right).toBeLessThanOrEqual(actions.right)
+    await expect(title.right).toBeLessThanOrEqual(canvas.getByRole('button', { name: 'Search' }).getBoundingClientRect().left)
+    await expect(fitsTheScreen()).toBe(true)
+  },
+}
+
+/** The text at 200 %: the same long title, still between the buttons and inside the screen. */
+export const LargeText: Story = {
+  ...LongTitle,
+  decorators: [largeText],
 }
 
 /** Over a full-bleed hero (a book cover): the bar floats over its light, the page scrolls under it. */

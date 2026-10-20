@@ -3,6 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiComposer from './Composer.vue'
 import UiComposerChip from './ComposerChip.vue'
 import { fakeMicrophone } from '../../../.storybook/chat-fixtures'
+import { fitsTheScreen, largeText } from '../../../.storybook/large-text'
 
 // The composer floats over the thread (a glass capsule, the chips above it); the stories sit it on a busy
 // backdrop so the glass shows. `v-model` is the text: every story holds it in a `ref`, so the field really
@@ -103,6 +104,25 @@ export const WithChips: Story = {
         </UiComposer>
       </div>`,
   }),
+}
+
+/**
+ * The text at 200 % (WCAG 1.4.4, 1.4.10): the chips wrap onto a second line instead of running out of the screen,
+ * so every one of them stays reachable by a single tap.
+ */
+export const LargeText: Story = {
+  ...WithChips,
+  decorators: [largeText],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    // The story's frame is the screen's width here: the chips stay inside it.
+    const row = (canvasElement.firstElementChild as HTMLElement).getBoundingClientRect()
+    for (const name of ['Send a photo from your gallery', 'Find and send a GIF', 'Share number', 'Send a like']) {
+      const chip = canvas.getByRole('button', { name }).getBoundingClientRect()
+      await expect(chip.right, name).toBeLessThanOrEqual(row.right + 1)
+    }
+    await expect(fitsTheScreen()).toBe(true)
+  },
 }
 
 /**

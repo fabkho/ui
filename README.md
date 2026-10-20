@@ -103,7 +103,9 @@ layer's components.
   (**none today**). Focus in modal layers is done without a library (`utils/focusWrap.ts`).
 - **Accessibility.** WCAG 2.2 AA and the WAI-ARIA Authoring Practices pattern for each widget: roles, accessible
   names, keyboard support, focus management, `prefers-reduced-motion`, 44×44 px targets.
-- **Mobile first.** Touch, safe areas, bottom sheets and the keyboard come first; desktop is not a target.
+- **Mobile first: VoiceOver, touch and gestures before desktop and keyboard.** Every swipe, drag and long press has a
+  single-tap alternative that a screen reader reaches (WCAG 2.5.1, 2.5.7); text at 200 % reflows without cutting
+  anything (1.4.4, 1.4.10). Touch, safe areas, bottom sheets and the keyboard come first; desktop is not a target.
 - **A story per component.** A new or changed component ships with its story (every state, both themes, axe clean,
   keyboard play function for an interactive widget). Stories are the docs; the component's JSDoc and the story's
   `docs.description` feed them.
