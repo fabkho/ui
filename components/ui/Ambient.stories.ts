@@ -57,12 +57,25 @@ export const Strength: Story = { args: { strength: '0.5' } }
 /** The theme's own `--opacity-glow`: nothing on paper, full strength in the dark. */
 export const ThemeDefault: Story = { args: { strength: null } }
 
+/** `grain="image"` (the default): the grain is a background image, a data URI tile. */
+export const GrainImage: Story = {
+  args: { grain: 'image' },
+  play: async ({ canvasElement }) => {
+    const grain = canvasElement.querySelector<HTMLElement>('.grain')!
+    await expect(grain.tagName).toBe('SPAN')
+    await expect(getComputedStyle(grain).backgroundImage).toContain('data:image/svg+xml')
+    await expect(canvasElement.querySelector('svg')).toBeNull()
+  },
+}
+
 /**
- * The grain is an inline SVG, not a background image: Chrome reports a background image as a Largest Contentful Paint
- * candidate, and the 160 px tile was the page's. Each instance has its own filter ids, so two cards never share one.
+ * `grain="inline"`: the grain is an inline SVG, not a background image. Chrome reports a background image as a Largest
+ * Contentful Paint candidate, and the 160 px tile was a page's; an inline SVG is none. The same filter: the same grain
+ * in Chromium, and in WebKit at 1×; WebKit at 2× and 3× draws it at the device's resolution (a crisper grain).
+ * Each instance has its own filter ids, so two cards never share one.
  */
-export const Grain: Story = {
-  args: { strength: '1' },
+export const GrainInline: Story = {
+  args: { grain: 'inline' },
   render: args => ({
     components: { UiAmbient },
     setup: () => ({ args }),

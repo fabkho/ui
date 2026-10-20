@@ -10,6 +10,8 @@ export default defineAppConfig({
      * What an app knows about its covers' sources, for every `UiCover` at once (a prop of the cover wins).
      * Empty here: a cover shows `src`, then its `fallbacks`, as given.
      */
+    /** `UiAmbient`: `grain` is how its grain is drawn when the card does not say (`image`, the default, or `inline`: an SVG, which is no LCP candidate). */
+    ambient: {} as { grain?: 'image' | 'inline' },
     cover: {} as {
       /**
        * `src` at `size`: the images to try after it (the same artwork at its other sizes), its `srcset` and `sizes`.

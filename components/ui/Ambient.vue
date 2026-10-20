@@ -8,6 +8,14 @@ import { glowOf } from '../../utils/cloth'
 // cover is the Placeholder has no colours worth lighting the room with: `cloth`
 // (the cloth's colour, as CSS) lights it instead, so the page matches what shows.
 //
+// The grain is drawn one of two ways (`grain`, default `ui.ambient.grain` of the app config, else `image`): as a
+// background image (a data URI tile; what the base always did), or as an inline SVG (BetterReads' F-12: Chrome
+// reports a background image, a data URI too, as a Largest Contentful Paint candidate, and the 160 px tile was a
+// page's, so the number said when the grain painted, not when the content did; an inline SVG is none). The same
+// filter either way: pixel for pixel the same in Chromium, and in WebKit at 1×; WebKit at 2× and 3× draws the
+// image tile at 1× and scales it (a softer grain) but the inline one at the device's resolution, a difference of up
+// to 6 of 255 at the grain's 7 %. That is why it is a choice and the app's to make.
+//
 // Added for Bookretreats: `pool` (two CSS colours, `{ a, b }`) lights the card in
 // colours the app names instead of a cover's, and `strength` (a CSS opacity, e.g.
 // `var(--opacity-announce)`) replaces the theme's `--opacity-glow`: the pinned
@@ -21,12 +29,17 @@ const props = withDefaults(
     shape?: 'page' | 'card'
     pool?: { a: string; b: string } | null
     strength?: string | null
+    /** How the grain is drawn: a background image, or an inline SVG (no LCP candidate). Default: the app's, else `image`. */
+    grain?: 'image' | 'inline'
   }>(),
-  { cloth: null, shape: 'page', pool: null, strength: null },
+  { cloth: null, shape: 'page', pool: null, strength: null, grain: undefined },
 )
 
-// The grain's filter and pattern are referenced by id: one pair per instance.
-const grain = useId()
+const config = useAppConfig()
+const inline = computed(() => (props.grain ?? config.ui.ambient?.grain ?? 'image') === 'inline')
+
+// The inline grain's filter and pattern are referenced by id: one pair per instance.
+const grainId = useId()
 
 // Two pool colours as whole colours, so a gradient can take them at any alpha.
 const style = computed(() => {
@@ -44,21 +57,18 @@ const style = computed(() => {
 
 <template>
   <div class="ambient" :class="`shape-${shape}`" :style="style" aria-hidden="true">
-    <!-- The grain is an inline SVG, not a background image: Chrome reports a background image (a data URI
-         too) as a Largest Contentful Paint candidate, and this one (a decorative 160 px tile at 7 %) was
-         the page's LCP element, so the number said when the grain painted, not when the content did.
-         The same filter, drawn as a repeating pattern, is pixel for pixel the same (0 px at 1× and 2×). -->
-    <svg class="grain" focusable="false">
+    <svg v-if="inline" class="grain" focusable="false">
       <defs>
-        <filter :id="`${grain}-noise`">
+        <filter :id="`${grainId}-noise`">
           <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch" />
         </filter>
-        <pattern :id="`${grain}-tile`" width="160" height="160" patternUnits="userSpaceOnUse">
-          <rect width="160" height="160" :filter="`url(#${grain}-noise)`" />
+        <pattern :id="`${grainId}-tile`" width="160" height="160" patternUnits="userSpaceOnUse">
+          <rect width="160" height="160" :filter="`url(#${grainId}-noise)`" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" :fill="`url(#${grain}-tile)`" />
+      <rect width="100%" height="100%" :fill="`url(#${grainId}-tile)`" />
     </svg>
+    <span v-else class="grain image" />
   </div>
 </template>
 
@@ -94,5 +104,9 @@ const style = computed(() => {
   height: 100%;
   opacity: 0.07;
   mix-blend-mode: overlay;
+}
+
+.grain.image {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 </style>
