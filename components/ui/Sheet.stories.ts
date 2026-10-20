@@ -261,6 +261,43 @@ export const TabStaysInside: Story = {
   },
 }
 
+/**
+ * Tab (APG dialog) cycles inside the sheet: past its last control it comes round to the first, and Shift+Tab from
+ * the first (or from the panel itself, which has focus before the field takes it) goes to the last. It never
+ * leaves for the page behind or the browser's own controls.
+ */
+export const TabWrapsInside: Story = {
+  args: { title: 'Add a book', action: 'Add', testid: 'addBook' },
+  render: opener,
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const dialog = await dialogOf('Add a book')
+    const field = within(dialog).getByLabelText('ISBN')
+    await waitFor(() => expect(field).toHaveFocus())
+    const stops = Array.from(dialog.querySelectorAll<HTMLElement>('button, input, [tabindex="0"]'))
+    await expect(stops.length).toBeGreaterThan(2)
+    const first = stops[0]!
+    const last = stops.at(-1)!
+    // A full turn forwards: every control once, then the first again.
+    last.focus()
+    await userEvent.tab()
+    await expect(first).toHaveFocus()
+    for (const stop of stops.slice(1)) {
+      await userEvent.tab()
+      await expect(stop).toHaveFocus()
+    }
+    await userEvent.tab()
+    await expect(first, 'forwards past the last control').toHaveFocus()
+    await userEvent.tab({ shift: true })
+    await expect(last, 'backwards from the first control').toHaveFocus()
+    // From the panel itself (before the first control) Shift+Tab also lands on the last.
+    dialog.focus()
+    await userEvent.tab({ shift: true })
+    await expect(last, 'backwards from the panel').toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+  },
+}
+
 /** Cancel, the scrim and Escape all close it, and focus goes back to the button that opened it. */
 export const CancelGivesFocusBack: Story = {
   ...FocusMovesInAndBack,

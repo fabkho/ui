@@ -240,6 +240,21 @@ own files. No `@nuxtjs/i18n`, Pinia or Supabase. A headless library (Reka UI, `@
 vaul) is allowed only inside one widget, behind the same `Ui*` API, tree-shakeable, tested here and
 recorded here as an exception. **Exceptions today: none.**
 
+**Focus in a modal layer (decided 2026-10-21): no library.** `inert` on everything outside the top-most layer
+(`useModalLayer`) is the trap: a tap, Tab and a screen reader's cursor cannot reach the page, or a sheet under a
+dialog (iOS Safari 15.5+, every evergreen browser; the layer's own `<body>` children are exactly what is
+made inert, so nested layers need no bookkeeping beyond the stack). What `inert` cannot do is wrap: past the last
+control Tab goes to the browser's own chrome. `utils/focusWrap.ts` closes that one gap (~100 lines): on `keydown`
+Tab, if the focus is on the layer's last control (or Shift+Tab on its first, or on the panel itself), it is moved
+to the other end; any other Tab is the browser's. Evaluated and left out: `focus-trap` 8.2.3 (+ `tabbable` 6.5.0,
+MIT; a second set of listeners and an activation stack that duplicate `inert` and the layer stack, and a viewer
+over a sheet would need its own pause/unpause between the two), `@vueuse/integrations` `useFocusTrap` (a wrapper of it, plus
+the vueuse dependency), Reka UI's `FocusScope` (trap, loop and return-focus per widget: a headless exception for
+what is already one composable), native `<dialog>.showModal()` (inert and Escape for free, but the top layer
+breaks the scrim/Transition/teleport setup, the keyboard lift and the vaul sheet under `UiMediaViewer`; it does not
+wrap either). Known limit: a positive `tabindex` (an order of its own) is not followed, and the wrap list follows the page's
+order; neither occurs in the base.
+
 ### Developing it
 
 `pnpm install`, `pnpm test` (Vitest, plain Node: the pure utils and the contract against a fixture;
@@ -325,7 +340,7 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiClampText` | A text cut to `lines` lines (2 by default) with a "More" under it when, and only when, it is cut; opens in place and folds again, the height gliding. The words are `ui.text.more` / `ui.text.less`; `testid`. Added from BetterReads (`ClampText`). |
 | `UiPressLink` | A link that starts on touch-down: `press` (preload and start the data; the link element comes with it), `navigate` (just before it takes its destination, for a transition), `data-press-to` parts that go elsewhere. A real anchor. Added from BetterReads (`PressLink`; its cover flight is the app's, on `press` and `navigate`). |
 | `UiPill` | A quiet toggle pill: hairline, ink when `pressed`, an optional `count`; `radio` for one of a choice of one. |
-| `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was; focus goes to the panel, then to the `data-autofocus` field once the sheet has finished rising (on iOS in the opening tap; `deferFocus` false: in the tap everywhere), and back to the opener on close. Tab cannot reach the page behind it (`inert`); past the last control it leaves for the browser's own, as with a native modal dialog (no wrap inside the sheet yet). |
+| `UiSheet` | Bottom sheet: grabber, Cancel · title · action row, swipe down, scrim, Escape, system Back; rides on the keyboard; `restore` puts it back as it was; focus goes to the panel, then to the `data-autofocus` field once the sheet has finished rising (on iOS in the opening tap; `deferFocus` false: in the tap everywhere), and back to the opener on close. Tab cannot reach the page behind it (`inert`) and cycles inside it: past the last control it comes round to the first, Shift+Tab the other way (every modal layer does, `useModalLayer`). |
 | `UiConfirm` | A confirmation dialog over a scrim. |
 | `UiReveal` | Something that opens in place (`show`): its room opens and it fades in. |
 | `UiListMotion` | A list whose items come, go and move in place. `still` (optional): items are only added or removed, never moved (for a list inside a sheet that is still rising). |
@@ -403,7 +418,8 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 ### Composables and utils (auto-imported)
 
 - `useModalLayer` (+ `useModalShown`, `useModalDepth`): a sheet or dialog makes the rest of the app inert, locks the
-  scroll, moves focus in and back. `useModalShown()` is whether any layer is on screen (open, or still leaving),
+  scroll, moves focus in and back, and keeps Tab and Shift+Tab cycling inside the top-most layer (a confirm over a sheet
+  traps in the confirm; `utils/focusWrap.ts`, which `UiMediaViewer` shares). `useModalShown()` is whether any layer is on screen (open, or still leaving),
   `useModalDepth()` how many (a confirm over a sheet is 2): read the boolean for what happens once for all layers (hold
   a list change back, dim the installed app's status bar), the count for what happens once per layer. `useBackDismiss` (+ `listenForBack`, `keepsForeignLayers`): the
   system Back closes it.
@@ -643,6 +659,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
 - `UiTabBar`: five tabs (an admin's) take `--size-tab-compact` (62) each instead of `--size-tab` (72), so the capsule fits a 390 pt phone.
 - `UiCheckbox`: a consent or choice that is ticked, Libellus' import check (a hairline ring, ticked an accent disc
   with the tick) as a component over a native checkbox; the words in its slot.
+- Tab wraps in every modal layer (`useModalLayer`, `utils/focusWrap.ts`), `UiMediaViewer` included: Tab and Shift+Tab cycle inside the top-most layer (it was: Tab left a sheet for the browser's own controls). Keyboard play tests: `TabWrapsInside` (Sheet), `TabStaysInTheTopLayer` (Confirm over a sheet), `TabStaysOverASheet` (MediaViewer).
 - `UiConfirm`: `tone` (`danger`, the default, or `primary`: the action in ink, for one that can be taken back). A default slot under the sentence, for what the question needs besides it (the Orga's ban takes a reason there).
 - `UiSearchPalette`: new in the layer. Libellus' search palette is its app's (`components/shell/SearchOverlay.vue`, with the morph out of the tab bar and the palette room); this is its frame without the morph, opened in Libellus' order (focus first, the animation after). Libellus can build its overlay on it once the morph is a variant of it.
 - `UiMediaViewer` and `utils/flip.ts` (`flipTransform`, `coverCrop`, `morphFrames`): new, no Libellus counterpart (Libellus shows no cover large). A picture full screen that grows out of the round face it was opened from and shrinks back into it.
