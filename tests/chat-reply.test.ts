@@ -14,7 +14,7 @@ import {
   replyProgress,
   replyTravel,
   type ReplyWords,
-} from '../utils/chat/reply'
+} from '../app/utils/chat/reply'
 
 // The chat's pure reply rules ("Antworten"): the swipe that arms a reply and the words a
 // quote shows. The gesture itself (the pointer events, the bubble that follows the finger)

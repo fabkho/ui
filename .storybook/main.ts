@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 // nothing mocked. Tailwind v4 is the one thing a layer does not bring (the apps do), so it is added here.
 const config: StorybookConfig = {
   framework: '@storybook-vue/nuxt',
-  stories: ['../components/**/*.stories.ts'],
+  stories: ['../app/components/**/*.stories.ts'],
   addons: ['@storybook/addon-a11y', '@storybook/addon-docs', 'storybook-addon-pseudo-states'],
   core: { disableTelemetry: true },
   async viteFinal(config) {

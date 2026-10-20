@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiComposer from './Composer.vue'
 import UiComposerChip from './ComposerChip.vue'
-import { fakeMicrophone } from '../../.storybook/chat-fixtures'
+import { fakeMicrophone } from '../../../.storybook/chat-fixtures'
 
 // The composer floats over the thread (a glass capsule, the chips above it); the stories sit it on a busy
 // backdrop so the glass shows. `v-model` is the text: every story holds it in a `ref`, so the field really

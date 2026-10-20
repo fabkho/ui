@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { addMover, followAfterMotion, parseDuration, timeAt } from '../utils/motion'
+import { addMover, followAfterMotion, parseDuration, timeAt } from '../app/utils/motion'
 
 /**
  * Motion tokens read back from the stylesheet (layers/ui/utils/motion.ts). The

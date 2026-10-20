@@ -5,7 +5,7 @@
  * port can copy them rule for rule. Days are the device's calendar days.
  *
  * Not auto-imported (the names are too generic for a global): import them, from a component
- * of the layer relatively, from an app as `#ui/utils/chat/timeline`, or in plain Node as
+ * of the layer relatively, from an app as `#layers/ui/app/utils/chat/timeline`, or in plain Node as
  * `@fabkho/ui/pure/timeline`. Plain ESM with JSDoc types (no build step).
  */
 

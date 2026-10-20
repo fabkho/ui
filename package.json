@@ -11,21 +11,16 @@
   "packageManager": "pnpm@10.34.7",
   "exports": {
     ".": "./nuxt.config.ts",
-    "./pure/*": "./utils/chat/*.js",
+    "./pure/*": "./app/utils/chat/*.js",
     "./*": "./*"
   },
   "main": "./nuxt.config.ts",
   "files": [
-    "app.config.ts",
-    "assets",
-    "components",
-    "composables",
+    "app",
+    "modules",
     "nuxt.config.ts",
-    "plugins",
-    "router.options.ts",
     "testing",
-    "utils",
-    "!components/**/*.stories.ts"
+    "!app/components/**/*.stories.ts"
   ],
   "scripts": {
     "test": "vitest run --project unit",

@@ -7,7 +7,7 @@ import { fillWords } from './words'
  * Domain kinds (a shared phone number, a system line) are the app's: it draws them in UiBubble's
  * `body` slot, or outside the bubble altogether.
  *
- * Not auto-imported: import from `#ui/utils/chat/message`.
+ * Not auto-imported: import from `#layers/ui/app/utils/chat/message`.
  */
 
 /** Where a message of one's own is: on its way, stored, or refused (a tap sends it again). */

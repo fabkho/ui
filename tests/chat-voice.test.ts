@@ -10,7 +10,7 @@ import {
   PEAK_COUNT,
   voiceExtension,
   voiceMime,
-} from '../utils/chat/voice'
+} from '../app/utils/chat/voice'
 
 /**
  * Voice messages without a stack: which type a phone records and how it is stored, when a device

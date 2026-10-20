@@ -6,7 +6,7 @@ import UiChatThread from './ChatThread.vue'
 import UiComposer from './Composer.vue'
 import UiRoundButton from './RoundButton.vue'
 import UiSkeleton from './Skeleton.vue'
-import { ago, EMOJIS, message, photoMessage, picture, quote, voiceMessage } from '../../.storybook/chat-fixtures'
+import { ago, EMOJIS, message, photoMessage, picture, quote, voiceMessage } from '../../../.storybook/chat-fixtures'
 import type { BubbleMessage, BubbleQuote } from '../../utils/chat/message'
 
 /** What the app's message adds to the base's: a quote, a sender (groups). */

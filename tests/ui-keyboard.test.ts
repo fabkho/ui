@@ -13,7 +13,7 @@ import {
   strandedViewport,
   type ViewportReading,
   type ViewportSample,
-} from '../utils/keyboard'
+} from '../app/utils/keyboard'
 
 /**
  * Following the on-screen keyboard (composables/useKeyboardInset.ts, UiSheet): how

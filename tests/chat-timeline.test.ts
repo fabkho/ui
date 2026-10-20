@@ -9,7 +9,7 @@ import {
   follows,
   timeline,
   type DayWords,
-} from '../utils/chat/timeline'
+} from '../app/utils/chat/timeline'
 
 // The chat's pure rules: day separators, runs and times. Dates are built in the local
 // time zone, as the helpers read them, so the suite holds wherever it runs. The words are

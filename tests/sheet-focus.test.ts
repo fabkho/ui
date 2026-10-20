@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { afterRise, defersFieldFocus, fieldMayTakeFocus, FIELD_FOCUS_AFTER_RISE, panelIsRising, RISE_FOCUS_MARGIN, RISE_FOCUS_RETRIES, RISE_FOCUS_RETRY } from '../utils/sheetFocus'
+import { afterRise, defersFieldFocus, fieldMayTakeFocus, FIELD_FOCUS_AFTER_RISE, panelIsRising, RISE_FOCUS_MARGIN, RISE_FOCUS_RETRIES, RISE_FOCUS_RETRY } from '../app/utils/sheetFocus'
 
 /**
  * When a sheet's field takes focus (UiSheet, utils/sheetFocus.ts): the panel at

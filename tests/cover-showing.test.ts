@@ -8,7 +8,7 @@ import {
   type ArtworkOf,
   type CoverInput,
   type CoverShowing,
-} from '../utils/coverShowing'
+} from '../app/utils/coverShowing'
 
 /**
  * What a mounted cover shows (utils/coverShowing.ts), taken from BetterReads' tests/cover-showing.test.ts: a cover

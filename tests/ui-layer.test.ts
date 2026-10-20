@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { layerContract } from '../testing/contract.mjs'
-import { CLOTH_COUNT, clothOf, formatAuthors, glowOf, isBlankCover, NEUTRAL_GLOW } from '../utils/cloth'
+import { CLOTH_COUNT, clothOf, formatAuthors, glowOf, isBlankCover, NEUTRAL_GLOW } from '../app/utils/cloth'
 
 /**
  * The UI layer's contract (README, "The contract"): it imports nothing from the

@@ -1,7 +1,7 @@
 // What the chat stories draw from: sample messages, pictures, a recording and a GIF provider, all
 // local (no network, no real people). Not part of the package: only `.storybook/` and the stories use it.
-import type { BubbleMedia, BubbleMessage, BubbleQuote } from '../utils/chat/message'
-import type { GifFeed, GifItem, GifResult, GifSearch } from '../utils/chat/gif'
+import type { BubbleMedia, BubbleMessage, BubbleQuote } from '../app/utils/chat/message'
+import type { GifFeed, GifItem, GifResult, GifSearch } from '../app/utils/chat/gif'
 
 /** The app's reaction set, in the order of the bar (`emojis`). */
 export const EMOJIS = ['❤️', '😂', '😮', '😢', '🔥'] as const

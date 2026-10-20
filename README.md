@@ -11,23 +11,54 @@ utility names and token names are Libellus'. Improvements are additive (a new op
 slot, a new token, a fixed bug), never a renamed or reshaped API, and every one is listed under
 [Changes against Libellus](#changes-against-libellus), so Libellus' move is a checklist.
 
-The layer has no `app/` folder: the package root is its source directory.
+The layer has the shape Nuxt documents for one ([Authoring Nuxt Layers](https://nuxt.com/docs/4.x/guide/going-further/layers)):
+the source is `app/`, which Nuxt scans by itself, and the package root holds only the config and the tooling.
+Paths below that start with `components/`, `composables/`, `utils/`, `plugins/` or `assets/` are inside `app/`.
 
 ```
 @fabkho/ui
-  package.json          `main` is nuxt.config.ts, so `extends: '@fabkho/ui'` finds the layer
-  nuxt.config.ts        the `#ui` alias and the router options hook
-  testing/contract.mjs  the contract as a function, run by every app against its own tokens
-  app.config.ts         the words the layer says itself (ui.text), in English
-  router.options.ts     the system Back closes the top sheet (useBackDismiss)
-  assets/css/ui.css     utilities, base styles, keyframes, Reduce Motion
-  components/ui/*.vue   UiButton, UiRow, UiSheet, …
-  composables/*.ts      useModalLayer, useBackDismiss, useSwipeDown, …
-  utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth, coverTilt, coverShowing, clampText
-  utils/chat/*.ts       the chat's pure logic: timeline, reply, voice
-  plugins/              touch-active (`:active` on iOS)
-  components/ui/*.stories.ts, .storybook/   Storybook: stories, config, two stand-in themes (not published)
+  package.json                 `main` is nuxt.config.ts, so `extends: '@fabkho/ui'` finds the layer
+  nuxt.config.ts               the layer's name (`#layers/ui`)
+  modules/overrides.ts         logs, in dev, what the app replaces of the base
+  testing/contract.mjs         the contract as a function, run by every app against its own tokens
+  testing/overrides.mjs        which base files an app's own files replace (`layerOverrides`)
+  app/app.config.ts            the words the layer says itself (ui.text), in English
+  app/router.options.ts        the system Back closes the top sheet (useBackDismiss)
+  app/assets/css/ui.css        utilities, base styles, keyframes, Reduce Motion
+  app/components/ui/*.vue      UiButton, UiRow, UiSheet, …
+  app/composables/*.ts         useModalLayer, useBackDismiss, useSwipeDown, …
+  app/utils/*.ts               motion, haptics, keyboard, hideOnScroll, cloth, coverTilt, coverShowing, clampText
+  app/utils/chat/*.ts          the chat's pure logic: timeline, reply, voice
+  app/plugins/                 touch-active (`:active` on iOS)
+  app/components/ui/*.stories.ts, .storybook/   Storybook: stories, config, two stand-in themes (not published)
 ```
+
+### Reaching the layer's files: `#layers/ui`
+
+The layer is named `ui` (`$meta` in `nuxt.config.ts`), so Nuxt gives every app the alias `#layers/ui`: the layer's
+root folder, wherever it lives (`node_modules/@fabkho/ui`, or the checkout `UI_LAYER` names). There is no alias of
+the layer's own. A component or composable is auto-imported, so the alias is for what is not: types
+(`import type { IconName } from '#layers/ui/app/components/ui/Icon.vue'`), the chat's pure utils
+(`#layers/ui/app/utils/chat/timeline`), and the stylesheet (`@import '#layers/ui/app/assets/css/ui.css'`).
+Vitest in plain Node (no Nuxt) does not know it: an app's `vitest.config.ts` sets
+`'#layers/ui': process.env.UI_LAYER || resolve('./node_modules/@fabkho/ui')` in its own `resolve.alias`.
+
+### Overrides are visible
+
+Nuxt gives the app's files priority over a layer's: `app/components/ui/Cover.vue` in an app replaces `UiCover`, and a
+`useSheetTouch` exported from the app's `app/composables/` replaces the base's. That is how BetterReads keeps its own
+cover on purpose, and how a forgotten copy would shadow the base unnoticed. So:
+
+- in dev the base logs each one once at start: `[@fabkho/ui] UiCover is overridden by the app (app/components/ui/Cover.vue)`;
+- `layerOverrides()` from `@fabkho/ui/testing/overrides.mjs` returns the list (components, composables and utils; plain
+  Node, no Nuxt: it reads the folders), so an app's test pins the ones it means and fails on any other:
+
+  ```ts
+  import { layerOverrides } from '@fabkho/ui/testing/overrides.mjs'
+  // `app`: the app's source folder; `layer`: the checkout `UI_LAYER` names, else the installed package.
+  const overrides = layerOverrides({ app: 'app', layer: process.env.UI_LAYER }).map((o) => o.name)
+  expect(overrides).toEqual([]) // the allow-list: write the names the app replaces on purpose
+  ```
 
 ## The contract
 
@@ -96,26 +127,26 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    `UI_LAYER=/path/to/ui` points the app at a local checkout of this repo (no `pnpm link`, no
    `overrides`). `extends: '@fabkho/ui'` resolves as a layer from `node_modules` because the
    package's `main` is `nuxt.config.ts` (c12 resolves the package name, then loads that file).
-   `#ui` (`import type { IconName } from '#ui/components/ui/Icon.vue'`) is the base's folder, wherever
-   it lives.
+   `#layers/ui` (`import type { IconName } from '#layers/ui/app/components/ui/Icon.vue'`) is the base's folder,
+   wherever it lives ([above](#reaching-the-layers-files-layersui)).
 3. **`main.css`**, after `tailwindcss` and the app's tokens: one `@import` and nothing else.
 
    ```css
    @import 'tailwindcss';
    @import './tokens.generated.css';
    /* the app's fonts */
-   @import '@fabkho/ui/assets/css/ui.css';
+   @import '@fabkho/ui/app/assets/css/ui.css';
    ```
 
    Tailwind v4 does not scan `node_modules`, so `ui.css` carries `@source '../../components'`,
-   relative to itself. **Checked**: a throwaway Nuxt 4.6.2 app under `/tmp`, the package installed with
+   relative to itself (`app/assets/css/ui.css`, so `app/components`). **Checked**: a throwaway Nuxt 4.6.2 app under `/tmp`, the package installed with
    `file:`, one `UiButton` on its page, `nuxt generate`: the built CSS holds `bg-ink`, `text-on-ink`,
-   `shadow-button` and the other classes that are written only in `components/ui/Button.vue`. With
+   `shadow-button` and the other classes that are written only in `app/components/ui/Button.vue`. With
    the `@source` line taken out of `ui.css` they are gone (the negative control), so it is the line that
-   does it. It resolves the same through `UI_LAYER` and through `@import '#ui/assets/css/ui.css'`
-   (the alias follows `UI_LAYER`; `@fabkho/ui/assets/…` always reads the installed copy, which is
+   does it. It resolves the same through `UI_LAYER` and through `@import '#layers/ui/app/assets/css/ui.css'`
+   (the alias follows `UI_LAYER`; `@fabkho/ui/app/assets/…` always reads the installed copy, which is
    what to use in a checked-in `main.css`). **If it ever stops resolving** (a Tailwind change), the
-   fallback is one line per app, next to the import: `@source '../../../node_modules/@fabkho/ui/components';`
+   fallback is one line per app, next to the import: `@source '../../../node_modules/@fabkho/ui/app/components';`
    (path relative to `main.css`).
 4. **Fonts** are the app's: the base names the families only through `--font-sans|mono|serif`.
    Libellus' (and Bookretreats') are Geist, Geist Mono and Newsreader from Fontsource.
@@ -197,12 +228,11 @@ and no way back. A tag per release (release-please makes them), the lockfile pin
    gesture, the browser's Back) closes the top sheet or dialog instead of leaving the page
    (`useBackDismiss`). Nuxt merges it with the app's own `router.options.ts`; an app that sets its
    own `history` must wrap it the same way (`listenForBack(); return keepsForeignLayers(createWebHistory(base))`).
-   Nuxt only looks for it in `<layer>/app/router.options.ts`, and this layer has no `app/` folder, so
-   the layer's `nuxt.config.ts` adds the file with the `pages:routerOptions` hook. Without it the
-   listener is added late, after the router's own, and a change of page made while a layer closes
-   navigates back to the page it left.
-8. **Types** from the base: `import type { IconName } from '#ui/components/ui/Icon.vue'`
-   (`UiTab` from `TabBar.vue`; `SheetRestore` from `#ui/utils/sheetRestore`, not from `Sheet.vue`).
+   Nuxt finds it by itself in `<layer>/app/router.options.ts`, right behind its own default and before the
+   app's, so the listener is added in time; without it the listener is added late, after the router's own,
+   and a change of page made while a layer closes navigates back to the page it left.
+8. **Types** from the base: `import type { IconName } from '#layers/ui/app/components/ui/Icon.vue'`
+   (`UiTab` from `TabBar.vue`; `SheetRestore` from `#layers/ui/app/utils/sheetRestore`, not from `Sheet.vue`).
 
 ### How an app learns about a release
 
@@ -292,7 +322,7 @@ Every base component in its states, in two themes, with an accessibility check o
   the fast, browser-less Vitest.
 - **How it runs**: `@storybook-vue/nuxt` (Storybook's Nuxt framework, from the `nuxt-modules/storybook`
   repo) with the layer as the Nuxt project, so stories see the layer's auto-imports, `app.config.ts`
-  (`ui.text`), the `#ui` alias and Tailwind v4 with `assets/css/ui.css`, without a mock. Config is in
+  (`ui.text`), the `#layers/ui` alias and Tailwind v4 with `app/assets/css/ui.css`, without a mock. Config is in
   `.storybook/` (`main.ts`, `preview.ts`, `tokens.css`, `storybook.css`); none of it is published.
 - **Themes**: the toolbar's paint-brush switches `data-theme` on `<html>` between **paper** (light) and
   **night** (dark), which stand in for the apps. `.storybook/tokens.css` is a copy of what an app's
@@ -303,7 +333,7 @@ Every base component in its states, in two themes, with an accessibility check o
   their sample messages, pictures, a silent voice clip, a fake GIF provider (no network) and a stand-in
   microphone from `.storybook/chat-fixtures.ts`. `Chat/ChatThread` is a live conversation (react, answer,
   retry, send); look at it in the iPhone viewport.
-- **Add a story**: next to the component, `components/ui/<Name>.stories.ts` (`files` in `package.json`
+- **Add a story**: next to the component, `app/components/ui/<Name>.stories.ts` (`files` in `package.json`
   leaves `*.stories.ts` out of the package). Copy `Button.stories.ts`: `title: 'Base/<Name>'`, one named
   story per state (sizes, variants, disabled, loading, empty, error, long text), and for an overlay
   (sheet, dialog, palette) an open button. A new or changed base component gets or updates its story in
@@ -461,7 +491,7 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
-- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`, `progressAt`, and what waits for motion: `addMover` (an app registers what moves in its own pages, e.g. a cover's flight between a list and a page: `addMover(() => flying)`, which returns its unregister), `moving`, `afterMotion`, `followAfterMotion`. One module for the layer and the app: import it from `#ui/utils/motion` (or the auto-import), never keep a copy, or the app's movers are invisible to the layer's `UiFlip`/`UiListMotion`/`UiCover`.
+- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`, `progressAt`, and what waits for motion: `addMover` (an app registers what moves in its own pages, e.g. a cover's flight between a list and a page: `addMover(() => flying)`, which returns its unregister), `moving`, `afterMotion`, `followAfterMotion`. One module for the layer and the app: import it from `#layers/ui/app/utils/motion` (or the auto-import), never keep a copy, or the app's movers are invisible to the layer's `UiFlip`/`UiListMotion`/`UiCover`.
 - `utils/coverShowing.ts`: what a mounted `UiCover` shows, as a framework-free state (`startCover`, `coverNow`, `coverInputChanged`, `coverShown`, `coverFailed`, `ArtworkOf`): the chain of `src` and `fallbacks`, a size that fails leaving the artwork in view, a new size of it taking over once loaded.
 - `utils/coverTilt.ts`: the lean of a pressed cover (`leanAt`, `leanTransform`, `between`, `mayLean`, `stillCovers`, `attachCoverTilt`), used by `UiCover`'s `tilt`.
 - `utils/clampText.ts`: `isCut`, `heightKeyframes`, the pure parts of `UiClampText`.
@@ -469,7 +499,7 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 - `utils/keyboard.ts`: the keyboard arithmetic (`readViewport`, the one measurement; `sheetLift`, `paletteLift`, `revealDelta`, …).
 - `utils/cloth.ts`: `clothOf`, `glowOf`, `isBlankCover`, `formatAuthors`, `thumbhashDataUrl` (keeps its last 200 decodes, `THUMBHASH_CACHE_SIZE`), `CoverColors`.
 - `utils/chat/*.ts` (the chat's pure logic, **not auto-imported**: the names are too generic for a global;
-  import `#ui/utils/chat/<file>` from an app, a relative path from a component). No Vue, no clock, no
+  import `#layers/ui/app/utils/chat/<file>` from an app, a relative path from a component). No Vue, no clock, no
   words of their own (they come in from `ui.text.chat`):
   - `timeline.ts`: `dayKey`, `daysAgo`, `dayLabel(at, now, words)` (Intl for weekdays and months),
     `clockTime(at, locale?)` (the locale's clock through `Intl`), `timeline(items, now, keyOf, words)` (day separators, `TimelineRow`), `follows` /
@@ -621,12 +651,12 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   `utils/cloth.ts`; `formatAuthors` from `utils/books.ts` too. Libellus keeps the source-specific
   rest (`coverSrc`, `coverFallbacks`, `APPLE_BOX`, `OPENLIBRARY_SIZE`, `CoverSize`) and removes the
   moved names (auto-imports would otherwise clash). `data/books.ts` imports `CoverColors` from the layer.
-- [ ] **`SheetRestore`** is exported by `utils/sheetRestore.ts` (`#ui/utils/sheetRestore`), no longer by
+- [ ] **`SheetRestore`** is exported by `utils/sheetRestore.ts` (`#layers/ui/app/utils/sheetRestore`), no longer by
   `Sheet.vue`; `composables/useSheetRestore.ts` keeps its own `SheetRestore` (with `shown`) or imports the
   layer's, which has `shown?` too.
 - [ ] **History state key** of `useBackDismiss`: `uiLayer` (was `libellusLayer`); `e2e/support.ts`
   reads `history.state.uiLayer`.
-- [ ] **Router**: the layer's `router.options.ts` (added by the hook in its `nuxt.config.ts`) installs `listenForBack` + `keepsForeignLayers`;
+- [ ] **Router**: the layer's `app/router.options.ts` installs `listenForBack` + `keepsForeignLayers`;
   Libellus' own `history` option in `app/router.options.ts` goes (its scroll behaviour stays).
 - [ ] **`main.css`**: the layer's `ui.css` replaces Libellus' safe-area variables, the utilities,
   the base layer (minus `color-scheme`, which the generated tokens set per theme), the scroll bars,
@@ -646,7 +676,7 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   without the sources: Apple's and Open Library's URLs, `coverSrc`, `coverSrcset`, `coverSizes`, `coverChain` and `artworkOf` stay in Libellus' `utils/cover.ts`,
   and it hands them over once, as `ui.cover.sources` and `ui.cover.artworkOf` in its `app.config.ts` (no call site changes; a prop on a cover wins); the halo and the backing get `decoding="async"` and the same srcset);
   `UiAmbient`'s `grain` is `image` (what the base drew) or `inline` (Libellus' SVG: no LCP candidate; the same grain in Chromium and in WebKit at 1×, crisper in WebKit at 2×/3×), set once as `ui.ambient.grain: 'inline'`; `utils/motion.ts` and `utils/coverTilt.ts` were already
-  Libellus' files byte for byte: Libellus imports `#ui/utils/motion` and deletes its copies, so `addMover` has one registry.
+  Libellus' files byte for byte: Libellus imports `#layers/ui/app/utils/motion` and deletes its copies, so `addMover` has one registry.
   Differences: `size` has `xxs`; `kind="screen"`; text from `useUiText` (`ui.text.etAl`) instead of `common.etAl`.
 
 - Wave 5b, from Libellus into the base (Libellus keeps its own copies, which still win, until it switches):
@@ -746,6 +776,15 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   options keep test ids they had as buttons.
 - `useUiText`, `app.config.ts` (`ui.text`).
 
+**Shape** (0.6.0, breaking for an app's import paths)
+
+- The source moved under `app/` (`app/components`, `app/composables`, `app/utils`, `app/plugins`, `app/assets`, `app/app.config.ts`,
+  `app/router.options.ts`), as Nuxt documents for a layer; Nuxt finds `app/router.options.ts` itself, so the `pages:routerOptions` hook is gone.
+- The `#ui` alias is gone: `#layers/ui` (the layer's name) reaches the same folder, so every `#ui/utils/x` is `#layers/ui/app/utils/x`,
+  `@import '#ui/assets/css/ui.css'` is `@import '#layers/ui/app/assets/css/ui.css'`, and `@fabkho/ui/assets/…` is `@fabkho/ui/app/assets/…`.
+  `@fabkho/ui/pure/*` and `@fabkho/ui/testing/*` keep their paths. An app's `vitest.config.ts` aliases `#layers/ui` itself (plain Node does not know it).
+- New: overrides are logged in dev and listed by `layerOverrides()` (`testing/overrides.mjs`), see [Overrides are visible](#overrides-are-visible).
+
 **Fixed**
 
 - `UiAvatar`'s photo fade used `duration-standard`, which is no Tailwind utility (durations have no
@@ -777,4 +816,4 @@ namespace, a `spring` group is unitless
 
 ## Pure utils under plain Node
 
-`utils/chat/{voice,timeline,reply}.js` are framework-free ESM with JSDoc types, so they load in plain Node with no build step: `import { voiceMime } from '@fabkho/ui/pure/voice'` (the `exports` map maps `./pure/*` to `./utils/chat/*.js`). Nuxt and the components import the same files as `#ui/utils/chat/voice`. Node's type stripping is not used (it skips `node_modules`, where consumers get the package). A util may go on the `./pure/*` path only when it imports nothing from Nuxt or the app.
+`app/utils/chat/{voice,timeline,reply}.js` are framework-free ESM with JSDoc types, so they load in plain Node with no build step: `import { voiceMime } from '@fabkho/ui/pure/voice'` (the `exports` map maps `./pure/*` to `./app/utils/chat/*.js`). Nuxt and the components import the same files as `#layers/ui/app/utils/chat/voice`. Node's type stripping is not used (it skips `node_modules`, where consumers get the package). A util may go on the `./pure/*` path only when it imports nothing from Nuxt or the app.

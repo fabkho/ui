@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const decode = vi.hoisted(() => vi.fn((bytes: Uint8Array) => `data:image/png;base64,${Array.from(bytes).join('.')}`))
 vi.mock('thumbhash', () => ({ thumbHashToDataURL: decode }))
 
-const { THUMBHASH_CACHE_SIZE, thumbhashDataUrl } = await import('../utils/cloth')
+const { THUMBHASH_CACHE_SIZE, thumbhashDataUrl } = await import('../app/utils/cloth')
 
 /** A distinct, valid base64 hash per number. */
 const hashOf = (n: number) => btoa(String.fromCharCode(n % 256, Math.floor(n / 256), 7))
