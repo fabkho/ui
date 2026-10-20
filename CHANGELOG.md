@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.1](https://github.com/fabkho/ui/compare/v0.6.0...v0.6.1) (2026-10-20)
+
+
+### Fixes
+
+* **a11y:** chat messages say who wrote them and arrive aloud, large text no longer cuts titles, top bars or chips ([a657287](https://github.com/fabkho/ui/commit/a6572870b20da00d13e2074748f2d153f6d9953e))
+* **a11y:** chat messages say who wrote them and arrive aloud, large text no longer cuts titles, top bars or chips ([f3c0c4e](https://github.com/fabkho/ui/commit/f3c0c4e141549946f27734853857280920bb7087))
+
 ## [0.6.0](https://github.com/fabkho/ui/compare/v0.5.0...v0.6.0) (2026-10-20)
 
 
