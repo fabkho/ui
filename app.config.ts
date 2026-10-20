@@ -2,8 +2,25 @@
 // cover's "et al.", a clamped text's More and Less). The app overrides them in its own app.config.ts, or, with
 // translations, keeps them current with `updateAppConfig({ ui: { text } })`
 // (README.md, Copy). The layer never imports the app's copy.
+import type { ArtworkOf, CoverSources } from './utils/coverShowing'
+
 export default defineAppConfig({
   ui: {
+    /**
+     * What an app knows about its covers' sources, for every `UiCover` at once (a prop of the cover wins).
+     * Empty here: a cover shows `src`, then its `fallbacks`, as given.
+     */
+    /** `UiAmbient`: `grain` is how its grain is drawn when the card does not say (`image`, the default, or `inline`: an SVG, which is no LCP candidate). */
+    ambient: {} as { grain?: 'image' | 'inline' },
+    cover: {} as {
+      /**
+       * `src` at `size`: the images to try after it (the same artwork at its other sizes), its `srcset` and `sizes`.
+       * Called again when `src` or `size` changes.
+       */
+      sources?: (src: string, size: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl') => CoverSources | null | undefined
+      /** Which artwork a URL is of, whatever size it is asked at: a new size of the image in view takes over once loaded. */
+      artworkOf?: ArtworkOf
+    },
     /**
      * UiIcon drawings an app replaces: the name (an `IconName`) and the SVG markup of its shapes on the 24-unit
      * grid, e.g. `people: '<circle cx="9.3" cy="8.8" r="3.3" /><path d="…" />'`. Merged over the layer's set;

@@ -23,7 +23,7 @@ The layer has no `app/` folder: the package root is its source directory.
   assets/css/ui.css     utilities, base styles, keyframes, Reduce Motion
   components/ui/*.vue   UiButton, UiRow, UiSheet, …
   composables/*.ts      useModalLayer, useBackDismiss, useSwipeDown, …
-  utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth, coverTilt, clampText
+  utils/*.ts            motion, haptics, keyboard, hideOnScroll, cloth, coverTilt, coverShowing, clampText
   utils/chat/*.ts       the chat's pure logic: timeline, reply, voice
   plugins/              touch-active (`:active` on iOS)
   components/ui/*.stories.ts, .storybook/   Storybook: stories, config, two stand-in themes (not published)
@@ -366,9 +366,9 @@ Every base component in its states, in two themes, with an accessibility check o
 | `UiIcon` | The icon set on the 24 grid (`IconName`): BetterReads' and Bookretreats' marks in one set. An app draws its own version of a name with `ui.icons` (below). |
 | `UiEmptyState` | Empty state: the drawing (or the `art` slot), a serif line, a sentence, the way forward. |
 | `UiProgress` | A thin progress bar. |
-| `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). |
+| `UiAmbient` | The light a cover throws into a card or page (off where the theme says so); `pool` and `strength` light it in the app's own colours (the Feed's pinned card). `grain` (`image`, the default, or `inline`: an SVG, which is no LCP candidate; an app says it once as `ui.ambient.grain`). |
 | `UiSkeleton` | A placeholder swelling with the loading wave. |
-| `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen; `tilt` (off by default) leans the sheet under the finger (the Book page's hero). |
+| `UiCover` | A cover in 2:3: the image, or a generated cloth from title and authors; `kind` book or screen; `tilt` (off by default) leans the sheet under the finger (the Book page's hero); `fallbacks` (tried in turn), `srcset` and `sizes` (for `src`), `identity` (what the cover is of: another one starts it afresh) and `artworkOf` (which URLs are one artwork at other sizes: the image in view stays until the new size has loaded), all unset by default. The sources (a CDN's sizes, which URL is which artwork) are the app's: it says them once for every cover as `ui.cover.sources(src, size)` (`{ fallbacks, srcset, sizes }`) and `ui.cover.artworkOf(url)` in its app config; a prop wins. |
 | `UiSearchPalette` | A search palette over the page (Libellus' search, without the morph out of the tab bar): veil, raised card on the keyboard, query row (glyph, field, clear, Cancel) at its bottom, the answers in the default slot above it; `v-model:open`, `v-model:query`, `label`, `placeholder`, `clear`, `cancel`, `status`, `testid`; everything else goes to the `<input>`; `cleared`. Focuses the query first, then rises and fades in (iOS: a field focused in a transparent layer leaves its list dead under the finger). Added for Bookretreats. |
 | `UiTabBar` | The floating glass tab bar: `items`, dot and lock per tab, hides on scroll, tap again for the top; a slot `icon-<key>` draws a tab's own face in the icon's place; `nameFromContent` drops the `aria-label` so the tab is named by what it draws (its visible text, or a visually hidden `label-<key>` slot for a face: WCAG 2.5.3), instead of passing `ariaLabel: ''`. |
 | `UiChatThread`, `UiBubble`, `UiDaySeparator`, `UiQuote`, `UiReactionBar`, `UiComposer`, `UiComposerChip`, `UiVoiceBubble`, `UiGifPicker` | The chat: see [Chat](#chat). |
@@ -461,7 +461,8 @@ phone card and sheet, the system lines, `copy/chat.ts`, `klipy.ts`, the store, t
 - `useHideOnScroll`: chrome that slides away while reading down (utils/hideOnScroll.ts has the arithmetic).
 - `useArrival`: the `arrive` motion once, after loading.
 - `useUiText`: the layer's own words from the app config.
-- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`, `progressAt`, and what waits for motion: `addMover`, `moving`, `afterMotion`, `followAfterMotion`.
+- `utils/motion.ts`: `parseDuration`, `durationToken`, `easingToken`, `prefersReducedMotion`, `timeAt`, `progressAt`, and what waits for motion: `addMover` (an app registers what moves in its own pages, e.g. a cover's flight between a list and a page: `addMover(() => flying)`, which returns its unregister), `moving`, `afterMotion`, `followAfterMotion`. One module for the layer and the app: import it from `#ui/utils/motion` (or the auto-import), never keep a copy, or the app's movers are invisible to the layer's `UiFlip`/`UiListMotion`/`UiCover`.
+- `utils/coverShowing.ts`: what a mounted `UiCover` shows, as a framework-free state (`startCover`, `coverNow`, `coverInputChanged`, `coverShown`, `coverFailed`, `ArtworkOf`): the chain of `src` and `fallbacks`, a size that fails leaving the artwork in view, a new size of it taking over once loaded.
 - `utils/coverTilt.ts`: the lean of a pressed cover (`leanAt`, `leanTransform`, `between`, `mayLean`, `stillCovers`, `attachCoverTilt`), used by `UiCover`'s `tilt`.
 - `utils/clampText.ts`: `isCut`, `heightKeyframes`, the pure parts of `UiClampText`.
 - `utils/haptics.ts`: `tick`, `stepTick`, `hapticsKind`.
@@ -639,6 +640,14 @@ composables, utils and the parts of `main.css` go; the layer comes in):
   step 3 with the motion tokens.
 
 **Added (nothing to do; available to Libellus)**
+
+- Wave 6e, the last gaps for Libellus (BetterReads) to switch its `Cover`, `Ambient`, `coverTilt.ts` and `motion.ts` to the base:
+  `UiCover` takes `identity`, `srcset`, `sizes` and `artworkOf`, and its image follows the state in `utils/coverShowing.ts` (Libellus' `CoverShowing`
+  without the sources: Apple's and Open Library's URLs, `coverSrc`, `coverSrcset`, `coverSizes`, `coverChain` and `artworkOf` stay in Libellus' `utils/cover.ts`,
+  and it hands them over once, as `ui.cover.sources` and `ui.cover.artworkOf` in its `app.config.ts` (no call site changes; a prop on a cover wins); the halo and the backing get `decoding="async"` and the same srcset);
+  `UiAmbient`'s `grain` is `image` (what the base drew) or `inline` (Libellus' SVG: no LCP candidate; the same grain in Chromium and in WebKit at 1×, crisper in WebKit at 2×/3×), set once as `ui.ambient.grain: 'inline'`; `utils/motion.ts` and `utils/coverTilt.ts` were already
+  Libellus' files byte for byte: Libellus imports `#ui/utils/motion` and deletes its copies, so `addMover` has one registry.
+  Differences: `size` has `xxs`; `kind="screen"`; text from `useUiText` (`ui.text.etAl`) instead of `common.etAl`.
 
 - Wave 5b, from Libellus into the base (Libellus keeps its own copies, which still win, until it switches):
   `UiSheet`'s two-stage focus (`utils/sheetFocus.ts`, `deferFocus`, and `tests/sheet-focus.test.ts` moved with it): the panel has focus at
