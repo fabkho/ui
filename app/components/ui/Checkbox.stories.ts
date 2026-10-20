@@ -6,6 +6,14 @@ const meta = {
   title: 'Base/Checkbox',
   component: UiCheckbox,
   args: { modelValue: false },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A consent or a choice that is ticked: a hairline ring that turns into a lamp-lit disc with a check, with the words beside it as the default slot (which may hold a link).',
+      },
+    },
+  },
   render: args => ({
     components: { UiCheckbox },
     setup() {

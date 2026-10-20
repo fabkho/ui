@@ -43,6 +43,14 @@ const meta = {
     onCancelQuote: fn(),
     onDismissNote: fn(),
   },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'The chat composer: a glass capsule with the growing field and one lit send, floating photo, GIF and app chips above it (the `actions` slot), a quote of the answered message, and an optional voice recording mode.',
+      },
+    },
+  },
   render,
 } satisfies Meta<typeof UiComposer>
 export default meta

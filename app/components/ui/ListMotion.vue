@@ -21,7 +21,15 @@
 // needs it: the sheet's own travel between two renders would read as every item's
 // own move, and the rows already there would be flung back by the distance.
 // Default off, so a list that reorders keeps its moves.
-withDefaults(defineProps<{ tag?: string; still?: boolean }>(), { tag: 'div', still: false })
+withDefaults(
+  defineProps<{
+    /** The element the list renders as. Default: 'div'. */
+    tag?: string
+    /** Items are only ever added or removed, never reordered, so none is moved to a new place. Default: false. */
+    still?: boolean
+  }>(),
+  { tag: 'div', still: false },
+)
 
 /**
  * How many items are opening or closing their room. While any is, the list

@@ -21,8 +21,25 @@ import type { BubbleMessage } from '../../utils/chat/message'
 // A quote slot on top (`#quote`): a recording that answers a message shows it inside the same card, over
 // the play row, as a text bubble does. `tail` is the bubble's tail class (UiBubble decides it).
 // Moved into the base unchanged.
-const props = withDefaults(defineProps<{ item: BubbleMessage; tail: string; testid?: string }>(), { testid: 'chat' })
-const emit = defineEmits<{ press: [event: Event] }>()
+const props = withDefaults(
+  defineProps<{
+    /** The voice message: its key, whose it is, and its media (url, mime, length, peaks). */
+    item: BubbleMessage
+    /** The bubble's tail class (UiBubble decides it). */
+    tail: string
+    /** The base of the `data-testid`s (`<testid>.voice`, `.voicePlay`, …); `chat` by default. */
+    testid?: string
+  }>(),
+  { testid: 'chat' },
+)
+const emit = defineEmits<{
+  /** The play button was pressed; the message counts the tap and then calls `toggle`. */
+  press: [event: Event]
+}>()
+defineSlots<{
+  /** The message this recording answers, over the play row, as a text bubble shows it. */
+  quote?: () => unknown
+}>()
 const uiText = useUiText()
 const words = computed(() => uiText.value.chat.voice.bubble)
 

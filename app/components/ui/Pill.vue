@@ -10,7 +10,16 @@
 // and the focus to the next or previous radio and wrap, disabled ones are skipped. The move is a click on
 // that radio, so the caller's `@click` is how the choice changes, as for a tap. The group is the nearest
 // `[role=radiogroup]` (or the pill's parent).
-const props = defineProps<{ pressed: boolean; count?: number; radio?: boolean }>()
+const props = defineProps<{
+  /** Whether the pill is on: pressed, or the chosen one of its radio group. */
+  pressed: boolean
+  /** A count shown in mono beside the words; `undefined` hides it, 0 still shows. */
+  count?: number
+  /** One of a choice of one (`role=radio`, `aria-checked`, the arrow keys move the choice) instead of a toggle. */
+  radio?: boolean
+}>()
+/** The words of the pill (the count is passed, not slotted). */
+defineSlots<{ default?: () => unknown }>()
 const state = computed(() =>
   props.radio ? { role: 'radio', 'aria-checked': props.pressed, tabindex: props.pressed ? 0 : -1 } : { 'aria-pressed': props.pressed },
 )

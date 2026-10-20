@@ -6,6 +6,7 @@ import UiDaySeparator from './DaySeparator.vue'
 const meta = {
   title: 'Chat/DaySeparator',
   component: UiDaySeparator,
+  parameters: { docs: { description: { component: 'The day a group of messages belongs to, centred and quiet in the eyebrow type, as a heading inside the thread list item.' } } },
   args: { label: 'Today', tag: 'li', testid: 'chat' },
   render: args => ({
     components: { UiDaySeparator },

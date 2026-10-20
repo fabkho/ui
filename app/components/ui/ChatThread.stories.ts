@@ -169,7 +169,16 @@ const meta = {
     headShown: true,
     testid: 'chat',
   },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 720 } } },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: { inline: false, iframeHeight: 720 },
+      description: {
+        component:
+          'A whole conversation screen: the thread scrolls under a floating top bar and composer, with day separators, paging of earlier messages, one reaction bar at a time and the keyboard kept off the newest message.',
+      },
+    },
+  },
   render: render(),
 } satisfies Meta<typeof UiChatThread>
 export default meta

@@ -7,6 +7,14 @@ import { EMOJIS } from '../../../.storybook/chat-fixtures'
 const meta = {
   title: 'Chat/ReactionBar',
   component: UiReactionBar,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A floating glass capsule of emoji for reacting to a chat message or a post, with "Reply" and "Copy" where the message offers them; a toolbar that is one tab stop and closes with Escape.',
+      },
+    },
+  },
   args: { emojis: EMOJIS, current: null, copyable: false, replyable: false, focusOnOpen: false, testid: 'chat', onPick: fn(), onCopy: fn(), onReply: fn(), onClose: fn() },
   decorators: [() => ({ template: '<div class="rounded-md bg-linear-to-br from-accent-soft to-surface-raised p-xl"><story /></div>' })],
 } satisfies Meta<typeof UiReactionBar>

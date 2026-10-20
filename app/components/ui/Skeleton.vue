@@ -6,7 +6,15 @@
 // (`h-… w-…`, `rounded-pill` for a face). Always hidden from assistive tech:
 // the screen says that it is loading. Added for Bookretreats (Libellus writes
 // `skeleton wave` by hand).
-withDefaults(defineProps<{ wave?: number; as?: 'span' | 'div' }>(), { wave: 0, as: 'span' })
+withDefaults(
+  defineProps<{
+    /** How far behind the first placeholder this one swells, 0–1, so a row of them reads as one wave travelling across. */
+    wave?: number
+    /** The element drawn: a `span` by default, a `div` for a line in a block. */
+    as?: 'span' | 'div'
+  }>(),
+  { wave: 0, as: 'span' },
+)
 </script>
 
 <template>

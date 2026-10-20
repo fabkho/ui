@@ -6,7 +6,22 @@
 // lamp is drawn at half its height, and not at all on a short phone, so the
 // one way forward stays above the tab bar. The `art` slot takes an app's own
 // illustration instead of the lamp (the layer README, Changes against Libellus).
-defineProps<{ screen: string; title: string; text: string; compact?: boolean }>()
+defineProps<{
+  /** The screen it belongs to, which prefixes its test ids (`<screen>.empty`, `<screen>.emptyTitle`). */
+  screen: string
+  /** The serif line, set in the book-title face. */
+  title: string
+  /** The sentence under it. */
+  text: string
+  /** Draw the lamp at half its height (and not at all on a short phone), for a screen that needs the room. Default: false. */
+  compact?: boolean
+}>()
+defineSlots<{
+  /** The one way forward, under the sentence. */
+  default?: () => unknown
+  /** An illustration of the app's own in place of the lamp. */
+  art?: () => unknown
+}>()
 
 const cone = useId()
 </script>

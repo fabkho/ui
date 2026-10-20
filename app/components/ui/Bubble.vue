@@ -60,8 +60,11 @@ import { mediaBox, reactionsLabel, type BubbleMessage, type BubbleQuote } from '
 // a like. A second mouse press does not select a word under the bubble.
 const props = withDefaults(
   defineProps<{
+    /** The message to draw (see `BubbleMessage`): its kind, side, delivery and reactions. */
     item: BubbleMessage
+    /** The other side has read it: "Read" shows under my last message. */
     read: boolean
+    /** It has just arrived: it plays the arrival animation once. */
     fresh: boolean
     /** The first of a run: the sender's name (`sender`) stands above the bubble. */
     signed?: boolean
@@ -79,7 +82,9 @@ const props = withDefaults(
     quote?: BubbleQuote | null
     /** The chat just jumped here from this bubble's quote: the bubble lights up for a moment. */
     highlight?: boolean
+    /** The reaction bar is open over this bubble (the thread keeps one open at a time). Default: `false`. */
     reacting?: boolean
+    /** Where the reaction bar opens: above the bubble, or below it when there is no room. Default: `above`. */
     placement?: 'above' | 'below'
     /** The `body` slot draws a card as wide as a voice message (78 %), not as wide as its words. */
     wide?: boolean
@@ -101,10 +106,15 @@ const props = withDefaults(
   },
 )
 const emit = defineEmits<{
+  /** A message that failed to send was tapped: try sending it again. */
   retry: [key: string]
+  /** A photo, GIF or voice message was tapped: open it (`UiMediaViewer`, the app's). */
   open: [item: BubbleMessage]
+  /** The reaction bar opened, with the bubble so the bar can sit over it. */
   reactOpen: [key: string, element: HTMLElement]
+  /** The reaction bar closed. */
   reactClose: []
+  /** A reaction was put on the message, or taken back: add or remove that emoji. */
   react: [messageId: string, emoji: string]
   /** The reader answers this message (the swipe, or the bar's entry): the composer quotes it. */
   reply: [key: string]

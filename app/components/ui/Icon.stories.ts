@@ -16,6 +16,7 @@ const NAMES: IconName[] = [
 const meta = {
   title: 'Base/Icon',
   component: UiIcon,
+  parameters: { docs: { description: { component: 'One icon of the set, drawn on a 24-unit grid in the current text colour and decorative to assistive tech.' } } },
   args: { name: 'home', size: 22, bold: false },
   argTypes: { name: { control: 'select', options: NAMES }, size: { control: { type: 'range', min: 12, max: 64, step: 2 } } },
 } satisfies Meta<typeof UiIcon>

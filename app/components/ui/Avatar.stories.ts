@@ -14,6 +14,13 @@ const meta = {
   component: UiAvatar,
   args: { initials: 'FK', photo: null, fallback: null, size: 'sm', solid: false, lazy: false },
   argTypes: { size: { control: 'inline-radio', options: SIZES } },
+  parameters: {
+    docs: {
+      description: {
+        component: 'A member\'s circle: initials in mono, or her photo drawn over them inside a hairline ring.',
+      },
+    },
+  },
 } satisfies Meta<typeof UiAvatar>
 export default meta
 type Story = StoryObj<typeof meta>

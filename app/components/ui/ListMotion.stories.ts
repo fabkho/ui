@@ -8,7 +8,10 @@ const TITLES = ['Dune', 'Neuromancer', 'Solaris', 'The Left Hand of Darkness', '
 const meta = {
   title: 'Base/ListMotion',
   component: UiListMotion,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: 'A list that animates its items in place as they are added, removed or reordered; the caller keeps the keyed items in the default slot.' } },
+  },
   args: { tag: 'ul' },
   render: args => ({
     components: { UiListMotion, UiButton },

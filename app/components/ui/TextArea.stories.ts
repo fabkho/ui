@@ -6,6 +6,7 @@ import UiTextArea from './TextArea.vue'
 const meta = {
   title: 'Base/TextArea',
   component: UiTextArea,
+  parameters: { docs: { description: { component: 'A few lines of the member\'s own words: a filled box with the label and hint on top and a `footer` slot under the text for a control that belongs to it.' } } },
   args: { id: 'review', label: 'Your review', modelValue: '' },
   argTypes: { modelValue: { control: 'text' } },
   render: args => ({

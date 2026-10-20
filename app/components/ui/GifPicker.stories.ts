@@ -12,7 +12,7 @@ const meta = {
   title: 'Chat/GifPicker',
   component: UiGifPicker,
   args: { open: false, search: fakeGifSearch(), feeds: GIF_FEEDS, attribution: 'Powered by Fake GIFs', testid: 'chat', onPick: fn() },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 700 } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'A sheet that searches a GIF provider and shows the results in two columns with topic chips while the search is empty, and picks one.' }, story: { inline: false, iframeHeight: 700 } } },
   render: args => ({
     components: { UiGifPicker, UiButton },
     setup() {

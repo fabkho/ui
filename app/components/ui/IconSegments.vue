@@ -10,25 +10,36 @@ import UiIcon from './Icon.vue'
 import type { IconName } from './Icon.vue'
 
 export interface IconSegment<V> {
+  /** What the choice is, handed back to the host. */
   value: V
   /** What assistive tech says, and the name that unfolds beside the icon. */
   label: string
+  /** The mark it shows while it is not the chosen one. */
   icon: IconName
 }
 
 const props = defineProps<{
+  /** The choices, in order. */
   options: readonly IconSegment<T>[]
+  /** The chosen one, or null while none is chosen. */
   value: T | null
   /** The id of the element that names the group (a visible label). */
   labelledby?: string
   /** The group's name for assistive tech, when there is no visible label to point at. */
   label?: string
+  /** The prefix of the group's test id and its segments' (`<testid>.<value>`). Default: none. */
   testid?: string
+  /** The group says a choice is required. Default: false. */
   required?: boolean
+  /** The group says its choice is invalid. Default: false. */
   invalid?: boolean
+  /** Every segment is off and the group says so. Default: false. */
   disabled?: boolean
 }>()
-const emit = defineEmits<{ choose: [value: T] }>()
+const emit = defineEmits<{
+  /** A segment was tapped or moved to with the arrows: the host makes it the value. */
+  choose: [value: T]
+}>()
 
 const segments = useTemplateRef<HTMLButtonElement[]>('segments')
 

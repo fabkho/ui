@@ -28,13 +28,21 @@ export interface SegmentedOption<V> {
 
 const model = defineModel<T>({ required: true })
 const props = defineProps<{
+  /** The options, in order; each one is a radio. */
   options: readonly SegmentedOption<T>[]
+  /** The group's name for assistive tech (the radiogroup's `aria-label`). */
   label: string
+  /** Names the group in `data-testid`; each option is `<testid>.<value>` unless it has its own. */
   testid?: string
+  /** The small one for the right of a row: a pill's height (32), the footnote size, `sm` corners. */
   compact?: boolean
+  /** Dims the whole group and takes no taps, while something it started is under way. */
   disabled?: boolean
 }>()
-defineSlots<{ option?: (props: { option: SegmentedOption<T>; selected: boolean }) => unknown }>()
+defineSlots<{
+  /** The face of an option (`{ option, selected }`); without it, the option's label. */
+  option?: (props: { option: SegmentedOption<T>; selected: boolean }) => unknown
+}>()
 
 /** The chosen option, -1 when `model` matches none (a choice not made yet: nothing is lit). */
 const chosen = computed(() => props.options.findIndex((o) => o.value === model.value))

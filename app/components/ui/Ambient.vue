@@ -24,10 +24,15 @@ import type { CoverColors } from '../../utils/cloth'
 
 const props = withDefaults(
   defineProps<{
+    /** The cover's precomputed colours (`{ dominant, secondary }`); `null` falls back to a warm neutral. */
     colors: CoverColors | null
+    /** A cloth colour as CSS, used instead of `colors` for a cover that has none (a Placeholder). Default: `null`. */
     cloth?: string | null
+    /** Where the light is painted: the top band of a page header (`page`) or the whole of a card (`card`). Default: `page`. */
     shape?: 'page' | 'card'
+    /** Two CSS colours the app names instead of the cover's, as `{ a, b }`. Default: `null`. */
     pool?: { a: string; b: string } | null
+    /** A CSS opacity that replaces the theme's `--opacity-glow`, e.g. `var(--opacity-announce)`. Default: `null`. */
     strength?: string | null
     /** How the grain is drawn: a background image, or an inline SVG (no LCP candidate). Default: the app's, else `image`. */
     grain?: 'image' | 'inline'

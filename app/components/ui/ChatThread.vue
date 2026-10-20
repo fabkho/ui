@@ -51,24 +51,25 @@ const props = withDefaults(
      * default (`sameSide`): the same `mine`, and neither is a system line (`kind: 'system'`).
      */
     sameRun?: (before: T, item: T) => boolean
-    /** The conversation shown: when it changes, an open reaction bar closes. */
+    /** The conversation shown: when it changes, an open reaction bar closes. Default: `null`. */
     conversationKey?: string | number | null
-    /** There are earlier messages to load. */
+    /** There are earlier messages to load (scrolling near the top asks for them). Default: `false`. */
     hasMore?: boolean
+    /** How the earlier page is going: `idle`, `loading` or `error`. Default: `idle`. */
     olderStatus?: 'idle' | 'loading' | 'error'
-    /** Loads the earlier page; resolves true when one came in. */
+    /** Loads the earlier page; resolves true when one came in. Default: resolves `false`. */
     loadOlder?: () => Promise<boolean>
     /** The thread's name for a screen reader (the conversation's title). */
     label: string
-    /** The device is offline: a quiet line under the top bar. */
+    /** The device is offline: a quiet line under the top bar. Default: `false`. */
     offline?: boolean
-    /** A sentence over the composer (a photo that could not be sent, a reaction that did not arrive). */
+    /** A sentence over the composer (a photo that could not be sent, a reaction that did not arrive). Default: `null`. */
     error?: string | null
-    /** A quiet line in the composer's place (a conversation that has become read-only). */
+    /** A quiet line in the composer's place (a conversation that has become read-only). Default: `null`. */
     notice?: string | null
-    /** The conversation's head (the `head` slot) stands above the first message. */
+    /** The conversation's head (the `head` slot) stands above the first message. Default: `true`. */
     headShown?: boolean
-    /** The test ids' start: `chat` → `chat.screen`, `chat.list`, `chat.thread`, … */
+    /** The test ids' start: `chat` → `chat.screen`, `chat.list`, `chat.thread`, … Default: `chat`. */
     testid?: string
     /**
      * The screen is a named landmark: `role="region"`, named by `label`, so a screen reader's landmark list finds
@@ -381,8 +382,11 @@ defineExpose({
     stick = true
     void nextTick(toBottom)
   },
+  /** Scroll to a message and light it up for a moment, paging earlier pages in until it is there. */
   jumpTo,
+  /** Open the reaction bar over a message (the key of its row, and the bubble it sits over). */
   openReactions,
+  /** Close the reaction bar, if one is open. */
   closeReactions,
 })
 </script>

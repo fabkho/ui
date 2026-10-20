@@ -24,16 +24,29 @@ const props = withDefaults(
   defineProps<{
     /** The emoji on offer, in the bar's order. */
     emojis: readonly string[]
+    /** The reader's own reaction: lit, and its button takes it back; null for none. */
     current: string | null
+    /** Offer "Copy" after the emoji (a text message, whose long press opened the bar). */
     copyable?: boolean
     /** May this message be answered; a post passes nothing. */
     replyable?: boolean
+    /** Take the focus when the bar shows (on the reader's reaction, or the first button). */
     focusOnOpen?: boolean
+    /** Names the screen, for the test ids (`chat` → `chat.reactionBar`). */
     testid?: string
   }>(),
   { copyable: false, replyable: false, focusOnOpen: false, testid: 'chat' },
 )
-const emit = defineEmits<{ pick: [emoji: string]; copy: []; reply: []; close: [] }>()
+const emit = defineEmits<{
+  /** A tap on an emoji, with the emoji (the same one again takes the reaction back; the caller closes the bar). */
+  pick: [emoji: string]
+  /** A tap on "Copy": the message's text goes to the clipboard. */
+  copy: []
+  /** A tap on "Reply": the message is answered. */
+  reply: []
+  /** Escape (or the caller's own reason): the bar should close and the focus go back. */
+  close: []
+}>()
 const uiText = useUiText()
 
 const bar = ref<HTMLElement | null>(null)

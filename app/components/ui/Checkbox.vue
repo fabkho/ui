@@ -7,6 +7,7 @@ import UiIcon from './Icon.vue'
 // usual; attributes (data-testid, required, …) go to it.
 defineOptions({ inheritAttrs: false })
 
+/** Whether it is ticked (a two-way `modelValue`); the words beside it are the default slot. */
 const checked = defineModel<boolean>({ required: true })
 </script>
 

@@ -10,6 +10,14 @@ const meta = {
   title: 'Base/ClampText',
   component: UiClampText,
   args: { text: LONG, lines: 2, testid: 'clamp' },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'Text cut to a few lines with a quiet "More" button under it when, and only when, the text is actually cut; the button opens and folds it in place.',
+      },
+    },
+  },
   render: args => ({
     components: { UiClampText },
     setup: () => ({ args }),

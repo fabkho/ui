@@ -24,7 +24,16 @@ const meta = {
     tone: 'danger',
   },
   argTypes: { tone: { control: 'inline-radio', options: ['danger', 'primary'] } },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 560 } } },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      story: { inline: false, iframeHeight: 560 },
+      description: {
+        component:
+          'A confirmation for something that cannot be taken back: a question over a scrim with the loss beneath it, one destructive action and Cancel; more can go in the default slot, such as a field for a reason.',
+      },
+    },
+  },
   render: args => ({
     components: { UiConfirm, UiButton },
     setup: () => ({ args, open: ref(false) }),

@@ -8,6 +8,14 @@ const meta = {
   title: 'Chat/ComposerChip',
   component: UiComposerChip,
   args: { label: undefined, icon: undefined, mono: false, onClick: fn() },
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A small glass chip floating over the composer capsule (Photo, GIF, an app\'s own action): the words go in the default slot and any other mark in the `icon` slot, with a 44 px touch target around the 34 px drawn pill.',
+      },
+    },
+  },
   render: args => ({
     components: { UiComposerChip },
     setup: () => ({ args }),

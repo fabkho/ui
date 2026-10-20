@@ -13,7 +13,7 @@ const meta = {
   title: 'Base/Sheet',
   component: UiSheet,
   args: { open: false, title: 'Reading goal', testid: 'goalSheet', action: undefined, actionDisabled: false, cancel: true, deferFocus: true },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 600 } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'A bottom sheet that rises over a scrim with a Cancel, a title and one action, closed by Cancel, the scrim, Escape, a swipe down or the system Back.' }, story: { inline: false, iframeHeight: 600 } } },
   render: args => ({
     components: { UiSheet, UiButton },
     setup: () => ({ args, open: ref(false) }),

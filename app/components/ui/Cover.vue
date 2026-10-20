@@ -41,8 +41,11 @@ import { coverFailed, coverInputChanged, coverNow, coverShown, startCover } from
 
 const props = withDefaults(
   defineProps<{
+    /** The book's title; it names the cover and sets the Placeholder type. */
     title: string
+    /** The authors, shown under the title on the Placeholder. Default: none. */
     authors?: readonly string[]
+    /** The cover image; without one the Placeholder cover shows. Default: null. */
     src?: string | null
     /** The images to try, in order, after `src` fails or is blank. Default: the app's (`ui.cover.sources`), else none. */
     fallbacks?: readonly string[]
@@ -61,9 +64,13 @@ const props = withDefaults(
      * else every URL is its own artwork.
      */
     artworkOf?: (url: string) => string
+    /** A thumbhash of the image, shown blurred while it loads. Default: null. */
     thumbhash?: string | null
+    /** The image's precomputed colours, used for the fill before it loads and the Placeholder cloth. Default: null. */
     colors?: CoverColors | null
+    /** The token width it renders at. Default: 'sm'. */
     size?: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+    /** Put the lamp light behind the cover: a blurred copy of the image or a pool in its colours. Default: false. */
     glow?: boolean
     /** For the first covers on screen: load now instead of when scrolled near. */
     eager?: boolean
@@ -88,7 +95,10 @@ const props = withDefaults(
 /** How far an image's shape may be from 2:3 (as a share of it) and still fill the slot when `whole`. */
 const WHOLE_TOLERANCE = 0.08
 
-const emit = defineEmits<{ fallback: [value: boolean] }>()
+const emit = defineEmits<{
+  /** Fires when the Placeholder cover starts or stops showing: true while no image is shown. */
+  fallback: [value: boolean]
+}>()
 
 const uiText = useUiText()
 

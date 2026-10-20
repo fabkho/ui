@@ -5,7 +5,10 @@ import UiEmptyState from './EmptyState.vue'
 const meta = {
   title: 'Base/EmptyState',
   component: UiEmptyState,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: { description: { component: 'An empty shelf under the reading lamp: a title, a sentence and, in the default slot, the one way forward.' } },
+  },
   args: {
     screen: 'library',
     title: 'Nothing on the shelf yet',

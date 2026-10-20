@@ -14,11 +14,24 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // and says so (`ui.text.chat.reply.deleted`) instead of being a button. `mine`: the bubble it sits on
 // is ink (the reader's own), so the type is on-ink. `testid` names the screen (`chat` → `chat.quote`).
 // Moved into the base unchanged.
-const props = withDefaults(defineProps<{ quote: BubbleQuote; mine?: boolean; testid?: string }>(), {
-  mine: false,
-  testid: 'chat',
-})
-const emit = defineEmits<{ tap: [id: string, event: Event] }>()
+const props = withDefaults(
+  defineProps<{
+    /** The message answered: its id (null once deleted), who wrote it and its one-line preview. */
+    quote: BubbleQuote
+    /** The bubble it sits on is ink (the reader's own), so the type is on-ink. */
+    mine?: boolean
+    /** Names the screen, for the test ids (`chat` → `chat.quote`). */
+    testid?: string
+  }>(),
+  {
+    mine: false,
+    testid: 'chat',
+  },
+)
+const emit = defineEmits<{
+  /** A tap on the quote, with the original message's id and the event (the thread jumps to it and lights it up). */
+  tap: [id: string, event: Event]
+}>()
 const uiText = useUiText()
 
 /** The tint: on an ink bubble a lift, on the paper card a quiet fill. */

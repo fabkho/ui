@@ -7,7 +7,14 @@ import UiSwitch from './Switch.vue'
 import type { IconName } from './Icon.vue'
 
 const model = defineModel<boolean>({ required: true })
-defineProps<{ label: string; icon?: IconName; testid?: string }>()
+defineProps<{
+  /** The setting's name, in the row's label. */
+  label: string
+  /** An icon at the left of the row. */
+  icon?: IconName
+  /** The row's `data-testid`. */
+  testid?: string
+}>()
 </script>
 
 <template>

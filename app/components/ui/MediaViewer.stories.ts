@@ -33,7 +33,7 @@ const meta = {
     origin: null,
     testid: 'viewer',
   },
-  parameters: { layout: 'fullscreen', docs: { story: { inline: false, iframeHeight: 560 } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'A picture full screen over a dark veil, closed with Esc, a tap beside it or a swipe down, grown out of the face it was opened from.' }, story: { inline: false, iframeHeight: 560 } } },
   render: args => ({
     components: { UiMediaViewer, UiButton },
     setup: () => ({ args, open: ref(false) }),

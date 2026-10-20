@@ -6,7 +6,15 @@ import UiButton from './Button.vue'
 const meta = {
   title: 'Base/Reveal',
   component: UiReveal,
-  parameters: { layout: 'padded' },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        component:
+          'A part of the page that is not there until it has something to say: when `show` turns on it opens its room and fades in, so what sits under it glides down instead of jumping.',
+      },
+    },
+  },
   args: { show: false },
   render: args => ({
     components: { UiReveal, UiButton },

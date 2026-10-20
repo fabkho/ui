@@ -9,11 +9,21 @@ import type { IconName } from './Icon.vue'
 // what they see) — in development a `label` that does not is warned about. `icon` draws one of the
 // base's glyphs before the words, the `icon` slot any other; `mono` sets the words in the mono label
 // type (the "GIF" mark). The caller gives it its `data-testid`.
-const props = withDefaults(defineProps<{ label?: string; icon?: IconName; mono?: boolean }>(), {
-  label: undefined,
-  icon: undefined,
-  mono: false,
-})
+const props = withDefaults(
+  defineProps<{
+    /** A longer accessible name for a screen reader; it must contain the visible words (WCAG 2.5.3). Default: `undefined`. */
+    label?: string
+    /** One of the base's glyphs drawn before the words. Default: `undefined`. */
+    icon?: IconName
+    /** Sets the words in the mono label type (the "GIF" mark). Default: `false`. */
+    mono?: boolean
+  }>(),
+  {
+    label: undefined,
+    icon: undefined,
+    mono: false,
+  },
+)
 
 const words = ref<HTMLElement | null>(null)
 if (import.meta.dev) {
