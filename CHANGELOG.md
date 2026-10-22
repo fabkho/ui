@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/fabkho/ui/compare/v0.6.1...v0.7.0) (2026-10-22)
+
+
+### Features
+
+* UiAvatarStack, UiCheckList, a face slot on UiBubble and app actions in the reaction bar ([#31](https://github.com/fabkho/ui/issues/31)) ([e6427bf](https://github.com/fabkho/ui/commit/e6427bfcdd6902b76865c789953946afbf2a9ff9))
+
 ## [0.6.1](https://github.com/fabkho/ui/compare/v0.6.0...v0.6.1) (2026-10-20)
 
 
