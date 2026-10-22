@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
+import { ref } from 'vue'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiBubble from './Bubble.vue'
 import UiButton from './Button.vue'
@@ -49,6 +50,8 @@ const meta = {
     onAction: fn(),
     onQuoteTap: fn(),
     onMediaFailed: fn(),
+    onReveal: fn(),
+    veiled: false,
   },
   decorators: [() => ({ template: '<div class="w-[min(100vw-2rem,380px)] pt-lg pb-md"><story /></div>' })],
 } satisfies Meta<typeof UiBubble>
@@ -339,4 +342,73 @@ export const Night: Story = { args: { item: message({ mine: true, body: 'Not yet
 export const NightTheirs: Story = {
   args: { canReact: true, item: message({ reactions: [{ emoji: '🔥', count: 3, mine: false }] }) },
   globals: { theme: 'night' },
+}
+
+// ---------------------------------------------------------------------------------------------- the veil
+
+/** A veiled bubble that reveals itself, as the app does it (the app clears `veiled` on `reveal`). */
+const revealing: Story['render'] = args => ({
+  components: { UiBubble },
+  setup() {
+    const veiled = ref(true)
+    return { args, veiled }
+  },
+  template: '<UiBubble v-bind="args" :veiled="veiled" @reveal="veiled = false" />',
+})
+const SPOILER = 'She marries him in the end.'
+
+/**
+ * A spoiler (`veiled`): the words are out of sight and out of the accessibility tree (`visibility: hidden`,
+ * `inert`), one button says "Spoiler · Show anyway". The bubble keeps its size, so nothing moves on reveal.
+ */
+export const Veiled: Story = { args: { item: message({ body: SPOILER }), veiled: true } }
+
+/** Mine, veiled: the same button on the ink bubble's quiet ground. */
+export const VeiledMine: Story = { args: { item: message({ mine: true, body: SPOILER }), veiled: true } }
+
+/** A picture is veiled too: not drawn (no thumbnail, nothing loaded), the frame keeps its size. */
+export const VeiledPhoto: Story = { args: { item: photoMessage(), veiled: true } }
+
+/** A short word keeps the bubble at least as wide as the veil's line, so the button is whole. */
+export const VeiledShort: Story = { args: { item: message({ body: 'Ha!' }), veiled: true } }
+
+/** The veil in the German sample: "Spoiler · Trotzdem anzeigen". */
+export const VeiledGerman: Story = { args: { item: message({ body: SPOILER }), veiled: true }, globals: { locale: 'de' } }
+
+/** The veil in the night theme. */
+export const VeiledNight: Story = { args: { item: message({ body: SPOILER }), veiled: true }, globals: { theme: 'night' } }
+
+/**
+ * The keyboard reveals it: Tab reaches the one button, Enter shows the words. Before, the words are not visible
+ * and not in the accessibility tree (no text, no name); after, they are, and the button is gone.
+ */
+export const RevealByKeyboard: Story = {
+  args: { item: message({ body: SPOILER }) },
+  render: revealing,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText(SPOILER)).not.toBeVisible()
+    await expect(canvas.queryByRole('button', { name: SPOILER })).toBeNull()
+    await userEvent.tab()
+    const button = canvas.getByRole('button', { name: 'Spoiler · Show anyway' })
+    await expect(button).toHaveFocus()
+    const before = canvasElement.querySelector('[data-testid="chat.bubble"]')!.getBoundingClientRect().height
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(canvas.getByText(SPOILER)).toBeVisible())
+    await expect(canvas.queryByRole('button', { name: /Show anyway/ })).toBeNull()
+    // No layout jump: the bubble is as tall as it was veiled.
+    await expect(Math.abs(canvasElement.querySelector('[data-testid="chat.bubble"]')!.getBoundingClientRect().height - before)).toBeLessThan(1)
+  },
+}
+
+/** A veiled photo is revealed by a tap and then is the photo again (the app brings the URL). */
+export const RevealPhoto: Story = {
+  args: { item: photoMessage() },
+  render: revealing,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvasElement.querySelector('img')).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: 'Spoiler · Show anyway' }))
+    await waitFor(() => expect(canvasElement.querySelector('img')).not.toBeNull())
+  },
 }

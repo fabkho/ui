@@ -13,7 +13,7 @@ import { fitsTheScreen, largeText, textIsWhole } from '../../../.storybook/large
 const meta = {
   title: 'Base/Sheet',
   component: UiSheet,
-  args: { open: false, title: 'Reading goal', testid: 'goalSheet', action: undefined, actionDisabled: false, cancel: true, deferFocus: true },
+  args: { open: false, title: 'Reading goal', testid: 'goalSheet', action: undefined, back: undefined, actionDisabled: false, cancel: true, deferFocus: true },
   parameters: { layout: 'fullscreen', docs: { description: { component: 'A bottom sheet that rises over a scrim with a Cancel, a title and one action, closed by Cancel, the scrim, Escape, a swipe down or the system Back.' }, story: { inline: false, iframeHeight: 600 } } },
   render: args => ({
     components: { UiSheet, UiButton },
@@ -396,3 +396,45 @@ export const Open: Story = {
 
 /** The dark theme, open: scrim, sheet surface and the lamp-coloured action. */
 export const Night: Story = { args: { action: 'Save' }, globals: { theme: 'night' }, render: Open.render }
+
+/** `back`: a sheet of steps. The left word is the step back ("Back") and replaces Cancel; the title stays centred. */
+export const WithBack: Story = { args: { action: 'Create', back: 'Back', title: 'New group' } }
+
+/**
+ * Two steps in one sheet: step 2 has `back` on the left (an event, not a body button), step 1 has Cancel. Back goes
+ * to step 1 with a tap or the keyboard (Tab, Enter); the sheet stays open and Escape still closes it.
+ */
+export const BackGoesAStep: Story = {
+  args: { action: 'Next', title: 'New group' },
+  render: args => ({
+    components: { UiSheet, UiButton },
+    setup: () => ({ args, open: ref(false), step: ref(1) }),
+    template: `
+      <div class="flex min-h-[560px] items-center justify-center bg-surface">
+        <UiButton tone="secondary" @click="step = 1; open = true">Open sheet</UiButton>
+        <UiSheet v-bind="args" v-model:open="open" :back="step === 2 ? 'Back' : undefined" :action="step === 1 ? 'Next' : 'Create'" @action="step === 1 ? (step = 2) : (open = false)" @back="step = 1">
+          <p class="text-body text-ink-muted" :data-step="step">{{ step === 1 ? 'Step 1: who is in the group?' : 'Step 2: what is it called?' }}</p>
+        </UiSheet>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Open sheet' }))
+    const dialog = await dialogOf('New group')
+    await expect(within(dialog).queryByRole('button', { name: 'Back' })).toBeNull()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Next' }))
+    await expect(within(dialog).queryByRole('button', { name: 'Cancel' })).toBeNull()
+    await expect(within(dialog).getByText('Step 2: what is it called?')).toBeVisible()
+    const back = within(dialog).getByRole('button', { name: 'Back' })
+    back.focus()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(within(dialog).getByText('Step 1: who is in the group?')).toBeVisible())
+    await expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeVisible()
+    await expect(within(document.body).getByRole('dialog', { name: 'New group' })).toBeVisible()
+  },
+}
+
+/** The left word in German ("Zurück"), longer than Back; the title stays centred. */
+export const BackGerman: Story = { args: { action: 'Erstellen', back: 'Zurück', title: 'Neue Gruppe' }, globals: { locale: 'de' } }
+
+/** `back`, open, in the night theme. */
+export const BackNight: Story = { args: { action: 'Create', back: 'Back', title: 'New group' }, globals: { theme: 'night' }, render: Open.render }

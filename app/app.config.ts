@@ -55,11 +55,26 @@ export default defineAppConfig({
         /** The filter found nobody. */
         none: 'Nothing matches.',
       },
+      /** UiThreadRow: what a row says besides the app's own title and number. `{count}` is a number. */
+      threadRow: {
+        /** Spoken for a veiled row, in place of its title ("Chapter 9, hidden, 12 comments"). */
+        veiled: 'hidden',
+        /** The count; `one` when it is 1. Never message text. */
+        comments: '{count} comments',
+        commentsOne: '1 comment',
+        /** The unread dot, spoken: "3 new". */
+        unread: '{count} new',
+      },
       chat: {
         /** A BCP 47 tag: the language the weekdays and months of a day separator are spelled in (`Intl`). */
         locale: 'en',
         /** The "+N" of a stack of faces (UiAvatarStack), spoken after the names when it has no label: "Ida, Berit and 3 more". */
         more: 'and {count} more',
+        /** UiBubble `veiled` (a spoiler): the button reads "{label} · {show}". */
+        veiled: {
+          label: 'Spoiler',
+          show: 'Show anyway',
+        },
         /** Day separators; older days are written out by `dayLabel`. */
         today: 'Today',
         yesterday: 'Yesterday',

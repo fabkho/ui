@@ -41,6 +41,7 @@ export const OWN_VARIABLES = [
   '--index',
   '--count',
   '--chat-dock',
+  '--chat-banner',
   '--composer-inset',
   '--voice-inset',
   '--voice-corner',

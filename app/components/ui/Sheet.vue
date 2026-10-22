@@ -13,7 +13,7 @@ import type { SheetRestore } from '../../utils/sheetRestore'
 // middle, the sheet's one action at the right in the lamp colour. Closed by
 // Cancel, a tap on the scrim, Escape, swiping it down, or the system Back
 // (Android's back gesture: useBackDismiss.ts); any change of page closes it
-// too. Respects the home indicator. `testid` names the sheet; Cancel and the
+// too. `back` (a step back in a sheet of steps) takes Cancel's place with its own word and event. Respects the home indicator. `testid` names the sheet; Cancel and the
 // action get `<testid>.cancel` and `<testid>.action`.
 //
 // While it is open the rest of the app is out of reach (`inert`), the page
@@ -52,14 +52,22 @@ const props = withDefaults(
     restore?: SheetRestore | null
     /** Added for Bookretreats: `false` leaves Cancel out, for a sheet only read (its action closes it). */
     cancel?: boolean
+    /**
+     * A step back in a sheet of several steps ("Back"): the word stands at the left where Cancel stands (it replaces
+     * Cancel) and emits `back` (`<testid>.back`); the sheet's owner changes the step. Escape, the scrim and a swipe
+     * down still close the sheet. Default: none (Cancel, or nothing with `cancel` off).
+     */
+    back?: string
     /** Added for Libellus: the `data-autofocus` field takes focus once the sheet has finished rising, not in the opening tap (utils/sheetFocus.ts; on iOS it is the tap's by default). `false`: in the tap everywhere. */
     deferFocus?: boolean
   }>(),
-  { action: undefined, actionDisabled: false, restore: null, cancel: true, deferFocus: true },
+  { action: undefined, actionDisabled: false, restore: null, cancel: true, back: undefined, deferFocus: true },
 )
 const emit = defineEmits<{
   /** The action at the right was pressed; the sheet's owner decides what it does (usually closes the sheet). */
   action: []
+  /** The left word (`back`) was pressed: the owner goes one step back. */
+  back: []
 }>()
 defineSlots<{
   /** The sheet's content, in the body under the header (a body that scrolls, if what is in it is long). */
@@ -307,7 +315,16 @@ function onAfterLeave() {
           />
           <div class="grid justify-items-start">
             <button
-              v-if="cancel"
+              v-if="back"
+              type="button"
+              class="col-start-1 row-start-1 -ml-sm min-h-(--size-touch) px-sm text-body text-ink-muted hover:text-ink"
+              :data-testid="`${testid}.back`"
+              @click="emit('back')"
+            >
+              {{ back }}
+            </button>
+            <button
+              v-else-if="cancel"
               type="button"
               class="col-start-1 row-start-1 -ml-sm min-h-(--size-touch) px-sm text-body text-ink-muted hover:text-ink"
               :data-testid="`${testid}.cancel`"
@@ -329,7 +346,7 @@ function onAfterLeave() {
             >
               {{ action }}
             </button>
-            <span class="invisible col-start-1 row-start-1 -mr-sm px-sm text-body" aria-hidden="true">{{ uiText.cancel }}</span>
+            <span class="invisible col-start-1 row-start-1 -mr-sm px-sm text-body" aria-hidden="true">{{ back || uiText.cancel }}</span>
           </div>
           <span class="rule pointer-events-none absolute inset-x-0 bottom-0 h-(--stroke-hairline) bg-hairline-strong" :class="scrolled && 'on'" aria-hidden="true" />
         </header>
