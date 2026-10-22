@@ -62,7 +62,7 @@ layer's components.
 
    Families: colours (`--color-*`, incl. `cloth1…6`), elevation (`shadow-*`), `--opacity-glow` and `--opacity-halo`,
    blur, spacing, radius, sizes, strokes, `--font-sans|mono|serif`, text styles, `--duration-*` and `--ease-*`,
-   `color-scheme`. Optional, with fallbacks: `--glass-solid`, `--glass-scale`, `--veil-solid`, `--size-target`,
+   `color-scheme`. Optional, with fallbacks: `--glass-solid`, `--glass-scale`, `--veil-solid`, `--size-target`, `--avatar-stack-ring` (the ring round a stack of faces),
    `--hit-up`, `--hit-down`. Themes are `html[data-theme='<name>']`; only colours change between them.
 2. **Copy** (`app.config.ts`, `ui.text`). English defaults; an app overrides them:
 
@@ -119,6 +119,11 @@ retry, `client_id`) is **not**: it stays in Bookretreats' store (trappist decisi
 reads need a chat, one of three ways is chosen in that work, not here: copy the queue into the app; a
 framework-free composable in the base (the transport is passed in, no Pinia, no Supabase); or a dedicated chat
 layer on top of `@fabkho/ui`. Until then the base gets no queue.
+
+**Added for group chats (additive, next minor):** `UiAvatarStack` (row with "+N", or a diagonal pair; one name for the
+stack; the ring from `--avatar-stack-ring`; scoped slot `face`), `UiBubble` slot `face` (beside theirs on the last bubble
+of a run), `actions` + `action` on `UiReactionBar` and `UiBubble` (the app's own entries, e.g. "Report"), `UiCheckList`
+(filter, `min`/`max`, count line, `face` slot; an APG checkbox group) and the words `ui.text.chat.more` and `ui.text.checkList`.
 
 ## Developing it
 

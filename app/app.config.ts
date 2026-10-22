@@ -44,9 +44,22 @@ export default defineAppConfig({
        * A word with a `{name}` in it is a template: the component fills the braces in (`fillWords`,
        * `utils/chat/words.ts`), so an app can hand over its own function's output for `'{name}'`.
        */
+      /** UiCheckList: the filter field, the count line under it, and what a filter that finds nobody says. */
+      checkList: {
+        filter: 'Filter',
+        /** `{count}` chosen; with a `max`, `{count}` of `{max}`. */
+        count: '{count} selected',
+        countMax: '{count} of {max} selected',
+        /** Under the count while fewer than `min` are chosen. */
+        atLeast: 'Choose at least {min}.',
+        /** The filter found nobody. */
+        none: 'Nothing matches.',
+      },
       chat: {
         /** A BCP 47 tag: the language the weekdays and months of a day separator are spelled in (`Intl`). */
         locale: 'en',
+        /** The "+N" of a stack of faces (UiAvatarStack), spoken after the names when it has no label: "Ida, Berit and 3 more". */
+        more: 'and {count} more',
         /** Day separators; older days are written out by `dayLabel`. */
         today: 'Today',
         yesterday: 'Yesterday',

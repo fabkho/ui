@@ -6,7 +6,15 @@ export const GERMAN = {
   etAl: 'u. a.',
   more: 'Mehr',
   less: 'Weniger',
+  checkList: {
+    filter: 'Filtern',
+    count: '{count} ausgewählt',
+    countMax: '{count} von {max} ausgewählt',
+    atLeast: 'Wähle mindestens {min}.',
+    none: 'Nichts passt.',
+  },
   chat: {
+    more: 'und {count} weitere',
     locale: 'de',
     today: 'Heute',
     yesterday: 'Gestern',

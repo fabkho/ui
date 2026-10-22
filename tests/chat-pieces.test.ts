@@ -148,6 +148,7 @@ describe('the English defaults of the components’ words', () => {
   it('name only the blanks the components fill', () => {
     const blanks: Record<string, string[]> = {
       incoming: ['name'],
+      more: ['count'],
       'reply.show': ['name', 'preview'],
       'voice.timer': ['elapsed', 'max'],
       'voice.bubble.position': ['now', 'total'],
