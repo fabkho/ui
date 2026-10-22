@@ -6,11 +6,6 @@ import { PEOPLE } from '../../../.storybook/chat-fixtures'
 
 const FACES = PEOPLE.map(({ initials, label, photo }) => ({ initials, label, photo }))
 
-// The row's name says every drawn number ("Chapter 7, …, 12 comments"), in order and with its words, so WCAG 2.5.3
-// holds; axe's `label-content-name-mismatch` wants the drawn text ("7 … 12") as one run inside it, which a name
-// with words between the numbers cannot be. Off for this component's stories only.
-const spokenNumbers = { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } }
-
 const meta = {
   title: 'Chat/ThreadRow',
   component: UiThreadRow,
@@ -27,7 +22,6 @@ const meta = {
     onOpen: fn(),
   },
   parameters: {
-    ...spokenNumbers,
     docs: {
       description: {
         component:
@@ -73,7 +67,7 @@ export const Veiled: Story = {
   args: { number: 9, label: 'Chapter 9', veiled: true, unread: 4, title: 'Mr Darcy proposes' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('button', { name: 'Chapter 9, hidden, 12 comments, Ida and Berit are here' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Chapter 9, 12 comments, hidden, Ida and Berit are here' })).toBeVisible()
     await expect(canvasElement.textContent).not.toContain('Darcy')
     await expect(canvas.queryByTestId('thread.unread')).toBeNull()
   },

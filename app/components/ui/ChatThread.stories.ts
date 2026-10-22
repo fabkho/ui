@@ -313,8 +313,7 @@ export const Group: Story = {
  * safe areas and the keyboard work as before. Only the pill itself takes touches.
  */
 export const WithBanner: Story = {
-  parameters: { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } },
-  args: { items: group(), label: 'Book club' },
+  args: { items: group().map(item => ({ ...item, reactions: [] })), label: 'Book club' },
   render: render({ head: false, banner: true }),
   globals: { viewport: { value: 'iphone', isRotated: false } },
   play: async ({ canvasElement }) => {
