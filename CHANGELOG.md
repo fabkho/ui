@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/fabkho/ui/compare/v0.7.0...v0.8.0) (2026-10-22)
+
+
+### Features
+
+* base pieces for buddy reads (banner slot, veiled bubble, UiThreadRow, sheet back) ([#33](https://github.com/fabkho/ui/issues/33)) ([8af4699](https://github.com/fabkho/ui/commit/8af469908c4adac29cadd344223561ddceff2a7b))
+
 ## [0.7.0](https://github.com/fabkho/ui/compare/v0.6.1...v0.7.0) (2026-10-22)
 
 
