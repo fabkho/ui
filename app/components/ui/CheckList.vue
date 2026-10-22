@@ -92,6 +92,7 @@ function set(id: string, on: boolean) {
       <li v-for="option in shown" :key="option.id">
         <UiCheckbox
           :model-value="model.includes(option.id)"
+          :center="!!$slots.face"
           :disabled="full && !model.includes(option.id)"
           :aria-describedby="option.sublabel ? `${uid}-${option.id}-sub` : undefined"
           :data-testid="`${testid}.option.${option.id}`"
