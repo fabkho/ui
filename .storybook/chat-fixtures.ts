@@ -180,3 +180,17 @@ export function fakeMicrophone() {
     return destination.stream
   }
 }
+
+/** A small inline face, standing in for a member's photo (no network). */
+export const FACE = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" fill="#8a6a4a"/><circle cx="64" cy="50" r="22" fill="#e9d2b4"/><path d="M20 128c0-30 20-48 44-48s44 18 44 48z" fill="#e9d2b4"/></svg>',
+)}`
+
+/** Five people, for stacks and pickers. */
+export const PEOPLE = [
+  { id: 'ida', initials: 'ID', label: 'Ida Berg', sublabel: 'Reads with you', photo: FACE },
+  { id: 'berit', initials: 'BH', label: 'Berit Holm', sublabel: 'Buddy since March' },
+  { id: 'clara', initials: 'CN', label: 'Clara Nowak' },
+  { id: 'jose', initials: 'JA', label: 'José Álvarez', sublabel: 'Reads with you' },
+  { id: 'mira', initials: 'MK', label: 'Mira Keller' },
+]

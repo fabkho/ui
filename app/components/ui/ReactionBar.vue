@@ -1,3 +1,16 @@
+<script lang="ts">
+import type { IconName } from './Icon.vue'
+
+export interface BarAction {
+  /** What `action` emits. */
+  id: string
+  /** The button's accessible name. */
+  label: string
+  /** The icon drawn (a `UiIcon` name). */
+  icon: IconName
+}
+</script>
+
 <script setup lang="ts">
 import UiIcon from './Icon.vue'
 import { useUiText } from '../../composables/useUiText'
@@ -20,6 +33,10 @@ import { fillWords } from '../../utils/chat/words'
 // Each button is a 44 × 44 cell (WCAG 2.5.8, our rule 44); the lit or hovered disc inside it is the 40 it always was.
 // The emoji are named for a screen reader by `ui.text.chat.reactions.names` (an emoji without a name is
 // read as itself). Moved into the base unchanged.
+//
+// `actions` (added for group chats): more entries after "Copy", the app's own (`{ id, label, icon }`: "Report",
+// "Delete for me"), each an icon button named by `label` that emits `action` with its `id`. The base knows no
+// domain word; they are in the same toolbar, so the roving tab stop and the arrow keys cover them.
 const props = withDefaults(
   defineProps<{
     /** The emoji on offer, in the bar's order. */
@@ -30,12 +47,14 @@ const props = withDefaults(
     copyable?: boolean
     /** May this message be answered; a post passes nothing. */
     replyable?: boolean
+    /** The app's own entries after "Copy": an icon button each, named by its label. Default: none. */
+    actions?: readonly BarAction[]
     /** Take the focus when the bar shows (on the reader's reaction, or the first button). */
     focusOnOpen?: boolean
     /** Names the screen, for the test ids (`chat` → `chat.reactionBar`). */
     testid?: string
   }>(),
-  { copyable: false, replyable: false, focusOnOpen: false, testid: 'chat' },
+  { copyable: false, replyable: false, actions: () => [], focusOnOpen: false, testid: 'chat' },
 )
 const emit = defineEmits<{
   /** A tap on an emoji, with the emoji (the same one again takes the reaction back; the caller closes the bar). */
@@ -44,6 +63,8 @@ const emit = defineEmits<{
   copy: []
   /** A tap on "Reply": the message is answered. */
   reply: []
+  /** A tap on one of the app's `actions`, with its id (the caller closes the bar). */
+  action: [id: string]
   /** Escape (or the caller's own reason): the bar should close and the focus go back. */
   close: []
 }>()
@@ -52,8 +73,8 @@ const uiText = useUiText()
 const bar = ref<HTMLElement | null>(null)
 const buttons = () => [...(bar.value?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
 
-/** The buttons' keys in order (an emoji, `reply`, `copy`), and the one that is the toolbar's tab stop (roving tabindex). */
-const keys = computed(() => [...props.emojis, ...(props.replyable ? ['reply'] : []), ...(props.copyable ? ['copy'] : [])])
+/** The buttons' keys in order (an emoji, `reply`, `copy`, `action:<id>`), and the one that is the toolbar's tab stop (roving tabindex). */
+const keys = computed(() => [...props.emojis, ...(props.replyable ? ['reply'] : []), ...(props.copyable ? ['copy'] : []), ...props.actions.map((a) => `action:${a.id}`)])
 const remembered = ref<string | null>(null)
 watch(() => props.current, () => (remembered.value = null))
 const stop = computed(() => {
@@ -147,6 +168,22 @@ const nameOf = (emoji: string) => reactionName(emoji, words.value.names)
         @click="emit('copy')"
       >
         <UiIcon name="copy" :size="18" />
+      </button>
+    </template>
+    <template v-if="actions.length">
+      <span class="mx-xxs h-md w-(--stroke-hairline) bg-hairline-strong" aria-hidden="true" />
+      <button
+        v-for="action in actions"
+        :key="action.id"
+        type="button"
+        class="emoji flex size-(--size-touch) items-center justify-center rounded-pill text-ink-muted"
+        :tabindex="stop === `action:${action.id}` ? 0 : -1"
+        :data-roving="`action:${action.id}`"
+        :aria-label="action.label"
+        :data-testid="`${testid}.reactionAction.${action.id}`"
+        @click="emit('action', action.id)"
+      >
+        <UiIcon :name="action.icon" :size="18" />
       </button>
     </template>
   </div>

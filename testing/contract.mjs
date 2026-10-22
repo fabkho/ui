@@ -45,6 +45,8 @@ export const OWN_VARIABLES = [
   '--voice-inset',
   '--voice-corner',
   '--voice-corner-tail',
+  '--face',
+  '--ring',
 ]
 
 /**
@@ -59,6 +61,7 @@ export const OPTIONAL_VARIABLES = [
   '--size-target',
   '--hit-up',
   '--hit-down',
+  '--avatar-stack-ring',
 ]
 
 const read = (path) => readFileSync(path, 'utf8')

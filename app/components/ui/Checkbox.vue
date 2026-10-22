@@ -9,11 +9,13 @@ defineOptions({ inheritAttrs: false })
 
 /** Whether it is ticked (a two-way `modelValue`); the words beside it are the default slot. */
 const checked = defineModel<boolean>({ required: true })
+/** Centre the box on the row's height (a row with a face beside the words) instead of at the first line. Default: `false`. */
+defineProps<{ center?: boolean }>()
 </script>
 
 <template>
-  <label class="flex min-h-(--size-touch) cursor-pointer items-start gap-ms py-xs">
-    <span class="relative mt-px flex size-(--size-checkbox) shrink-0">
+  <label class="flex min-h-(--size-touch) cursor-pointer gap-ms py-xs" :class="center ? 'items-center' : 'items-start'">
+    <span class="relative flex size-(--size-checkbox) shrink-0" :class="center ? '' : 'mt-px'">
       <input
         v-model="checked"
         type="checkbox"
@@ -28,7 +30,7 @@ const checked = defineModel<boolean>({ required: true })
         <UiIcon v-if="checked" name="check" :size="14" bold />
       </span>
     </span>
-    <span class="min-w-0 flex-1 pt-xxs text-subhead text-ink-muted"><slot /></span>
+    <span class="min-w-0 flex-1 text-subhead text-ink-muted" :class="center ? '' : 'pt-xxs'"><slot /></span>
   </label>
 </template>
 

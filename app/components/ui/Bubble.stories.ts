@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, fn, waitFor, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import UiBubble from './Bubble.vue'
 import UiButton from './Button.vue'
+import UiAvatar from './Avatar.vue'
 import { EMOJIS, message, photoMessage, picturesMedia, quote, voiceMessage } from '../../../.storybook/chat-fixtures'
 
 // axe's `label-content-name-mismatch` wants the numbers a pill draws side by side ("5 3") to sit side by side in its name.
@@ -45,6 +46,7 @@ const meta = {
     onReactClose: fn(),
     onReact: fn(),
     onReply: fn(),
+    onAction: fn(),
     onQuoteTap: fn(),
     onMediaFailed: fn(),
   },
@@ -223,6 +225,81 @@ export const Voice: Story = { args: { item: voiceMessage() } }
 export const VoiceMine: Story = { args: { item: voiceMessage({ mine: true }) } }
 export const VoiceWithQuote: Story = { args: { item: voiceMessage(), quote: quote() } }
 export const VoiceRemoved: Story = { args: { item: voiceMessage({}, { removed: true }) } }
+
+// ------------------------------------------------------------ group chats
+
+const REPORT = [{ id: 'report', label: 'Report', icon: 'flag' as const }]
+
+const faceRun = {
+  components: { UiBubble, UiAvatar },
+  template: `
+    <div class="flex flex-col gap-xs">
+      <UiBubble v-for="(item, i) in items" :key="item.key" v-bind="args" :item="item" :ends-run="i === items.length - 1" :signed="i === 0" :sender="'Ida'">
+        <template #face><UiAvatar initials="ID" size="sm" decorative /></template>
+      </UiBubble>
+    </div>`,
+}
+
+/**
+ * Slot `face`: the sender's avatar at the lower left of the last bubble of a run (`endsRun`); the earlier ones keep its
+ * width free, so the bubbles stand in one column. It is decoration: the sender is read before the message.
+ */
+export const WithFace: Story = {
+  render: args => ({
+    ...faceRun,
+    setup: () => ({ args, items: [message({ body: 'Are you up?' }), message({ body: 'I found the edition you were looking for.' }), message({ body: 'It has the old cover!' })] }),
+  }),
+  play: async ({ canvasElement }) => {
+    const faces = within(canvasElement).getAllByTestId('chat.face')
+    await expect(faces).toHaveLength(3)
+    // The face is on the last bubble only; the others hold the place.
+    await expect(faces.map(f => f.children.length > 0 || f.textContent?.trim() !== '')).toEqual([false, false, true])
+    await expect(faces[0]).toHaveAttribute('aria-hidden', 'true')
+  },
+}
+
+/** Mine never has a face and no room is kept for one. */
+export const FaceNotOnMine: Story = {
+  args: { item: message({ mine: true, body: 'Yes, tonight.' }) },
+  render: args => ({
+    components: { UiBubble, UiAvatar },
+    setup: () => ({ args }),
+    template: '<UiBubble v-bind="args"><template #face><UiAvatar initials="ME" decorative /></template></UiBubble>',
+  }),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).queryByTestId('chat.face')).toBeNull()
+  },
+}
+
+/** The reaction bar still opens on the bubble (not the face), and a reaction pill lifts the face with the bubble. */
+export const FaceWithReactionBar: Story = {
+  args: { canReact: true, reacting: true, item: message({ body: 'Guess who found the first edition?', reactions: [{ emoji: '❤️', count: 1, mine: false }] }) },
+  decorators: [() => ({ template: '<div class="pt-xxl"><story /></div>' })],
+  render: args => ({
+    components: { UiBubble, UiAvatar },
+    setup: () => ({ args }),
+    template: '<UiBubble v-bind="args"><template #face><UiAvatar initials="ID" decorative /></template></UiBubble>',
+  }),
+}
+
+/** `actions`: the app's own entries after "Copy" in the bar ("Report"); the bubble emits `action` with the id and the message key. */
+export const WithActions: Story = {
+  args: { canReact: true, reacting: true, actions: REPORT, item: message({ body: 'Guess who found the first edition?' }) },
+  decorators: [() => ({ template: '<div class="pt-xxl"><story /></div>' })],
+  play: async ({ canvasElement, args }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Report' }))
+    await expect(args.onAction).toHaveBeenCalledWith('report', args.item.key)
+    await expect(args.onReactClose).toHaveBeenCalled()
+  },
+}
+
+export const FaceNight: Story = {
+  globals: { theme: 'night' },
+  render: args => ({
+    ...faceRun,
+    setup: () => ({ args, items: [message({ body: 'Are you up?' }), message({ body: 'It has the old cover!' })] }),
+  }),
+}
 
 // ----------------------------------------------------------- the app's own
 

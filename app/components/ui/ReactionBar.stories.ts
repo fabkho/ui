@@ -15,7 +15,7 @@ const meta = {
       },
     },
   },
-  args: { emojis: EMOJIS, current: null, copyable: false, replyable: false, focusOnOpen: false, testid: 'chat', onPick: fn(), onCopy: fn(), onReply: fn(), onClose: fn() },
+  args: { emojis: EMOJIS, current: null, copyable: false, replyable: false, focusOnOpen: false, testid: 'chat', onPick: fn(), onCopy: fn(), onReply: fn(), onAction: fn(), onClose: fn() },
   decorators: [() => ({ template: '<div class="rounded-md bg-linear-to-br from-accent-soft to-surface-raised p-xl"><story /></div>' })],
 } satisfies Meta<typeof UiReactionBar>
 export default meta
@@ -82,3 +82,31 @@ export const SixEmoji: Story = { args: { emojis: ['❤️', '😂', '😮', '�
 
 export const German: Story = { args: { replyable: true, copyable: true, current: '❤️' }, globals: { locale: 'de' } }
 export const Night: Story = { args: { replyable: true, copyable: true, current: '🔥' }, globals: { theme: 'night' } }
+
+const ACTIONS = [
+  { id: 'report', label: 'Report', icon: 'flag' as const },
+  { id: 'remove', label: 'Delete for me', icon: 'trash' as const },
+]
+
+/** `actions`: the app's own entries after "Copy", each an icon button named by its label (no domain word in the base). */
+export const WithActions: Story = { args: { replyable: true, copyable: true, actions: ACTIONS } }
+
+/** The actions are in the same toolbar: the arrow keys reach them, Enter or Space emits `action` with the id. */
+export const ActionsKeyboard: Story = {
+  args: { replyable: true, actions: ACTIONS, focusOnOpen: true },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('button', { name: 'React with Heart' })).toHaveFocus()
+    // End goes to the last entry; one Left to the one before it.
+    await userEvent.keyboard('{End}')
+    await expect(canvas.getByRole('button', { name: 'Delete for me' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(canvas.getByRole('button', { name: 'Report' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onAction).toHaveBeenCalledWith('report')
+    // Still one tab stop: only the focused one is tabbable.
+    await expect(canvas.getAllByRole('button').filter(b => b.tabIndex === 0)).toHaveLength(1)
+  },
+}
+
+export const ActionsNight: Story = { args: { replyable: true, copyable: true, actions: ACTIONS }, globals: { theme: 'night' } }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import UiIcon from './Icon.vue'
 import UiQuote from './Quote.vue'
-import UiReactionBar from './ReactionBar.vue'
+import UiReactionBar, { type BarAction } from './ReactionBar.vue'
 import UiVoiceBubble from './VoiceBubble.vue'
 import { useUiText } from '../../composables/useUiText'
 import { tick } from '../../utils/haptics'
@@ -23,6 +23,14 @@ import { mediaBox, reactionsLabel, type BubbleMessage, type BubbleQuote } from '
 // when `signed`), `body` (the bubble's content), `quote` (the answered message on top, UiQuote),
 // `reactions` (the pill on the corner) and `meta` (the time and the marks under the bubble). Each
 // gets what it needs as slot props.
+//
+// `face` (added for group chats): a slot beside theirs, at the bubble's lower left, on the last bubble of a run
+// only (`endsRun`); the other bubbles of the run keep its width free (UiAvatar's 32 px), so the column of bubbles
+// stays straight. It is decoration (hidden from assistive tech: the sender is read before the message), drawn
+// by the app (an avatar, `UiAvatarStack`). Mine never has one. The reply swipe and the reaction bar are the
+// bubble's, not the face's: the arrow starts after the face, the bar sits on the bubble.
+// `actions` (added for group chats): the app's own entries in the reaction bar after "Copy" (`{ id, label, icon }`,
+// "Report"), each emitting `action` with its id and this message's key.
 //
 // Mine on its way is a touch lighter; held up long enough, "Sending …" shows under it. Mine that did
 // not go out sends again on a tap: the bubble, or the reason under it, which is the named button.
@@ -88,6 +96,8 @@ const props = withDefaults(
     quote?: BubbleQuote | null
     /** The chat just jumped here from this bubble's quote: the bubble lights up for a moment. */
     highlight?: boolean
+    /** The app's own entries in the reaction bar after "Copy". Default: none. */
+    actions?: readonly BarAction[]
     /** The reaction bar is open over this bubble (the thread keeps one open at a time). Default: `false`. */
     reacting?: boolean
     /** Where the reaction bar opens: above the bubble, or below it when there is no room. Default: `above`. */
@@ -104,6 +114,7 @@ const props = withDefaults(
     endsRun: true,
     canReact: false,
     like: undefined,
+    actions: () => [],
     reacting: false,
     placement: 'above',
     quote: null,
@@ -123,6 +134,8 @@ const emit = defineEmits<{
   reactClose: []
   /** A reaction was put on the message, or taken back: add or remove that emoji. */
   react: [messageId: string, emoji: string]
+  /** One of the reaction bar's `actions` was tapped: its id, and this message's key. */
+  action: [id: string, key: string]
   /** The reader answers this message (the swipe, or the bar's entry): the composer quotes it. */
   reply: [key: string]
   /** A tap on the bubble's quote: find that message and light it up. */
@@ -131,6 +144,9 @@ const emit = defineEmits<{
   mediaFailed: [path: string]
 }>()
 const uiText = useUiText()
+const slots = useSlots()
+/** Theirs with a `face` slot: a column beside the bubble, drawn on the last bubble of a run, free on the others. */
+const hasFace = computed(() => !props.item.mine && !!slots.face)
 const chat = computed(() => uiText.value.chat)
 
 // A picture keeps its shape before it loads (`mediaBox`).
@@ -399,6 +415,12 @@ function pick(emoji: string) {
   emit('reactClose')
 }
 
+/** One of the app's entries in the bar: it closes the bar and hands the id and the message over. */
+function runAction(id: string) {
+  emit('reactClose')
+  emit('action', id, props.item.key)
+}
+
 /** The bar's "Reply": the way without a swipe (a keyboard, VoiceOver, a mouse). */
 function answer() {
   // Opened by its button, the bar hands the focus back to it (the watcher on `reacting`); the
@@ -482,14 +504,24 @@ const spokenAuthor = computed(() => {
       <!-- The reply arrow, at the left of the row: it comes with the finger and lights in the
            accent once letting go would answer. It only ever shows during a gesture. -->
       <span
-        class="reply-arrow pointer-events-none absolute left-0 top-1/2 flex size-(--size-button-md) items-center justify-center"
-        :class="arrowArmed ? 'text-accent' : 'text-ink-faint'"
+        class="reply-arrow pointer-events-none absolute top-1/2 flex size-(--size-button-md) items-center justify-center"
+        :class="[arrowArmed ? 'text-accent' : 'text-ink-faint', hasFace ? 'left-[calc(var(--size-avatar)+var(--spacing-xs))]' : 'left-0']"
         :style="{ opacity: arrowAt, scale: `${(0.7 + 0.3 * arrowAt).toFixed(2)}` }"
         aria-hidden="true"
         :data-testid="`${testid}.replyArrow`"
       >
         <UiIcon name="reply" :size="20" />
       </span>
+      <!-- The face of theirs: on the last bubble of a run, its width reserved on the others. -->
+      <div
+        v-if="hasFace"
+        class="mr-xs flex w-(--size-avatar) shrink-0 items-end self-end"
+        :class="item.reactions.length ? 'mb-ms' : ''"
+        aria-hidden="true"
+        :data-testid="`${testid}.face`"
+      >
+        <slot v-if="endsRun" name="face" :item="item" />
+      </div>
       <div
         ref="holder"
         class="holder relative max-w-[78%]"
@@ -528,9 +560,11 @@ const spokenAuthor = computed(() => {
             :focus-on-open="openedBy === 'button'"
             :copyable="item.kind === 'text'"
             :replyable="reactable"
+            :actions="actions"
             @pick="pick"
             @copy="copyText"
             @reply="answer"
+            @action="runAction"
             @close="emit('reactClose')"
             @click.stop
             @pointerdown.stop
