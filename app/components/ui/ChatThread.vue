@@ -100,6 +100,8 @@ const props = withDefaults(
 defineSlots<{
   /** The top bar's row: back, a title, a menu. */
   top?: () => unknown
+  /** A pinned line under the top bar, over the list (a buddy read's pill): the list makes room for it. Left out, nothing is reserved. */
+  banner?: () => unknown
   /** The beginning of the conversation, above the first message. */
   head?: () => unknown
   /** One message (or system line). */
@@ -317,7 +319,29 @@ watch(scroller, (el) => {
 })
 onBeforeUnmount(() => listWatcher?.disconnect())
 
-const frame = computed(() => (dockHeight.value ? { '--chat-dock': `${dockHeight.value}px` } : {}))
+// The banner slot's height: the list's top padding grows by it (and a little air), so the first message
+// is never under the pill, and the newest stays in view as it comes and goes.
+const bannerEl = ref<HTMLElement | null>(null)
+const bannerHeight = ref(0)
+let bannerWatcher: ResizeObserver | null = null
+watch(bannerEl, (el) => {
+  bannerWatcher?.disconnect()
+  bannerWatcher = null
+  if (!el) {
+    bannerHeight.value = 0
+    return
+  }
+  bannerHeight.value = el.offsetHeight
+  if (typeof ResizeObserver === 'undefined') return
+  bannerWatcher = new ResizeObserver(() => (bannerHeight.value = el.offsetHeight))
+  bannerWatcher.observe(el)
+})
+onBeforeUnmount(() => bannerWatcher?.disconnect())
+
+const frame = computed(() => ({
+  ...(dockHeight.value ? { '--chat-dock': `${dockHeight.value}px` } : {}),
+  ...(bannerHeight.value ? { '--chat-banner': `${bannerHeight.value}px` } : {}),
+}))
 
 onMounted(() => {
   onFocusChange()
@@ -337,7 +361,7 @@ const placement = ref<'above' | 'below'>('above')
 
 function openReactions(key: string, element: HTMLElement) {
   // Under the bubble when the bar would run under the top bar.
-  const chrome = header.value?.getBoundingClientRect().bottom ?? 0
+  const chrome = Math.max(header.value?.getBoundingClientRect().bottom ?? 0, bannerEl.value?.getBoundingClientRect().bottom ?? 0)
   const bar = Number.parseFloat(getComputedStyle(element).getPropertyValue('--size-button-md')) || 40
   placement.value = element.getBoundingClientRect().top - bar * 1.5 < chrome ? 'below' : 'above'
   reactingKey.value = key
@@ -429,6 +453,11 @@ defineExpose({
         <slot name="top" />
       </div>
     </header>
+
+    <!-- A pinned line under the top bar (the app's: a pill, a notice). -->
+    <div v-if="$slots.banner" ref="bannerEl" class="banner safe-x" :data-testid="`${testid}.banner`">
+      <slot name="banner" />
+    </div>
 
     <!-- No connection: one quiet line under the buttons. -->
     <Transition name="chat-offline">
@@ -575,7 +604,7 @@ defineExpose({
 .thread,
 .loading,
 .state {
-  padding-top: calc(var(--bar-top) + var(--size-touch));
+  padding-top: calc(var(--bar-top) + var(--size-touch) + var(--chat-banner, 0px));
   padding-bottom: calc(var(--float-bottom) + var(--chat-dock) + var(--spacing-md));
 }
 .thread {
@@ -672,9 +701,24 @@ defineExpose({
   max-width: var(--size-max-content);
 }
 
+.banner {
+  position: absolute;
+  top: calc(var(--bar-top) + var(--size-touch));
+  right: 0;
+  left: 0;
+  z-index: 25;
+  margin: 0 auto;
+  max-width: var(--size-max-content);
+  padding: var(--spacing-xs) var(--spacing-md);
+  /* Only what the app puts in is touchable; the thread under the gaps keeps its scroll. */
+  pointer-events: none;
+}
+.banner > :deep(*) {
+  pointer-events: auto;
+}
 .offline {
   position: absolute;
-  top: calc(var(--bar-top) + var(--size-touch) + var(--spacing-xs));
+  top: calc(var(--bar-top) + var(--size-touch) + var(--chat-banner, 0px) + var(--spacing-xs));
   right: 0;
   left: 0;
   z-index: 25;

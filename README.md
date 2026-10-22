@@ -125,6 +125,12 @@ stack; the ring from `--avatar-stack-ring`; scoped slot `face`), `UiBubble` slot
 of a run), `actions` + `action` on `UiReactionBar` and `UiBubble` (the app's own entries, e.g. "Report"), `UiCheckList`
 (filter, `min`/`max`, count line, `face` slot; an APG checkbox group) and the words `ui.text.chat.more` and `ui.text.checkList`.
 
+**Added for buddy reads (additive, next minor):** `UiChatThread` slot `banner` (a pinned line under the top bar; the list
+makes room), `UiBubble` prop `veiled` + event `reveal` (a spoiler: words and picture out of sight and out of the
+accessibility tree, the size kept), `UiThreadRow` (number, title, faces, count, unread; a `veiled` row never has its title;
+one accessible name), `UiSheet` prop `back` + event `back` (a configurable left word that replaces Cancel), and the words
+`ui.text.chat.veiled` and `ui.text.threadRow`.
+
 ## Developing it
 
 - `pnpm install`

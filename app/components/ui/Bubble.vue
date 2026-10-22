@@ -102,6 +102,13 @@ const props = withDefaults(
     reacting?: boolean
     /** Where the reaction bar opens: above the bubble, or below it when there is no room. Default: `above`. */
     placement?: 'above' | 'below'
+    /**
+     * A spoiler: the words (or the picture) are out of sight and out of the accessibility tree until the reader
+     * taps "Show anyway" (`reveal`, with this message's key; the app then clears `veiled`). The bubble keeps its
+     * size, so nothing moves on reveal. A veiled picture is not drawn at all (the app should not sign it either).
+     * Default: `false`.
+     */
+    veiled?: boolean
     /** The `body` slot draws a card as wide as a voice message (78 %), not as wide as its words. */
     wide?: boolean
     /** The test ids' start: `chat` → `chat.message`, `chat.bubble`, … */
@@ -119,6 +126,7 @@ const props = withDefaults(
     placement: 'above',
     quote: null,
     highlight: false,
+    veiled: false,
     wide: false,
     testid: 'chat',
   },
@@ -142,12 +150,16 @@ const emit = defineEmits<{
   quoteTap: [id: string]
   /** A picture did not load (its signed URL has run out): the thread asks for a new one. */
   mediaFailed: [path: string]
+  /** The veil's "Show anyway" was pressed: the app shows this message (its key). */
+  reveal: [key: string]
 }>()
 const uiText = useUiText()
 const slots = useSlots()
 /** Theirs with a `face` slot: a column beside the bubble, drawn on the last bubble of a run, free on the others. */
 const hasFace = computed(() => !props.item.mine && !!slots.face)
 const chat = computed(() => uiText.value.chat)
+/** The veil's one line: "Spoiler · Show anyway" (the button's name and its look). */
+const veilWords = computed(() => `${chat.value.veiled.label} · ${chat.value.veiled.show}`)
 
 // A picture keeps its shape before it loads (`mediaBox`).
 const mediaStyle = computed(() => (props.item.media ? mediaBox(props.item.media) : undefined))
@@ -558,7 +570,7 @@ const spokenAuthor = computed(() => {
             :testid="testid"
             :current="item.myReaction"
             :focus-on-open="openedBy === 'button'"
-            :copyable="item.kind === 'text'"
+            :copyable="item.kind === 'text' && !veiled"
             :replyable="reactable"
             :actions="actions"
             @pick="pick"
@@ -599,13 +611,27 @@ const spokenAuthor = computed(() => {
             class="relative w-fit overflow-hidden rounded-lg bg-fill"
             :class="[tail, item.mine ? 'bg-ink' : 'media-theirs shadow-raised']"
           >
-            <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
-              <UiQuote v-if="quote" class="m-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
-            </slot>
+            <div :class="veiled && 'invisible'" :inert="veiled || undefined">
+              <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
+                <UiQuote v-if="quote" class="m-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
+              </slot>
+            </div>
+            <!-- A spoiler: the frame keeps its size, the picture is not drawn, one button reveals it. -->
+            <button
+              v-if="veiled"
+              type="button"
+              class="veil-button relative flex w-full items-center justify-center"
+              :style="mediaStyle"
+              :data-testid="`${testid}.veil`"
+              @click.stop="emit('reveal', item.key)"
+              @pointerdown.stop
+            >
+              <span class="flex items-center gap-xs"><UiIcon name="eyeOff" :size="16" aria-hidden="true" />{{ veilWords }}</span>
+            </button>
             <!-- Nothing to view (the file is gone, signing failed): the frame says so and is no button, so no
                  name says "View large" over it. A failed send (`failed`) still is one: it retries. -->
             <div
-              v-if="unavailable && !failed"
+              v-else-if="unavailable && !failed"
               class="relative block"
               :style="mediaStyle"
               :data-testid="`${testid}.media`"
@@ -646,14 +672,30 @@ const spokenAuthor = computed(() => {
           </div>
           <div
             v-else
-            class="rounded-lg px-inset py-sm text-body"
+            class="relative rounded-lg px-inset py-sm text-body"
             :class="[tail, item.mine ? 'bg-ink text-on-ink' : 'edge bg-surface-raised text-ink shadow-raised']"
             :data-testid="`${testid}.bubble`"
           >
-            <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
-              <UiQuote v-if="quote" class="mb-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
-            </slot>
-            <span class="block break-words whitespace-pre-wrap">{{ item.body }}</span>
+            <!-- A spoiler keeps the words in place (so the bubble does not change size) but `invisible` and `inert`:
+                 out of sight and out of the accessibility tree. The button is the one thing a reader meets. -->
+            <div :class="veiled && 'invisible'" :inert="veiled || undefined">
+              <slot name="quote" :quote="quote" :mine="item.mine" :tap="tapQuote">
+                <UiQuote v-if="quote" class="mb-xs" :quote="quote" :mine="item.mine" :testid="testid" @tap="tapQuote" />
+              </slot>
+              <span class="block break-words whitespace-pre-wrap">{{ item.body }}</span>
+            </div>
+            <template v-if="veiled">
+              <span class="invisible block h-0 overflow-hidden whitespace-nowrap" aria-hidden="true">{{ veilWords }}</span>
+              <button
+                type="button"
+                class="veil-button absolute inset-0 flex items-center justify-center rounded-lg px-inset"
+                :data-testid="`${testid}.veil`"
+                @click.stop="emit('reveal', item.key)"
+                @pointerdown.stop
+              >
+                <span class="flex items-center gap-xs"><UiIcon name="eyeOff" :size="16" aria-hidden="true" />{{ veilWords }}</span>
+              </button>
+            </template>
           </div>
         </slot>
 
@@ -839,6 +881,24 @@ const spokenAuthor = computed(() => {
 }
 .heart-pop {
   animation: heart-pop var(--duration-gentle) var(--ease-standard) both;
+}
+/* The veil: a quiet ground over the hidden words or picture, the line in the muted ink; a clear focus ring. */
+.veil-button {
+  border-radius: inherit;
+  background: var(--color-fill);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  color: var(--color-ink-muted);
+}
+/* The bubble may be shorter than a finger: the button's hit area reaches past it (the size stays). */
+.veil-button::after {
+  position: absolute;
+  inset: calc((var(--size-touch) - 100%) / -2) 0;
+  content: '';
+}
+.veil-button:focus-visible {
+  outline: var(--stroke-focus) solid var(--color-accent);
+  outline-offset: calc(-1 * var(--stroke-focus));
 }
 .pill {
   height: var(--size-reaction);

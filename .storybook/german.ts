@@ -13,7 +13,14 @@ export const GERMAN = {
     atLeast: 'Wähle mindestens {min}.',
     none: 'Nichts passt.',
   },
+  threadRow: {
+    veiled: 'verborgen',
+    comments: '{count} Kommentare',
+    commentsOne: '1 Kommentar',
+    unread: '{count} neu',
+  },
   chat: {
+    veiled: { label: 'Spoiler', show: 'Trotzdem anzeigen' },
     more: 'und {count} weitere',
     locale: 'de',
     today: 'Heute',

@@ -47,7 +47,7 @@ function group(): Item[] {
 }
 
 /** The screen as an app builds it: a top bar, the conversation's head, a bubble per message, the composer docked below. */
-const render = (extra: { composer?: boolean; head?: boolean; answer?: string } = {}): Story['render'] => args => ({
+const render = (extra: { composer?: boolean; head?: boolean; answer?: string; banner?: boolean } = {}): Story['render'] => args => ({
   components: { UiAvatar, UiBubble, UiChatThread, UiComposer, UiRoundButton, UiSkeleton },
   setup() {
     const items = ref<Item[]>(args.items as Item[])
@@ -99,6 +99,7 @@ const render = (extra: { composer?: boolean; head?: boolean; answer?: string } =
         if (extra.answer) setTimeout(() => (items.value = [...items.value, sam({ body: extra.answer, id: `sam-${Date.now()}`, createdAt: new Date().toISOString() })]), 1500)
       },
       showHead: extra.head ?? true,
+      showBanner: extra.banner ?? false,
       showComposer: extra.composer ?? true,
     }
   },
@@ -111,6 +112,9 @@ const render = (extra: { composer?: boolean; head?: boolean; answer?: string } =
           <h1 class="text-subhead font-medium text-ink">{{ args.label }}</h1>
         </div>
         <span class="size-(--size-touch)" aria-hidden="true" />
+      </template>
+      <template v-if="showBanner" #banner>
+        <button type="button" class="glass edge mx-auto flex min-h-(--size-touch) items-center rounded-pill px-md text-caption text-ink">Buddy read · Persuasion · up to chapter 6 · 4 new</button>
       </template>
       <template #head>
         <div class="flex flex-col items-center gap-xs px-lg py-xl text-center">
@@ -302,6 +306,29 @@ export const Group: Story = {
   },
   render: render({ head: false }),
 }
+
+/**
+ * The `banner` slot: a pinned line under the top bar (a buddy read's pill). The list makes room for it (its
+ * first message starts under the pill, not behind it), it stays while the thread scrolls, and the composer, the
+ * safe areas and the keyboard work as before. Only the pill itself takes touches.
+ */
+export const WithBanner: Story = {
+  parameters: { a11y: { config: { rules: [{ id: 'label-content-name-mismatch', enabled: false }] } } },
+  args: { items: group(), label: 'Book club' },
+  render: render({ head: false, banner: true }),
+  globals: { viewport: { value: 'iphone', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const pill = canvas.getByRole('button', { name: /Buddy read/ })
+    const thread = canvas.getByTestId('chat.thread')
+    await expect(pill).toBeVisible()
+    // The list made room: its top padding reaches past the pill's lower edge, so no message starts behind it.
+    await waitFor(() => expect(Number.parseFloat(getComputedStyle(thread).paddingTop)).toBeGreaterThanOrEqual(pill.getBoundingClientRect().bottom - 1))
+  },
+}
+
+/** The banner in the night theme. */
+export const WithBannerNight: Story = { ...WithBanner, globals: { theme: 'night', viewport: { value: 'iphone', isRotated: false } } }
 
 /** There are earlier messages: a line at the top loads them as the thread is scrolled up there. */
 export const LoadingEarlierMessages: Story = { args: { items: conversation().slice(4), hasMore: true, olderStatus: 'loading' } }
