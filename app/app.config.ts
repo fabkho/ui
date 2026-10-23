@@ -55,6 +55,17 @@ export default defineAppConfig({
         /** The filter found nobody. */
         none: 'Nothing matches.',
       },
+      /** UiImageCrop: the names a screen reader speaks. `{percent}` is the zoom, 100 to 400. */
+      imageCrop: {
+        /** The picture under the mask (a focusable group). */
+        area: 'Crop area',
+        /** Read after the name of the area: how to move it without a touch screen. */
+        hint: 'Arrow keys move the picture, plus and minus zoom.',
+        zoom: 'Zoom',
+        zoomValue: '{percent} %',
+        zoomIn: 'Zoom in',
+        zoomOut: 'Zoom out',
+      },
       /** UiThreadRow: what a row says besides the app's own title and number. `{count}` is a number. */
       threadRow: {
         /** Spoken for a veiled row, in place of its title ("Chapter 9, hidden, 12 comments"). */
