@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/fabkho/ui/compare/v0.9.0...v0.10.0) (2026-10-23)
+
+
+### Features
+
+* UiConfirm takes a cancel label ([#37](https://github.com/fabkho/ui/issues/37)) ([95ec6d9](https://github.com/fabkho/ui/commit/95ec6d96fd9614e3bebd97e4d1c1f63fa5050f7f))
+
 ## [0.9.0](https://github.com/fabkho/ui/compare/v0.8.0...v0.9.0) (2026-10-23)
 
 
