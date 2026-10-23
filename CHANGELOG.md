@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/fabkho/ui/compare/v0.8.0...v0.9.0) (2026-10-23)
+
+
+### Features
+
+* UiImageCrop, a round or square crop with zoom, drag, pinch and keyboard pan ([#35](https://github.com/fabkho/ui/issues/35)) ([182e4ef](https://github.com/fabkho/ui/commit/182e4effaf5eedfcb777edd58d38739f2313bc99))
+
 ## [0.8.0](https://github.com/fabkho/ui/compare/v0.7.0...v0.8.0) (2026-10-22)
 
 
