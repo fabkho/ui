@@ -13,6 +13,14 @@ export const GERMAN = {
     atLeast: 'Wähle mindestens {min}.',
     none: 'Nichts passt.',
   },
+  imageCrop: {
+    area: 'Bildausschnitt',
+    hint: 'Pfeiltasten bewegen das Bild, Plus und Minus zoomen.',
+    zoom: 'Zoom',
+    zoomValue: '{percent} %',
+    zoomIn: 'Vergrößern',
+    zoomOut: 'Verkleinern',
+  },
   threadRow: {
     veiled: 'verborgen',
     comments: '{count} Kommentare',
