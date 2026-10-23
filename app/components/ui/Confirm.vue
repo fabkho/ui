@@ -13,7 +13,9 @@ import { useUiText } from '../../composables/useUiText'
 // `<testid>.error`. `offline` (#15): the action stays, disabled, and says
 // "Offline" (UiButton); Cancel still closes it. `alternative`: a safe way out
 // offered above the destructive action (Sign out with changes waiting to sync:
-// "Sync first", #93), `<testid>.alternative`.
+// "Sync first", #93), `<testid>.alternative`. `cancelLabel`: this one question's
+// own word for Cancel ("Keep it"), where the app's `ui.text.cancel` (Abbrechen,
+// Annuler) is not what it should say; nothing changes otherwise.
 // The default slot (added for Bookretreats): more under the sentence, such as
 // a field for a reason (the Orga's ban). With such a field's keyboard up
 // (added for Bookretreats) the dialog stands on the keyboard as a sheet does,
@@ -42,12 +44,18 @@ const props = withDefaults(
     offline?: boolean
     /** A safe way out offered above the action ("Sync first"). */
     alternative?: string
+    /**
+     * Cancel's own word, when the app's `ui.text.cancel` is not right for this one question ("Keep it", "Stay
+     * signed in"): it stands where Cancel stands, does what Cancel does and closes the dialog. Default: none
+     * (`ui.text.cancel`).
+     */
+    cancelLabel?: string
     /** `primary` (added for Bookretreats): an action that can be taken back (Freigeben) in ink, not red. */
     tone?: 'danger' | 'primary'
     /** The test ids' start: `<testid>`, `<testid>.confirm`, `<testid>.cancel`, `<testid>.error`. */
     testid: string
   }>(),
-  { text: undefined, busy: false, error: null, offline: false, alternative: undefined, tone: 'danger' },
+  { text: undefined, busy: false, error: null, offline: false, alternative: undefined, cancelLabel: undefined, tone: 'danger' },
 )
 const emit = defineEmits<{
   /** The action was chosen: do the thing. */
@@ -166,7 +174,7 @@ const textId = useId()
               {{ action }}
             </UiButton>
             <UiButton block tone="quiet" :disabled="busy" :data-testid="`${testid}.cancel`" @click="close">
-              {{ uiText.cancel }}
+              {{ cancelLabel ?? uiText.cancel }}
             </UiButton>
           </div>
         </div>

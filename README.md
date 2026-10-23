@@ -131,6 +131,10 @@ accessibility tree, the size kept), `UiThreadRow` (number, title, faces, count, 
 one accessible name), `UiSheet` prop `back` + event `back` (a configurable left word that replaces Cancel), and the words
 `ui.text.chat.veiled` and `ui.text.threadRow`.
 
+**Added for confirmations (additive, next minor):** `UiConfirm` prop `cancelLabel` (this one question's own word for
+Cancel, "Keep it", where the app's `ui.text.cancel` is not what it should say; without it the dialog says exactly what
+it said before, and Cancel keeps its place, its test id and its job).
+
 ## Developing it
 
 - `pnpm install`

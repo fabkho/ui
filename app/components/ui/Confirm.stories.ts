@@ -76,6 +76,33 @@ export const WithAlternative: Story = {
 }
 
 /**
+ * `cancelLabel`: this one question's own word for Cancel, where the app's `ui.text.cancel` ("Abbrechen",
+ * "Annuler") is not what it should say here. Cancel keeps its place and its job — it closes the dialog, as the
+ * scrim, Escape and Back do — and only this dialog says the other word.
+ */
+export const WithCancelLabel: Story = {
+  args: {
+    title: 'Remove this book from your library?',
+    text: 'Your notes and highlights for it are kept in the copy you are removing it from, and come back if you add it again.',
+    action: 'Remove book',
+    cancelLabel: 'Keep it',
+    testid: 'removeBook',
+  },
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Remove book' }))
+    const dialog = await within(document.body).findByRole('alertdialog', { name: /Remove this book/ })
+    const cancel = within(dialog).getByRole('button', { name: 'Keep it' })
+    await expect(cancel).toHaveAttribute('data-testid', 'removeBook.cancel')
+    await expect(within(dialog).queryByRole('button', { name: 'Cancel' }), 'the default word is gone').toBeNull()
+    await userEvent.click(cancel)
+    await waitFor(() => expect(within(document.body).queryByRole('alertdialog')).toBeNull())
+  },
+}
+
+/** The same custom Cancel in the dark theme. */
+export const WithCancelLabelNight: Story = { ...WithCancelLabel, globals: { theme: 'night' } }
+
+/**
  * `busy`: the action runs. The buttons are disabled and the dialog cannot be closed (not by Cancel, the scrim,
  * Escape or Back) until it is done.
  */
