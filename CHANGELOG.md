@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.3](https://github.com/fabkho/ui/compare/v0.10.2...v0.10.3) (2026-10-28)
+
+
+### Fixes
+
+* the viewport watcher and the pin act only after a keyboard ([#44](https://github.com/fabkho/ui/issues/44)) ([a3e2302](https://github.com/fabkho/ui/commit/a3e2302cd923d22adfd98c755bd8fa494a7db237))
+
 ## [0.10.2](https://github.com/fabkho/ui/compare/v0.10.1...v0.10.2) (2026-10-28)
 
 
