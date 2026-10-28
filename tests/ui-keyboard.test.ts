@@ -7,6 +7,7 @@ import {
   paletteBottomOnScreen,
   paletteLift,
   pinHold,
+  pinHolds,
   readViewport,
   revealDelta,
   sheetLift,
@@ -300,14 +301,17 @@ describe('the tab bar after a keyboard in a sheet (r10)', () => {
     let nudged = false
     let pan = 0
     let tallest = 0
+    // The watcher's memory of a keyboard: a field took the focus, until the viewport reads clear again.
+    let keyboardSince = false
     const out: { what: string; barBottom: number; nudge: boolean; reflow: boolean }[] = []
     for (const step of steps) {
       const layout = step.innerHeight ?? 852
       tallest = Math.max(tallest, layout)
       let offsetTop = step.offsetTop
+      if (step.typing) keyboardSince = true
       let verdict = strandedViewport(
         { innerHeight: layout, clientHeight: layout, viewport: { height: step.height, offsetTop, scale: 1 } },
-        { tallest, typing: step.typing, nudged, standalone: options.standalone ?? true },
+        { tallest, typing: step.typing, nudged, standalone: options.standalone ?? true, keyboardSince },
       )
       const nudge = verdict.nudge
       if (verdict.nudge) {
@@ -316,9 +320,12 @@ describe('the tab bar after a keyboard in a sheet (r10)', () => {
         // The watcher looks again after its nudge.
         verdict = strandedViewport(
           { innerHeight: layout, clientHeight: layout, viewport: { height: step.height, offsetTop, scale: 1 } },
-          { tallest, typing: step.typing, nudged, standalone: options.standalone ?? true },
+          { tallest, typing: step.typing, nudged, standalone: options.standalone ?? true, keyboardSince },
         )
       }
+      // A look that reads clear forgets the keyboard, but not the one right after the watcher's own nudge: iOS may
+      // pan again once the nudge has passed.
+      if (verdict.clear && !nudge) keyboardSince = false
       if (!verdict.pan) nudged = false
       pan = verdict.pan
       out.push({ what: step.what, barBottom: layout - float - offsetTop + pan, nudge, reflow: verdict.reflow })
@@ -350,10 +357,11 @@ describe('the tab bar after a keyboard in a sheet (r10)', () => {
 
   it('leaves the keyboard to the reader while a field has the focus or the keyboard is up', () => {
     const viewport = { height: 486, offsetTop: 330, scale: 1 }
-    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport }, { tallest: 852, typing: true, nudged: true, standalone: true })).toEqual({ nudge: false, pan: 0, reflow: false })
-    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport }, { tallest: 852, typing: false, nudged: true, standalone: true }).pan).toBe(0)
+    const after = { nudged: true, standalone: true, keyboardSince: true }
+    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport }, { ...after, tallest: 852, typing: true })).toEqual({ nudge: false, pan: 0, reflow: false, clear: false })
+    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport }, { ...after, tallest: 852, typing: false }).pan).toBe(0)
     const zoomed = { height: 426, offsetTop: 200, scale: 2 }
-    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport: zoomed }, { tallest: 852, typing: false, nudged: true, standalone: true }).pan).toBe(0)
+    expect(strandedViewport({ innerHeight: 852, clientHeight: 852, viewport: zoomed }, { ...after, tallest: 852, typing: false }).pan).toBe(0)
   })
 
   it('measures the installed app\'s viewport again when iOS 26.0 shrank it for good (WebKit bug 301857)', () => {
@@ -383,5 +391,63 @@ describe('where a pinned screen holds the window', () => {
 
   it('stays while the keyboard is up (the focus moves from one field to the next, iOS has panned)', () => {
     expect(pinHold(post, { x: 0, y: 336 }, true)).toEqual(post)
+  })
+})
+
+// Bookretreats, 2026-10-28 (P0): a member scrolled to the comments of a Feed post in the installed app (iPhone), no
+// keyboard anywhere, and the comment bar went under the screen; „Antworten“ and „…“ did nothing, Back neither, and a
+// moment later the list jumped to its top. The watcher had read a pan (and a shrunk viewport) that no keyboard had
+// left behind, moved the bottom chrome and every sheet down by it (`--viewport-pan`, the „…“ sheet rose under the
+// screen and left the app inert) and flipped the page (the reflow that puts every scrolled list back to its top).
+describe('a viewport no keyboard left behind', () => {
+  const sample = (height: number, offsetTop: number, innerHeight = 852) => ({ innerHeight, clientHeight: innerHeight, viewport: { height, offsetTop, scale: 1 } })
+  const options = { tallest: 852, typing: false, nudged: false, standalone: true, keyboardSince: false }
+
+  it('is left alone: no nudge, no pan, no reflow', () => {
+    expect(strandedViewport(sample(852, 140), options)).toEqual({ nudge: false, pan: 0, reflow: false, clear: false })
+    expect(strandedViewport(sample(852, 140), { ...options, nudged: true })).toEqual({ nudge: false, pan: 0, reflow: false, clear: false })
+    expect(strandedViewport(sample(740, 0, 740), options)).toEqual({ nudge: false, pan: 0, reflow: false, clear: false })
+  })
+
+  it('keeps the bar on the screen through a scroll that reads a pan, and heals it once a keyboard was up', () => {
+    let keyboardSince = false
+    let nudged = false
+    const look = (height: number, offsetTop: number, typing = false) => {
+      if (typing) keyboardSince = true
+      let verdict = strandedViewport(sample(height, offsetTop), { ...options, typing, nudged, keyboardSince })
+      const nudge = verdict.nudge
+      if (nudge) {
+        nudged = true
+        verdict = strandedViewport(sample(height, offsetTop), { ...options, typing, nudged, keyboardSince })
+      }
+      if (verdict.clear && !nudge) keyboardSince = false
+      if (!verdict.pan) nudged = false
+      return verdict.pan
+    }
+    expect(look(852, 0)).toBe(0) // the post, at rest
+    expect(look(852, 140)).toBe(0) // she scrolls the comments; iOS reads a pan: the bar stays
+    expect(look(852, 0)).toBe(0)
+    expect(look(486, 0, true)).toBe(0) // she answers: the field takes the keyboard
+    expect(look(852, 330)).toBe(330) // the keyboard went, the pan stayed (r10): healed as before
+    expect(look(852, 0)).toBe(0) // iOS let go: clear, the keyboard is forgotten
+    expect(look(852, 140)).toBe(0) // the next scroll that reads a pan is left alone again
+  })
+
+  it('reports the viewport clear only at rest', () => {
+    expect(strandedViewport(sample(852, 0), options).clear).toBe(true)
+    expect(strandedViewport(sample(852, 0), { ...options, typing: true }).clear).toBe(false)
+    expect(strandedViewport(sample(486, 0), options).clear).toBe(false)
+    expect(strandedViewport(sample(744, 0, 744), options).clear).toBe(false)
+  })
+})
+
+describe('when a pinned screen holds the window at all', () => {
+  it('holds while a field has the focus or the keyboard is up', () => {
+    expect(pinHolds(true, false)).toBe(true)
+    expect(pinHolds(false, true)).toBe(true)
+  })
+
+  it('follows the page with the keyboard down and no field focused (a Feed post opened from far down the Feed)', () => {
+    expect(pinHolds(false, false)).toBe(false)
   })
 })

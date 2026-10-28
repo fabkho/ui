@@ -189,6 +189,20 @@ export function pinHold(held: ScrollPoint, now: ScrollPoint, keyboardUp: boolean
 }
 
 /**
+ * Whether a pinned layer holds the window where it is (useKeyboardViewport, `pin`): only while a text field has the
+ * focus or the keyboard is up. Every pan the pin exists for comes from the keyboard — iOS revealing the field that
+ * took it, a drag on the chrome or the emoji keyboard while it is up. With the keyboard down and no field focused
+ * there is nothing to hold: the hold follows the page instead (Bookretreats, 2026-10-28). Before, a Feed post opened
+ * from far down the Feed held the Feed's scroll from the moment it opened (pinHold re-takes it only when a field
+ * takes the focus), and every scroll event on the post — on iOS also the root's bounce when the comments reached
+ * their end — scrolled the window back to thousands of px down (measured in Playwright, WebKit: `scrollTo(0, 1479)`
+ * on the post's first scroll event).
+ */
+export function pinHolds(typing: boolean, keyboardUp: boolean): boolean {
+  return typing || keyboardUp
+}
+
+/**
  * What to do about a viewport iOS left behind once the keyboard has gone (added for Bookretreats, r10: the tab bar
  * stood ~330 pt up the screen on Friends, no keyboard in sight). Two iOS 26 faults leave fixed chrome too high:
  *
@@ -202,20 +216,31 @@ export function pinHold(held: ScrollPoint, now: ScrollPoint, keyboardUp: boolean
  *   26.1; dev.to, cederhook): `innerHeight`, `clientHeight` and the visual viewport all read less than the tallest seen
  *   at this width. Then `reflow`: a display flip of the page, which makes WebKit measure the viewport again.
  *
+ * Both are left behind by a keyboard, so nothing is done unless one was up since the viewport last read clear
+ * (`keyboardSince`; Bookretreats, 2026-10-28). A reading without a keyboard before it is not one of these faults, and
+ * acting on it is worse than leaving it: `--viewport-pan` moves every sheet and the floating chrome down by it, and
+ * with nothing on screen showing that pan the comment bar of a Feed post went under the screen while the member only
+ * scrolled the comments; a sheet opened then (the comment's „…“) rose under the screen too, and as a modal layer it
+ * left the rest of the app inert — nothing answered a tap, Back included, until the app was closed. The reflow,
+ * a display flip of the whole page, also put every scrolled list back to its top.
+ *
  * Nothing while a text field has the focus (the keyboard is the reader's, `readViewport`), pinch-zoomed, or with the
- * keyboard up.
+ * keyboard up. `clear`: the viewport reads as the page at rest (no pan, not shrunk, the keyboard down, no field
+ * focused, not zoomed): what a keyboard left behind is gone, so `keyboardSince` starts again from here.
  */
 export function strandedViewport(
   sample: ViewportSample,
-  options: { tallest: number; typing: boolean; nudged: boolean; standalone: boolean },
-): { nudge: boolean; pan: number; reflow: boolean } {
-  const none = { nudge: false, pan: 0, reflow: false }
+  options: { tallest: number; typing: boolean; nudged: boolean; standalone: boolean; keyboardSince: boolean },
+): { nudge: boolean; pan: number; reflow: boolean; clear: boolean } {
+  const none = { nudge: false, pan: 0, reflow: false, clear: false }
   const viewport = sample.viewport
   if (!viewport || options.typing || Math.abs((viewport.scale ?? 1) - 1) > 0.01) return none
   const layout = layoutHeightOf(sample.innerHeight, sample.clientHeight)
   if (viewport.height < layout - MIN_KEYBOARD_HEIGHT) return none
   const offsetTop = Math.round(Math.max(0, viewport.offsetTop))
   const shrunk = options.standalone && options.tallest - layout > MIN_KEYBOARD_HEIGHT
+  if (offsetTop < 1 && !shrunk) return { ...none, clear: true }
+  if (!options.keyboardSince) return none
   if (offsetTop < 1) return { ...none, reflow: shrunk }
-  return options.nudged ? { nudge: false, pan: offsetTop, reflow: shrunk } : { nudge: true, pan: 0, reflow: false }
+  return options.nudged ? { ...none, pan: offsetTop, reflow: shrunk } : { ...none, nudge: true }
 }

@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { keyboardShown, layoutHeightOf, pinHold, readViewport, strandedViewport } from '../utils/keyboard'
+import { keyboardShown, layoutHeightOf, pinHold, pinHolds, readViewport, strandedViewport } from '../utils/keyboard'
 
 /**
  * How much of the layout viewport the on-screen keyboard covers, in px (0
@@ -38,11 +38,13 @@ export interface KeyboardViewportOptions {
    *   is the focus without the pan; programmatic focus in the layer already
    *   passes `preventScroll` (useModalLayer, the palette). The caret goes to
    *   the end of what is there instead of under the finger, for that first tap.
-   * - every scroll of the window is put back to where it was when a field
-   *   last took the keyboard (before that: when the first pinned user became
-   *   active; utils/keyboard.ts, pinHold) — a pan that still happens: a drag on
-   *   the chrome with the keyboard up, a keyboard switching to emoji — at once,
-   *   or once a pan under a finger has settled;
+   * - while a field has the focus or the keyboard is up, every scroll of the
+   *   window is put back to where it was when a field last took the keyboard
+   *   (utils/keyboard.ts, pinHold) — a pan that still happens: a drag on the
+   *   chrome with the keyboard up, a keyboard switching to emoji — at once, or
+   *   once a pan under a finger has settled. With no field focused and the
+   *   keyboard down the hold follows the page (pinHolds): a pinned screen opened
+   *   from a scrolled list never drags the window back to the list's place;
    * - a pan the pin cannot put back (iOS also pans the visual viewport where
    *   the window cannot scroll: the root is `overflow: hidden` under a modal
    *   layer) is counted, once `offsetTop` can be trusted: not inside the event
@@ -175,14 +177,28 @@ function onResize() {
  * something that does not scroll, and the momentum after it) is left alone
  * until it has settled: snapping back against a moving finger shakes the page
  * by tens of pixels every frame (measured in the iOS Simulator), and a rubber
- * band mostly comes back by itself.
+ * band mostly comes back by itself. With no field focused and the keyboard down
+ * nothing is held: the hold goes where the page is (utils/keyboard.ts, pinHolds).
  */
 function onScroll() {
   if (pins > 0 && displaced()) {
-    if (touching || performance.now() - lastTouch < SETTLE_MS) restoreWhenSettled()
+    if (!holding()) follow()
+    else if (touching || performance.now() - lastTouch < SETTLE_MS) restoreWhenSettled()
     else restore()
   }
   look()
+}
+
+/** Whether the pin holds the window now: a field has the focus, or the keyboard is up (pinHolds). */
+function holding(): boolean {
+  return pinHolds(isTextField(document.activeElement), reading.shown)
+}
+
+/** The hold goes where the page is. */
+function follow() {
+  clearTimeout(settle)
+  settle = 0
+  pinned = { x: window.scrollX, y: window.scrollY }
 }
 
 /** How long after a finger left a pan still counts as its momentum, and how long a pan must be still. */
@@ -198,7 +214,9 @@ function displaced(): boolean {
 function restore() {
   clearTimeout(settle)
   settle = 0
-  if (pins > 0 && displaced()) window.scrollTo({ left: pinned.x, top: pinned.y, behavior: 'instant' })
+  if (pins === 0 || !displaced()) return
+  if (holding()) window.scrollTo({ left: pinned.x, top: pinned.y, behavior: 'instant' })
+  else follow()
 }
 
 function restoreWhenSettled() {
@@ -266,6 +284,7 @@ function measure(settled: boolean) {
   reading.inset = next.inset
   reading.room = next.room
   reading.shown = keyboardShown(next.inset, next.layout, tallest.height)
+  if (reading.shown) keyboardSince = true
   if (changed) document.documentElement.style.setProperty('--keyboard-inset', `${next.inset}px`)
 }
 
@@ -279,14 +298,15 @@ function measure(settled: boolean) {
  * its own. It looks once things have been still for `LOOK_MS` after a viewport resize or scroll, a field taking or
  * losing the focus, a layer on the keyboard closing, the app coming back (`pageshow`, `visibilitychange`), never under a
  * finger. What it cannot put right by a scroll nudge it compensates: `--viewport-pan` on the root, which the
- * floating chrome (`float-bottom`) and the sheets subtract from their `bottom`.
+ * floating chrome (`float-bottom`) and the sheets subtract from their `bottom`. Only after a keyboard
+ * (`keyboardSince`): a reading no keyboard left behind is left alone (strandedViewport).
  */
 export function watchStrandedViewport(): void {
   if (watching || !window.visualViewport || !iosWebKit()) return
   watching = true
   window.visualViewport.addEventListener('resize', lookAfterViewport)
   window.visualViewport.addEventListener('scroll', lookAfterViewport)
-  document.addEventListener('focusin', lookAfterViewport)
+  document.addEventListener('focusin', onWatchedFocus)
   document.addEventListener('focusout', lookAfterViewport)
   window.addEventListener('pageshow', lookAfterViewport)
   document.addEventListener('visibilitychange', lookAfterViewport)
@@ -298,6 +318,18 @@ export function watchStrandedViewport(): void {
 let watching = false
 /** Its own listener: the reader's (`onTouch`) is removed when the last layer on the keyboard closes. */
 const onWatchedTouch = (event: TouchEvent) => onTouch(event)
+/** A field took the keyboard: what follows may be left behind by it. */
+function onWatchedFocus(event: FocusEvent) {
+  if (isTextField(event.target)) keyboardSince = true
+  lookAfterViewport()
+}
+/**
+ * A keyboard was up (a field had the focus, or the reader saw one) since the viewport last read clear: only then can
+ * a pan or a shrunk viewport be what it left behind (utils/keyboard.ts, strandedViewport).
+ */
+let keyboardSince = false
+/** The next look is the one right after the watcher's own scroll nudge. */
+let justNudged = false
 let healTimer = 0
 let nudged = false
 let viewportPan = 0
@@ -321,6 +353,8 @@ function heal() {
   if (touching || performance.now() - lastTouch < LOOK_MS) return lookAfterViewport()
   const visual = window.visualViewport
   if (!visual) return
+  const afterNudge = justNudged
+  justNudged = false
   const height = noteTallest()
   const verdict = strandedViewport(
     {
@@ -333,10 +367,15 @@ function heal() {
       typing: isTextField(document.activeElement),
       nudged,
       standalone: window.matchMedia?.('(display-mode: standalone)').matches ?? false,
+      keyboardSince,
     },
   )
+  // Clear: what the keyboard left is gone, and the next pan is not its — unless this is the look right after the
+  // nudge, which may have cleared the pan only until iOS puts it back.
+  if (verdict.clear && !afterNudge) keyboardSince = false
   if (verdict.nudge) {
     nudged = true
+    justNudged = true
     const { scrollX: x, scrollY: y } = window
     window.scrollTo({ left: x, top: y > 0 ? y - 1 : y + 1, behavior: 'instant' })
     window.scrollTo({ left: x, top: y, behavior: 'instant' })
