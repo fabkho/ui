@@ -98,7 +98,7 @@ const name = computed(() => {
   width: var(--face);
   height: var(--face);
   background: linear-gradient(var(--color-fill), var(--color-fill)), var(--ring);
-  font-size: var(--text-meta);
+  font-size: min(var(--text-meta), calc(var(--face) * 0.38));
   font-weight: 500;
 }
 /* Two faces on the diagonal of a box one and a half faces wide. */
