@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
-import { expect, within } from 'storybook/test'
+import { ref } from 'vue'
+import { expect, waitFor, within } from 'storybook/test'
 import UiAvatar from './Avatar.vue'
 
 const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -45,8 +46,38 @@ export const Decorative: Story = {
   },
 }
 
-/** A photo draws over the initials; they stay underneath, so nothing moves while it decodes. */
-export const Photo: Story = { args: { photo: PHOTO, size: 'lg' } }
+/** A photo the avatar mounts with draws at once: no fade, and the initials are invisible under it, so an undecoded image never shows them. */
+export const Photo: Story = {
+  args: { photo: PHOTO, size: 'lg' },
+  play: async ({ canvasElement }) => {
+    const img = canvasElement.querySelector('[data-avatar-photo]')!
+    await expect(img.classList.contains('opacity-0')).toBe(false)
+    await expect(img.className).not.toContain('transition-opacity')
+    await expect(canvasElement.querySelector('[data-avatar-initials]')!.classList.contains('invisible')).toBe(true)
+  },
+}
+
+/** A photo that arrives while the avatar is on screen fades in over the visible initials once decoded. */
+export const PhotoArrives: Story = {
+  args: { initials: 'FK', size: 'lg' },
+  render: args => ({
+    components: { UiAvatar },
+    setup: () => ({ args, PHOTO, photo: ref<string | null>(null) }),
+    template: `
+      <div class="flex items-center gap-md">
+        <UiAvatar v-bind="args" :photo="photo" />
+        <button type="button" data-arrive @click="photo = PHOTO">Arrive</button>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const initials = canvasElement.querySelector('[data-avatar-initials]')!
+    await expect(initials.classList.contains('invisible')).toBe(false)
+    canvasElement.querySelector<HTMLButtonElement>('[data-arrive]')!.click()
+    await waitFor(() => expect(canvasElement.querySelector('[data-avatar-photo]')).not.toBeNull())
+    await expect(canvasElement.querySelector('[data-avatar-photo]')!.className).toContain('transition-opacity')
+    await expect(initials.classList.contains('invisible')).toBe(false)
+  },
+}
 
 /** `photo` fails to load: `fallback` is drawn instead (and the `fallback` event fires). */
 export const FallbackPhoto: Story = { args: { photo: 'data:image/png;base64,broken', fallback: PHOTO, size: 'lg' } }
