@@ -104,24 +104,6 @@ const name = computed(() =>
 .thread-row {
   container-type: inline-size;
 }
-@container (max-width: 17rem) {
-  .lead {
-    min-width: 0;
-  }
-  .title {
-    padding-block: var(--spacing-xs);
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-  .faces-box {
-    display: none;
-  }
-}
 /* A face and the "+N" circle, text in a pseudo-element (no text node for the button's visible text). */
 .mark,
 .more {
@@ -167,5 +149,24 @@ const name = computed(() =>
   height: var(--stroke-hairline);
   content: '';
   background: var(--color-hairline-strong);
+}
+/* Last, so the large-text rules win over the plain ones above at the same specificity. */
+@container (max-width: 17rem) {
+  .lead {
+    min-width: 0;
+  }
+  .title {
+    padding-block: var(--spacing-xs);
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .faces-box {
+    display: none;
+  }
 }
 </style>

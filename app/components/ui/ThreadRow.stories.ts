@@ -114,6 +114,9 @@ const holdsAtLargeText = async (canvasElement: HTMLElement) => {
     const title = row.querySelector('[data-testid$=".title"]')!.getBoundingClientRect()
     const count = row.querySelector('[data-testid$=".count"]')!.getBoundingClientRect()
     await expect(title.right).toBeLessThanOrEqual(count.left + 0.5)
+    // The faces make room: hidden at this width (the rule must win over the plain `.faces-box`).
+    const faces = row.querySelector<HTMLElement>('.faces-box')
+    if (faces) await expect(getComputedStyle(faces).display).toBe('none')
   }
 }
 
