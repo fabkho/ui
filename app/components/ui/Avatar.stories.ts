@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, within } from 'storybook/test'
+import { largeText, fitsTheScreen } from '../../../.storybook/large-text'
 import UiAvatar from './Avatar.vue'
 
 const SIZES = ['xs', 'sm', 'md', 'lg', 'xl'] as const
@@ -87,3 +88,29 @@ export const Night: Story = {
   globals: { theme: 'night' },
   render: AllSizes.render,
 }
+
+/** Initials that have to fit: the circle holds them as a cap of its own size, however large the text is. */
+const initialsFit = (canvasElement: HTMLElement) => {
+  const circles = [...canvasElement.querySelectorAll<HTMLElement>('.avatar')]
+  expect(circles.length).toBeGreaterThan(0)
+  for (const circle of circles) {
+    const range = document.createRange()
+    range.selectNodeContents(circle.firstChild as Node)
+    const text = range.getBoundingClientRect()
+    const box = circle.getBoundingClientRect()
+    expect(text.width, 'initials within the circle').toBeLessThanOrEqual(box.width)
+    expect(text.height, 'initials within the circle').toBeLessThanOrEqual(box.height)
+  }
+}
+
+/** Large text (200 %): the circles keep their size and the initials are capped to what they hold. */
+export const LargeText: Story = {
+  decorators: [largeText],
+  render: AllSizes.render,
+  play: async ({ canvasElement }) => {
+    initialsFit(canvasElement)
+    await expect(fitsTheScreen()).toBe(true)
+  },
+}
+
+export const LargeTextNight: Story = { ...LargeText, globals: { theme: 'night' } }

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, within } from 'storybook/test'
 import UiAvatarStack from './AvatarStack.vue'
 import UiAvatar from './Avatar.vue'
+import { largeText, fitsTheScreen } from '../../../.storybook/large-text'
 import { PEOPLE } from '../../../.storybook/chat-fixtures'
 
 const FACES = PEOPLE.map(({ initials, label, photo }) => ({ initials, label, photo }))
@@ -94,3 +95,23 @@ export const CustomFace: Story = {
 export const German: Story = { args: { faces: FACES, max: 2, label: undefined }, globals: { locale: 'de' } }
 export const Night: Story = { args: { faces: FACES, max: 3, label: 'Five readers' }, globals: { theme: 'night' } }
 export const NightPair: Story = { args: { layout: 'pair', faces: FACES.slice(0, 2), label: 'Ida and Berit' }, globals: { theme: 'night' } }
+
+/** Large text (200 %): initials and the "+N" stay inside their circles. */
+export const LargeText: Story = {
+  args: { faces: FACES, max: 3, size: 'xs', label: 'Five readers' },
+  decorators: [largeText],
+  play: async ({ canvasElement }) => {
+    for (const el of canvasElement.querySelectorAll<HTMLElement>('.face')) {
+      const circle = el.getBoundingClientRect()
+      const text = el.querySelector('.avatar') ? el.querySelector('.avatar')!.firstChild : el.firstChild
+      const range = document.createRange()
+      range.selectNodeContents(text as Node)
+      const box = range.getBoundingClientRect()
+      await expect(box.width).toBeLessThanOrEqual(circle.width)
+      await expect(box.height).toBeLessThanOrEqual(circle.height)
+    }
+    await expect(fitsTheScreen()).toBe(true)
+  },
+}
+
+export const LargeTextNight: Story = { ...LargeText, globals: { theme: 'night' } }

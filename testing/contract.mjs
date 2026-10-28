@@ -22,6 +22,8 @@ const ROOT_FILES = ['nuxt.config.ts', 'app/app.config.ts', 'app/router.options.t
 
 /** Variables the layer sets itself (component styles, the safe-area frame) rather than reads from the tokens. */
 export const OWN_VARIABLES = [
+  '--avatar-d',
+  '--avatar-fs',
   '--safe-area-top',
   '--safe-area-bottom',
   '--safe-area-left',
