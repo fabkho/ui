@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/fabkho/ui/compare/v0.10.0...v0.10.1) (2026-10-28)
+
+
+### Fixes
+
+* thread rows and avatar initials hold at large text ([#40](https://github.com/fabkho/ui/issues/40)) ([2abdc4f](https://github.com/fabkho/ui/commit/2abdc4f2fbde1d00cb12e1de51c43b616f696beb))
+
 ## [0.10.0](https://github.com/fabkho/ui/compare/v0.9.0...v0.10.0) (2026-10-23)
 
 
