@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue'
 import UiMediaViewer from './MediaViewer.vue'
 import UiButton from './Button.vue'
 import UiSheet from './Sheet.vue'
@@ -17,6 +18,43 @@ const svg = (width: number, height: number, from: string, to: string, text: stri
       <text x="${width / 2}" y="${height * 0.2}" text-anchor="middle" font-family="sans-serif" font-size="${Math.min(width, height) / 12}" fill="#f1e3c8">${text}</text>
     </svg>`,
   )}`
+
+/**
+ * A focus trap the base does not own, as an app's own sheet can have one: Bookretreats' member sheet is vaul, whose
+ * content is Reka UI's `FocusScope` with `trapped`. This is Reka's logic, line for line: it remembers the last focus
+ * inside it and pulls focus back when focus lands outside it (`focusin`) or leaves for an element outside it (`focusout`
+ * with a `relatedTarget`); a focus that goes nowhere (`relatedTarget` null) it lets go. `data-pulls` counts the pulls.
+ */
+const ForeignTrap = defineComponent({
+  setup(_, { slots }) {
+    const box = ref<HTMLElement | null>(null)
+    const pulls = ref(0)
+    let last: HTMLElement | null = null
+    function pull() {
+      pulls.value++
+      last?.focus({ preventScroll: true })
+    }
+    function onFocusIn(event: FocusEvent) {
+      if (!box.value) return
+      if (box.value.contains(event.target as Node)) last = event.target as HTMLElement
+      else pull()
+    }
+    function onFocusOut(event: FocusEvent) {
+      if (!box.value || event.relatedTarget === null) return
+      if (!box.value.contains(event.relatedTarget as Node)) pull()
+    }
+    onMounted(() => {
+      document.addEventListener('focusin', onFocusIn)
+      document.addEventListener('focusout', onFocusOut)
+    })
+    onBeforeUnmount(() => {
+      document.removeEventListener('focusin', onFocusIn)
+      document.removeEventListener('focusout', onFocusOut)
+    })
+    return () =>
+      h('div', { ref: box, tabindex: -1, role: 'dialog', 'aria-label': 'Member', 'data-pulls': pulls.value, class: 'rounded-lg bg-surface-sheet p-lg' }, slots.default?.())
+  },
+})
 
 const LANDSCAPE = svg(1200, 800, '#22303f', '#4a3220', 'Retreat terrace, 6 am')
 const PORTRAIT = svg(800, 1200, '#3b2430', '#2c3a2e', 'Reading by the lake')
@@ -132,6 +170,53 @@ export const TabStaysOverASheet: Story = {
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(opener).toHaveFocus(), { timeout: 3000 })
     await userEvent.keyboard('{Escape}')
+  },
+}
+
+/**
+ * The viewer over a focus trap it does not own (an app's sheet with Reka UI's `FocusScope`, see `ForeignTrap`): only
+ * the top-most layer keeps focus. The viewer lets go of the focus under it before its close button takes it, so the
+ * trap underneath never sees focus leave for a foreign element and never pulls it back; before, the two bounced focus
+ * between them until the stack ran out („Maximum call stack size exceeded“, Bookretreats' map, WebKit).
+ */
+export const OverAForeignTrap: Story = {
+  render: args => ({
+    components: { UiMediaViewer, UiButton, ForeignTrap },
+    setup: () => ({ args, open: ref(false) }),
+    template: `
+      <div class="flex min-h-[520px] items-center justify-center bg-surface">
+        <ForeignTrap>
+          <UiButton tone="secondary" @click="open = true">View photo</UiButton>
+        </ForeignTrap>
+        <UiMediaViewer v-bind="args" :open="open" @close="open = false" />
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const errors: string[] = []
+    const record = (event: ErrorEvent) => errors.push(String(event.error ?? event.message))
+    window.addEventListener('error', record)
+    try {
+      const trap = within(canvasElement).getByRole('dialog', { name: 'Member' })
+      const opener = within(trap).getByRole('button', { name: 'View photo' })
+      // A tap focuses the trap's own element first (WebKit focuses the nearest focusable, here the trap itself).
+      opener.focus()
+      await userEvent.click(opener)
+      const dialog = await within(document.body).findByRole('dialog', { name: 'Photo viewer' })
+      const closer = within(dialog).getByRole('button', { name: 'Close photo' })
+      await waitFor(() => expect(closer).toHaveFocus())
+      await expect(errors).toEqual([])
+      await expect(trap).toHaveAttribute('data-pulls', '0')
+      // Focus that lands in the trap behind the viewer is brought back, and the trap does not fight for it.
+      opener.focus()
+      await expect(closer).toHaveFocus()
+      await userEvent.tab()
+      await expect(closer).toHaveFocus()
+      await expect(errors).toEqual([])
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(opener).toHaveFocus(), { timeout: 3000 })
+    } finally {
+      window.removeEventListener('error', record)
+    }
   },
 }
 
