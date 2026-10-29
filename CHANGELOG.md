@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.4](https://github.com/fabkho/ui/compare/v0.10.3...v0.10.4) (2026-10-29)
+
+
+### Fixes
+
+* **ui:** the photo viewer no longer bounces focus with a focus trap under it ([#46](https://github.com/fabkho/ui/issues/46)) ([751063d](https://github.com/fabkho/ui/commit/751063d3c57feedbf9bd84d5569bb4ae5f51fec9))
+
 ## [0.10.3](https://github.com/fabkho/ui/compare/v0.10.2...v0.10.3) (2026-10-28)
 
 
