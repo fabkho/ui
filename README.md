@@ -100,7 +100,8 @@ layer's components.
 - **Library first.** Before writing a utility or a widget's logic, look for a maintained library that fits the
   dependency cap. Peer dependencies `nuxt`, `vue`, `vue-router`; one runtime dependency, `thumbhash`. A headless
   library is allowed only inside one widget, behind the same `Ui*` API, and recorded here as an exception
-  (**none today**). Focus in modal layers is done without a library (`utils/focusWrap.ts`).
+  (**none today**). Focus in modal layers is done without a library (`utils/focusWrap.ts`), and a layer that keeps
+  focus never fights a focus trap it does not own, such as an app's Reka UI sheet under it (`utils/layerFocus.ts`).
 - **Accessibility.** WCAG 2.2 AA and the WAI-ARIA Authoring Practices pattern for each widget: roles, accessible
   names, keyboard support, focus management, `prefers-reduced-motion`, 44×44 px targets.
 - **Mobile first: VoiceOver, touch and gestures before desktop and keyboard.** Every swipe, drag and long press has a
