@@ -2,9 +2,11 @@
 // The member's initials in mono inside a hairline ring, or her photo (issue
 // #156) over them. The initials stay underneath, so the circle is never empty
 // and nothing moves: a photo the avatar mounts with (the device's copy) simply
-// draws over them as it decodes; one that comes while it is on screen (the
-// first download, a new photo) fades in over `standard` once decoded. Drawing
-// only: the button around it is the 44 px target and carries the label.
+// draws over them, visible at once with no fade, and the initials are then
+// invisible under it so an image that is not decoded yet (iOS Safari decodes
+// blob URLs async) never shows them; one that comes while it is on screen (the
+// first download, a new photo) fades in over `standard` once decoded, over the
+// visible initials. Drawing only: the button around it is the 44 px target and carries the label.
 //
 // `size` (added for Bookretreats): xs 30, sm 32 (the default, Libellus' only
 // size), md 40, lg 40 at `coverSm`, xl 72 (a hero's ring, `coverMd`).
@@ -59,20 +61,26 @@ const SIZES = {
 
 /** What is being drawn: `photo`, or `fallback` once that one was refused. */
 const source = ref<string | null>(null)
-/** The photo changed while on screen: it waits for its decode, then fades in. */
+/** The photo came or changed while on screen: it waits for its decode, then fades in. Not for one present at mount. */
 const arriving = ref(false)
 const decoded = ref(false)
 const failed = ref(false)
+function reset() {
+  source.value = props.photo
+  decoded.value = false
+  failed.value = false
+}
+// Not immediate: a photo known at mount is drawn at once (`arriving` stays false).
+reset()
 watch(
   () => [props.photo, props.fallback] as const,
   () => {
-    source.value = props.photo
+    reset()
     arriving.value = true
-    decoded.value = false
-    failed.value = false
   },
-  { immediate: true },
 )
+/** A photo is being drawn that was there at mount: the initials stay underneath but invisible. */
+const initialsHidden = computed(() => !!source.value && !failed.value && !arriving.value)
 
 /** A refused photo: the fallback, once; then the initials. */
 function onError() {
@@ -94,7 +102,7 @@ function onError() {
     :aria-label="hidden ? undefined : label"
     :aria-hidden="hidden ? 'true' : undefined"
   >
-    {{ initials }}
+    <span :class="{ invisible: initialsHidden }" data-avatar-initials>{{ initials }}</span>
     <img
       v-if="source && !failed"
       :key="source"
