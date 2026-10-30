@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.6](https://github.com/fabkho/ui/compare/v0.10.5...v0.10.6) (2026-10-30)
+
+
+### Fixes
+
+* **avatar:** draw a photo present at mount at once, with no fade and no initials showing ([#39](https://github.com/fabkho/ui/issues/39)) ([8bdf6cf](https://github.com/fabkho/ui/commit/8bdf6cf335d927d8d4536b8c98831707712ee026))
+
 ## [0.10.5](https://github.com/fabkho/ui/compare/v0.10.4...v0.10.5) (2026-10-30)
 
 
