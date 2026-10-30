@@ -5,6 +5,7 @@ import UiButton from './Button.vue'
 import UiField from './Field.vue'
 import UiRow from './Row.vue'
 import UiRowGroup from './RowGroup.vue'
+import { ForeignTrap } from '../../../.storybook/foreign-trap'
 import { fitsTheScreen, largeText, textIsWhole } from '../../../.storybook/large-text'
 
 // The sheet is a modal layer: while it is open the rest of the page is `inert` and focus is inside it. Every
@@ -235,6 +236,54 @@ export const FocusMovesInAndBack: Story = {
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(opening).toHaveFocus())
     await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull())
+  },
+}
+
+/**
+ * A sheet opened over a focus trap the base does not own (an app's own sheet with Reka UI's `FocusScope`, as in
+ * `MediaViewer › OverAForeignTrap`): the layers below are `inert` before focus moves into the sheet, so the trap
+ * never sees a `focusin` it could pull back (it pulled focus to its own element, which then went `inert`, and focus
+ * ended on `<body>`, WebKit). Focus lands in the sheet, Tab stays in it, and closing gives focus back to the opener
+ * once the trap is reachable again.
+ */
+export const OverAForeignTrap: Story = {
+  args: { title: 'More', testid: 'moreSheet' },
+  render: args => ({
+    components: { UiSheet, UiButton, ForeignTrap },
+    setup: () => ({ args, open: ref(false) }),
+    template: `
+      <div class="flex min-h-[560px] items-center justify-center bg-surface">
+        <ForeignTrap>
+          <UiButton tone="secondary" @click="open = true">Open sheet</UiButton>
+        </ForeignTrap>
+        <UiSheet v-bind="args" v-model:open="open">
+          <UiButton tone="secondary">First action</UiButton>
+        </UiSheet>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const trap = within(canvasElement).getByRole('dialog', { name: 'Member' })
+    const opener = within(trap).getByRole('button', { name: 'Open sheet' })
+    // Where focus has been, in order: it must never rest on <body> while the sheet is open.
+    const seen: string[] = []
+    const record = () => queueMicrotask(() => seen.push(document.activeElement === document.body ? 'body' : 'element'))
+    document.addEventListener('focusout', record, true)
+    // A tap focuses the opener inside the trap first, so the trap has a last focus to pull back to.
+    opener.focus()
+    await userEvent.click(opener)
+    const dialog = await dialogOf('More')
+    await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true))
+    await expect(document.activeElement).not.toBe(document.body)
+    await expect(trap.closest('[inert]'), 'the trap under the sheet is out of reach').not.toBeNull()
+    document.removeEventListener('focusout', record, true)
+    await expect(seen.at(-1), 'focus is not left on <body>').not.toBe('body')
+    // Tab stays in the sheet.
+    await userEvent.tab()
+    await expect(dialog.contains(document.activeElement)).toBe(true)
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(opener).toHaveFocus())
+    await expect(trap.closest('[inert]'), 'the trap is reachable again').toBeNull()
+    await waitFor(() => expect(within(document.body).queryByRole('dialog', { name: 'More' })).toBeNull())
   },
 }
 
