@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.5](https://github.com/fabkho/ui/compare/v0.10.4...v0.10.5) (2026-10-30)
+
+
+### Fixes
+
+* a modal layer makes the layers below inert before it takes the focus ([#48](https://github.com/fabkho/ui/issues/48)) ([7d9c184](https://github.com/fabkho/ui/commit/7d9c184cc2e5f3243a0e9cb1f65aaac0e3838d36))
+
 ## [0.10.4](https://github.com/fabkho/ui/compare/v0.10.3...v0.10.4) (2026-10-29)
 
 
