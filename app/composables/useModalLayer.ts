@@ -6,8 +6,10 @@ import { useBackDismiss } from './useBackDismiss'
  * What a sheet or a dialog does to the rest of the app while it is open, as on
  * iOS: everything else stops taking part (the page, the search palette, a
  * sheet under a dialog — `inert`, so neither a tap nor Tab nor VoiceOver
- * reaches it), the page stops scrolling under it, focus moves into it and
- * goes back to whatever opened it once it closes.
+ * reaches it), the page stops scrolling under it, focus moves into it (once
+ * the rest is inert, so a focus trap underneath never sees it move) and goes
+ * back to whatever opened it once it closes (once the layers below are
+ * reachable again).
  *
  * Tab stays in the top-most layer (WAI-ARIA dialog): past its last control it
  * comes round to its first, Shift+Tab the other way (`utils/focusWrap.ts`), where
@@ -130,15 +132,20 @@ export function useModalLayer(
     markShown(true)
     await nextTick()
     if (layer !== stack.at(-1)) return
-    // Focus first, while the trigger is still reachable, then shut the rest.
+    // Shut the rest first, then move focus. A focus trap the base does not own
+    // (an app's vaul sheet, Reka UI's `FocusScope`) pulls focus back on a
+    // `focusin` outside it; once the layers below are `inert` its pull finds
+    // nothing to focus, so it cannot take the focus off the new layer (before,
+    // it pulled it to its own element, which then went inert, and focus ended
+    // on `<body>`: WebKit). The trigger is remembered already.
     // A field that already has focus keeps it (the keyboard comes up with the
     // sheet). UiSheet's `initialFocus` names the panel while its field waits for
     // the rise (stage 1: focus is inside at once for the trap and VoiceOver;
     // stage 2, in UiSheet, moves it to the field once the sheet is in place,
     // utils/sheetFocus.ts).
+    apply()
     const target = initialFocus()
     if (!contains(layer, document.activeElement)) target?.focus({ preventScroll: true })
-    apply()
   }
 
   function leave() {

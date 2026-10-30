@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
-import { defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import UiMediaViewer from './MediaViewer.vue'
 import UiButton from './Button.vue'
 import UiSheet from './Sheet.vue'
+import { ForeignTrap } from '../../../.storybook/foreign-trap'
 
 // The viewer covers the whole screen. Every story shows a button that opens it, and the stories are drawn in an
 // iframe in the docs page (`inline: false`).
@@ -18,43 +19,6 @@ const svg = (width: number, height: number, from: string, to: string, text: stri
       <text x="${width / 2}" y="${height * 0.2}" text-anchor="middle" font-family="sans-serif" font-size="${Math.min(width, height) / 12}" fill="#f1e3c8">${text}</text>
     </svg>`,
   )}`
-
-/**
- * A focus trap the base does not own, as an app's own sheet can have one: Bookretreats' member sheet is vaul, whose
- * content is Reka UI's `FocusScope` with `trapped`. This is Reka's logic, line for line: it remembers the last focus
- * inside it and pulls focus back when focus lands outside it (`focusin`) or leaves for an element outside it (`focusout`
- * with a `relatedTarget`); a focus that goes nowhere (`relatedTarget` null) it lets go. `data-pulls` counts the pulls.
- */
-const ForeignTrap = defineComponent({
-  setup(_, { slots }) {
-    const box = ref<HTMLElement | null>(null)
-    const pulls = ref(0)
-    let last: HTMLElement | null = null
-    function pull() {
-      pulls.value++
-      last?.focus({ preventScroll: true })
-    }
-    function onFocusIn(event: FocusEvent) {
-      if (!box.value) return
-      if (box.value.contains(event.target as Node)) last = event.target as HTMLElement
-      else pull()
-    }
-    function onFocusOut(event: FocusEvent) {
-      if (!box.value || event.relatedTarget === null) return
-      if (!box.value.contains(event.relatedTarget as Node)) pull()
-    }
-    onMounted(() => {
-      document.addEventListener('focusin', onFocusIn)
-      document.addEventListener('focusout', onFocusOut)
-    })
-    onBeforeUnmount(() => {
-      document.removeEventListener('focusin', onFocusIn)
-      document.removeEventListener('focusout', onFocusOut)
-    })
-    return () =>
-      h('div', { ref: box, tabindex: -1, role: 'dialog', 'aria-label': 'Member', 'data-pulls': pulls.value, class: 'rounded-lg bg-surface-sheet p-lg' }, slots.default?.())
-  },
-})
 
 const LANDSCAPE = svg(1200, 800, '#22303f', '#4a3220', 'Retreat terrace, 6 am')
 const PORTRAIT = svg(800, 1200, '#3b2430', '#2c3a2e', 'Reading by the lake')
