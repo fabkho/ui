@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook-vue/nuxt'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import UiThreadRow from './ThreadRow.vue'
 import UiRowGroup from './RowGroup.vue'
+import { largeText, fitsTheScreen } from '../../../.storybook/large-text'
 import { PEOPLE } from '../../../.storybook/chat-fixtures'
 
 const FACES = PEOPLE.map(({ initials, label, photo }) => ({ initials, label, photo }))
@@ -103,3 +104,41 @@ export const German: Story = { args: { unread: 3, label: 'Kapitel 7', title: 'Da
 
 /** Night: the faint veiled rows and the lamp dot must still read. */
 export const Night: Story = { ...List, globals: { theme: 'night' } }
+
+/** Title and trailing column side by side, never over each other, and nothing sticks out sideways. */
+const holdsAtLargeText = async (canvasElement: HTMLElement) => {
+  await expect(fitsTheScreen()).toBe(true)
+  for (const row of canvasElement.querySelectorAll<HTMLElement>('.thread-row')) {
+    await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth)
+    await expect(row.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    const title = row.querySelector('[data-testid$=".title"]')!.getBoundingClientRect()
+    const count = row.querySelector('[data-testid$=".count"]')!.getBoundingClientRect()
+    await expect(title.right).toBeLessThanOrEqual(count.left + 0.5)
+    // The faces make room: hidden at this width (the rule must win over the plain `.faces-box`).
+    const faces = row.querySelector<HTMLElement>('.faces-box')
+    if (faces) await expect(getComputedStyle(faces).display).toBe('none')
+  }
+}
+
+/** Large text (200 %): the title takes two lines before it is cut, the faces make room, the count keeps its place. */
+export const LargeText: Story = {
+  decorators: [largeText],
+  args: { title: 'In which a very long title for a chapter will not fit on one line of a phone', unread: 3 },
+  render: List.render,
+  play: async ({ canvasElement }) => {
+    await holdsAtLargeText(canvasElement)
+  },
+}
+
+export const LargeTextOne: Story = {
+  decorators: [largeText],
+  args: { title: 'In which a very long title for a chapter will not fit on one line of a phone', unread: 3 },
+  play: async ({ canvasElement }) => {
+    await holdsAtLargeText(canvasElement)
+    const canvas = within(canvasElement)
+    // Decoration only: the name is the same with the faces hidden.
+    await expect(canvas.getByRole('button', { name: /Ida and Berit are here/ })).toBeVisible()
+  },
+}
+
+export const LargeTextNight: Story = { ...LargeText, globals: { theme: 'night' } }

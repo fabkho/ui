@@ -96,8 +96,8 @@ function onError() {
 
 <template>
   <span
-    class="relative flex shrink-0 items-center justify-center overflow-hidden rounded-pill figures font-medium text-ink-muted"
-    :class="[SIZES[size], solid ? 'solid' : 'bg-fill']"
+    class="avatar relative flex shrink-0 items-center justify-center overflow-hidden rounded-pill figures font-medium text-ink-muted"
+    :class="[`is-${size}`, SIZES[size], solid ? 'solid' : 'bg-fill']"
     :role="hidden ? undefined : 'img'"
     :aria-label="hidden ? undefined : label"
     :aria-hidden="hidden ? 'true' : undefined"
@@ -123,6 +123,31 @@ function onError() {
 </template>
 
 <style scoped>
+/* Large text: the circle is fixed, the initials follow the text size, so they are capped to what the circle holds
+   (at 100 % the cap is never reached: 38 % of the circle is at least the size's own text). */
+.is-xs {
+  --avatar-d: var(--size-cover-xs);
+  --avatar-fs: var(--text-meta);
+}
+.is-sm {
+  --avatar-d: var(--size-avatar);
+  --avatar-fs: var(--text-meta);
+}
+.is-md {
+  --avatar-d: var(--size-button-md);
+  --avatar-fs: var(--text-caption);
+}
+.is-lg {
+  --avatar-d: var(--size-cover-sm);
+  --avatar-fs: var(--text-caption);
+}
+.is-xl {
+  --avatar-d: var(--size-cover-md);
+  --avatar-fs: var(--text-title);
+}
+.avatar {
+  font-size: min(var(--avatar-fs), calc(var(--avatar-d) * 0.38));
+}
 /* The quiet fill on the room colour: the same tint, but nothing shows through it. */
 .solid {
   background: linear-gradient(var(--color-fill), var(--color-fill)), var(--color-surface);

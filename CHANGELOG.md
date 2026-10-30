@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.10.5](https://github.com/fabkho/ui/compare/v0.10.4...v0.10.5) (2026-10-30)
+
+
+### Fixes
+
+* a modal layer makes the layers below inert before it takes the focus ([#48](https://github.com/fabkho/ui/issues/48)) ([7d9c184](https://github.com/fabkho/ui/commit/7d9c184cc2e5f3243a0e9cb1f65aaac0e3838d36))
+
+## [0.10.4](https://github.com/fabkho/ui/compare/v0.10.3...v0.10.4) (2026-10-29)
+
+
+### Fixes
+
+* **ui:** the photo viewer no longer bounces focus with a focus trap under it ([#46](https://github.com/fabkho/ui/issues/46)) ([751063d](https://github.com/fabkho/ui/commit/751063d3c57feedbf9bd84d5569bb4ae5f51fec9))
+
+## [0.10.3](https://github.com/fabkho/ui/compare/v0.10.2...v0.10.3) (2026-10-28)
+
+
+### Fixes
+
+* the viewport watcher and the pin act only after a keyboard ([#44](https://github.com/fabkho/ui/issues/44)) ([a3e2302](https://github.com/fabkho/ui/commit/a3e2302cd923d22adfd98c755bd8fa494a7db237))
+
+## [0.10.2](https://github.com/fabkho/ui/compare/v0.10.1...v0.10.2) (2026-10-28)
+
+
+### Fixes
+
+* UiThreadRow hides its faces at large text (the container rule comes last) ([#42](https://github.com/fabkho/ui/issues/42)) ([209e999](https://github.com/fabkho/ui/commit/209e99907118fc683d53df24f797a5510167a887))
+
+## [0.10.1](https://github.com/fabkho/ui/compare/v0.10.0...v0.10.1) (2026-10-28)
+
+
+### Fixes
+
+* thread rows and avatar initials hold at large text ([#40](https://github.com/fabkho/ui/issues/40)) ([2abdc4f](https://github.com/fabkho/ui/commit/2abdc4f2fbde1d00cb12e1de51c43b616f696beb))
+
 ## [0.10.0](https://github.com/fabkho/ui/compare/v0.9.0...v0.10.0) (2026-10-23)
 
 

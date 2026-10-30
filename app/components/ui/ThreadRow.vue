@@ -76,8 +76,8 @@ const name = computed(() =>
     :data-veiled="veiled || undefined"
     @click="emit('open')"
   >
-    <span class="figures min-w-8 shrink-0 text-caption" :class="veiled ? 'text-ink-faint' : 'text-ink-muted'" aria-hidden="true">{{ number }}</span>{{ ' ' }}
-    <span class="min-w-0 flex-1 truncate" aria-hidden="true" :data-testid="`${testid}.title`">
+    <span class="lead figures min-w-8 shrink-0 text-caption" :class="veiled ? 'text-ink-faint' : 'text-ink-muted'" aria-hidden="true">{{ number }}</span>{{ ' ' }}
+    <span class="title min-w-0 flex-1 truncate" aria-hidden="true" :data-testid="`${testid}.title`">
       <UiIcon v-if="veiled" name="eyeOff" :size="16" class="text-ink-faint" />
       <template v-else>{{ title }}</template>
     </span>{{ ' ' }}
@@ -91,13 +91,19 @@ const name = computed(() =>
       </UiAvatarStack>
       <span v-if="rest" class="more" :data-more="`+${rest}`" />
     </span>{{ ' ' }}
-    <span class="figures shrink-0 text-caption" :class="veiled ? 'text-ink-faint' : 'text-ink-muted'" aria-hidden="true" :data-testid="`${testid}.count`">{{ count }}</span>{{ ' ' }}
+    <span class="count figures shrink-0 text-caption" :class="veiled ? 'text-ink-faint' : 'text-ink-muted'" aria-hidden="true" :data-testid="`${testid}.count`">{{ count }}</span>{{ ' ' }}
     <span v-if="showsUnread" class="size-(--spacing-sm) shrink-0 rounded-pill bg-accent" aria-hidden="true" :data-testid="`${testid}.unread`" />
     <UiIcon name="chevron" :size="15" bold class="-mr-xs shrink-0 text-ink-ghost" aria-hidden="true" />
   </button>
 </template>
 
 <style scoped>
+/* Large text: the row is a container, in rem, so it narrows as the text grows (22 rem wide at 100 %, 11 rem at 200 %).
+   There the title may take two lines before it is cut, the number and the count keep their width, the faces (decoration;
+   the name still says who is here) make room, and the vertical padding grows a little (the container is the button itself, so the padding sits on the title). The row stays at least 44 px. */
+.thread-row {
+  container-type: inline-size;
+}
 /* A face and the "+N" circle, text in a pseudo-element (no text node for the button's visible text). */
 .mark,
 .more {
@@ -111,7 +117,7 @@ const name = computed(() =>
   overflow: hidden;
   border-radius: var(--radius-pill);
   background: linear-gradient(var(--color-fill), var(--color-fill)), var(--color-surface);
-  font-size: var(--text-meta);
+  font-size: min(var(--text-meta), calc(var(--size-cover-xs) * 0.38));
   font-weight: 500;
   color: var(--color-ink-muted);
 }
@@ -143,5 +149,24 @@ const name = computed(() =>
   height: var(--stroke-hairline);
   content: '';
   background: var(--color-hairline-strong);
+}
+/* Last, so the large-text rules win over the plain ones above at the same specificity. */
+@container (max-width: 17rem) {
+  .lead {
+    min-width: 0;
+  }
+  .title {
+    padding-block: var(--spacing-xs);
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .faces-box {
+    display: none;
+  }
 }
 </style>

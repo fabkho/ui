@@ -4,6 +4,7 @@ import { useSwipeDown } from '../../composables/useSwipeDown'
 import { durationToken, easingToken, prefersReducedMotion } from '../../utils/motion'
 import { morphFrames } from '../../utils/flip'
 import { wrapTab } from '../../utils/focusWrap'
+import { createFocusMover, inNewerLayer, openLayers } from '../../utils/layerFocus'
 
 // A picture full screen: dark veil, the picture as large as the screen allows, a close
 // button in the corner. Esc, a tap beside the picture and a swipe down close it (no system-Back
@@ -77,29 +78,43 @@ const veilStyle = computed(() =>
 // while it is open (APG dialog): the close button is the only control, so Tab and Shift+Tab stay on it, and
 // focus that ends up anywhere else (a screen reader's cursor, a click in the page behind) is brought back.
 // The rest of the page is not made `inert` for the same reason as above (a sheet under it must not notice).
+// A focus trap under the viewer (that vaul sheet: Reka UI's FocusScope) must not notice the focus moving either:
+// the viewer lets go of the focus under it before the close button takes it, never fights a trap over it, and
+// leaves focus alone in a layer that opened after it (utils/layerFocus.ts; the two bounced focus between them
+// until WebKit's stack ran out, Bookretreats' map, 2026-10-29).
 let trigger: HTMLElement | null = null
+/** The dialogs on screen when the viewer opened: focus in one of them is brought back, focus in a newer one is not. */
+let covered: ReadonlySet<Element> = new Set()
+const moveFocus = createFocusMover()
+function focusCloser() {
+  moveFocus(closer.value, root.value)
+}
 watch(visible, async (isOpen) => {
   if (isOpen) {
     trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    covered = openLayers()
     await nextTick()
-    closer.value?.focus({ preventScroll: true })
+    focusCloser()
   }
 })
 function afterLeave() {
   if (trigger?.isConnected) trigger.focus({ preventScroll: true })
   trigger = null
+  covered = new Set()
 }
 
 function onKey(event: KeyboardEvent) {
   if (!visible.value) return
+  // Focus in a layer that opened over the viewer: Tab and Esc are that layer's.
+  const active = document.activeElement
+  if (active && inNewerLayer(active, root.value, covered)) return
   if (event.key === 'Tab') {
     // Tab (either way) stays in the dialog, as in every layer (utils/focusWrap.ts): past its last control it
     // comes round to the first, which here is the close button, its one control. Focus that is somewhere else
     // altogether is brought back to it.
-    const active = document.activeElement
     if (!active || active === document.body || !root.value?.contains(active)) {
       event.preventDefault()
-      closer.value?.focus({ preventScroll: true })
+      focusCloser()
     } else wrapTab(event, [root.value])
     return
   }
@@ -108,11 +123,12 @@ function onKey(event: KeyboardEvent) {
   event.stopPropagation()
   close()
 }
-/** Focus that left the dialog while it is open (and not leaving) comes back to the close button. */
+/** Focus that left the dialog while it is open (and not leaving) comes back to the close button, unless a newer layer took it. */
 function onOutsideFocus(event: FocusEvent) {
   if (!visible.value || leaving) return
   const target = event.target
-  if (target instanceof Node && !root.value?.contains(target)) closer.value?.focus({ preventScroll: true })
+  if (!(target instanceof Node) || root.value?.contains(target) || inNewerLayer(target, root.value, covered)) return
+  focusCloser()
 }
 onMounted(() => {
   window.addEventListener('keydown', onKey, true)
