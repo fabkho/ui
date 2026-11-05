@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/fabkho/ui/compare/v0.10.6...v0.11.0) (2026-11-05)
+
+
+### Features
+
+* **chat:** hold the microphone to record, slide up to lock, slide away to cancel ([#51](https://github.com/fabkho/ui/issues/51)) ([409766b](https://github.com/fabkho/ui/commit/409766b226333f98f34434ca0eb86366363704c5))
+
 ## [0.10.6](https://github.com/fabkho/ui/compare/v0.10.5...v0.10.6) (2026-10-30)
 
 
