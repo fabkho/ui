@@ -4,7 +4,21 @@ import UiIcon from './Icon.vue'
 import { useRovingToolbar } from '../../composables/useRovingToolbar'
 import { useUiText } from '../../composables/useUiText'
 import { useVoiceRecorder } from '../../composables/useVoiceRecorder'
+import { tick } from '../../utils/haptics'
+import { prefersReducedMotion } from '../../utils/motion'
 import { clock, liveRow, type PreparedVoice } from '../../utils/chat/voice'
+import {
+  HOLD_CANCEL_PX,
+  HOLD_LOCK_PX,
+  cancelProgress,
+  holdStep,
+  initialHold,
+  lockProgress,
+  type DiscardWhy,
+  type HoldEffect,
+  type HoldEvent,
+  type HoldState,
+} from '../../utils/chat/voiceGesture'
 import { fillWords } from '../../utils/chat/words'
 import type { BubbleQuote } from '../../utils/chat/message'
 
@@ -19,12 +33,34 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // (a drag on the thread closes the keyboard, UiChatThread). Sending never waits: the app shows the
 // message at once.
 //
-// Voice messages (with `voiceMaxMs`, the app's longest recording): while the field is empty the
-// microphone stands where send is. Tap to start (a tap to stop would be easy to miss on a hold, and two
-// minutes is a long time to hold a thumb: it also works with VoiceOver and Switch Control, and the
-// iPhone's long-press callout never gets in the way). The capsule then holds ✕ (throw away), the live
-// bars, the timer and send; the floating pills give way to one line, "Recording". Send hands the
-// recording over (`voice`), at `voiceMaxMs` it stops by itself and still waits for ✕ or send.
+// Voice messages (with `voiceMaxMs`, the app's longest recording), as WhatsApp does them: while the field
+// is empty the microphone stands where send is.
+//  - HOLD it: recording starts at once, with the timer and a pulsing red dot, the live bars and "Slide to
+//    cancel" in the capsule, and a lock mark (lock, chevron up) above the microphone. LET GO and the
+//    recording is sent (`voice`). Slide towards the start side of the line (left; right in RTL) past
+//    `HOLD_CANCEL_PX` and let go, and it is thrown away (the trash shows for a moment); the hint fades as
+//    the thumb goes. Slide UP past `HOLD_LOCK_PX` and it is LOCKED: it goes on without the finger and the
+//    capsule becomes the recording panel, ✕ (throw away), the live bars, the timer and send.
+//  - TAP it (released within `TAP_MS`, or before the microphone is live, when the phone's permission
+//    sheet eats the finger's `pointerup`): nothing is sent and nothing is thrown away, the recording
+//    goes on in the panel, as it always did. That is the way for VoiceOver and Switch Control (their
+//    activation is a tap), the keyboard (Enter, Space) and a mouse that clicks. `voiceHold` off keeps
+//    only this. A hold released under `TOO_SHORT_MS` is thrown away (too short to send).
+//  - Robustness (utils/chat/voiceGesture.ts holds the rules, tests/chat-voice-gesture.test.ts runs them):
+//    pointer events with pointer capture on the button, one pointer only, `touch-action: none` and no
+//    selection, callout or context menu so the iPhone's long press has nothing to show. A `pointercancel`
+//    (a system gesture took the touch) after the lock distance locks, before it cancels; the page going
+//    to the background, or the window losing focus while the microphone is live, cancels. Whatever
+//    ends it, the recorder is stopped and the microphone released. Reduced motion: the dot does not
+//    pulse, the hint, lock mark and microphone do not move with the thumb (the distances still count).
+//  In the locked panel nothing changes at `voiceMaxMs`: it stops by itself and waits for ✕ or send. The
+//  floating pills give way to one line, "Recording".
+// The words (`ui.text.chat.voice`, English defaults in app.config.ts, the app supplies its own):
+//  `record` the microphone's name; `recordHint` its description, read after the name (aria-describedby:
+//  the gesture and the way without one; say which side "cancel" slides to in the language's direction);
+//  `slideToCancel` the hint in the capsule; `recording` / `stopped` / `limit` the status line;
+//  `locked`, `discarded`, `tooShort` the polite announcements (a status region that is always there)
+//  when it locks, is thrown away, or was too short; `cancel`, `send`, `timer` the panel's own.
 //
 // The field grows with what is written up to five lines, then scrolls. Return sends on a desktop
 // keyboard only (a fine pointer that can hover); on a phone it is a new line, and the button sends. A
@@ -49,6 +85,11 @@ const props = withDefaults(
     photoAccept?: string
     /** The microphone, and the longest recording in milliseconds. */
     voiceMaxMs?: number
+    /**
+     * The microphone is held to record, as in WhatsApp (release sends, slide up locks, slide away cancels);
+     * a tap still records hands-free. False keeps tap-only: tap to start, the panel to send.
+     */
+    voiceHold?: boolean
     /** A comment bar: the field and send, the note and the chips it is given, no microphone. */
     compact?: boolean
     /** The field's placeholder; when not given, `ui.text.chat.composer.placeholder`. */
@@ -69,6 +110,7 @@ const props = withDefaults(
     gifs: false,
     photoAccept: undefined,
     voiceMaxMs: undefined,
+    voiceHold: true,
     compact: false,
     placeholder: undefined,
     label: undefined,
@@ -112,7 +154,11 @@ const liveBars = computed(() => liveRow(recorder.bars.value))
 
 async function startVoice() {
   const problem = await recorder.start()
-  if (problem) emit('voiceError', chat.value.voice.problems[problem])
+  if (problem) {
+    hold.value = initialHold()
+    emit('voiceError', chat.value.voice.problems[problem])
+  }
+  return problem
 }
 async function sendVoice() {
   const voice = await recorder.finish()
@@ -122,7 +168,208 @@ async function sendVoice() {
 watch(recording, (now) => {
   // The field leaves while recording, and an element that is removed sends no blur.
   if (now) focused.value = false
-  else void nextTick(grow)
+  else {
+    hold.value = initialHold()
+    void nextTick(grow)
+  }
+})
+
+// ---------------------------------------------------------------- the held microphone
+// The rules are utils/chat/voiceGesture.ts (pure); this feeds them the pointer and the page, and does
+// what they say. The microphone button stays in the DOM while it is held (it owns the pointer), and
+// leaves for the panel when the recording is locked.
+
+const DISCARD_MS = 700
+/** How far (px) the thumb's hint, lock mark and the microphone follow it at most. */
+const FOLLOW_PX = HOLD_CANCEL_PX * 1.2
+
+const hold = ref<HoldState>(initialHold())
+/** The microphone is held (or just let go to send): the capsule shows the hold, not the panel. */
+const holding = computed(() => hold.value.phase === 'holding' || hold.value.phase === 'sent')
+/** Today's recording panel: ✕, bars, timer, send. */
+const panel = computed(() => recording.value && !holding.value)
+/** The polite live region's sentence: locked, thrown away, too short. */
+const announcement = ref('')
+/** The trash, shown for a moment where the field will come back. */
+const discarding = ref(false)
+const motion = ref(true)
+let discardTimer: ReturnType<typeof setTimeout> | undefined
+let clickTimer: ReturnType<typeof setTimeout> | undefined
+/** The pointer's own click (after a hold or a slide) is not a tap. */
+let swallowClick = false
+let captured = false
+
+/** The microphone is recording: before that the permission sheet may be up. */
+const live = () => recorder.state.value === 'recording' || recorder.state.value === 'stopped'
+
+function dispatch(event: HoldEvent) {
+  const step = holdStep(hold.value, event)
+  hold.value = step.state
+  for (const effect of step.effects) perform(effect)
+}
+
+function perform(effect: HoldEffect) {
+  if (effect.type === 'start') void begin()
+  else if (effect.type === 'send') void sendVoice()
+  else if (effect.type === 'lock') {
+    // A tap is today's behaviour, and the status line says it. The others say what happened.
+    if (effect.how === 'tap') return
+    announcement.value = chat.value.voice.locked
+    tick()
+  } else {
+    recorder.cancel()
+    discarded(effect.why)
+  }
+}
+
+/** Starts the recorder in the press's own turn; if the finger is gone by the time the microphone is there, it is a tap. */
+async function begin() {
+  const problem = await startVoice()
+  if (problem || hold.value.phase !== 'holding') return
+  const id = hold.value.pointerId
+  if (captured && id !== null && !mic.value?.hasPointerCapture(id)) dispatch({ type: 'pointercancel', pointerId: id, live: false })
+}
+
+function discarded(why: DiscardWhy) {
+  announcement.value = why === 'short' ? chat.value.voice.tooShort : chat.value.voice.discarded
+  if (why === 'hidden') return
+  discarding.value = true
+  clearTimeout(discardTimer)
+  discardTimer = setTimeout(() => {
+    discarding.value = false
+    void nextTick(grow)
+  }, DISCARD_MS)
+}
+
+const mic = ref<HTMLButtonElement | null>(null)
+
+function onPointerDown(event: PointerEvent) {
+  if (!props.voiceHold || recording.value || !event.isPrimary) return
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  const el = event.currentTarget as HTMLButtonElement
+  swallowClick = true
+  clearTimeout(clickTimer)
+  announcement.value = ''
+  discarding.value = false
+  motion.value = !prefersReducedMotion()
+  try {
+    el.setPointerCapture(event.pointerId)
+    captured = true
+  } catch {
+    captured = false
+  }
+  dispatch({
+    type: 'press',
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    at: performance.now(),
+    rtl: getComputedStyle(el).direction === 'rtl',
+  })
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (hold.value.phase !== 'holding') return
+  dispatch({ type: 'move', pointerId: event.pointerId, x: event.clientX, y: event.clientY })
+}
+
+function pointerOver(event: PointerEvent) {
+  captured = false
+  try {
+    mic.value?.releasePointerCapture(event.pointerId)
+  } catch {
+    // Not captured (or already gone).
+  }
+  // The click that follows a pointerup comes at once; a stale flag must not eat a later keyboard activation.
+  clearTimeout(clickTimer)
+  clickTimer = setTimeout(() => {
+    swallowClick = false
+  }, 400)
+}
+
+function onPointerUp(event: PointerEvent) {
+  if (hold.value.phase !== 'holding') return
+  dispatch({ type: 'release', pointerId: event.pointerId, at: performance.now(), live: live() })
+  pointerOver(event)
+}
+
+function onPointerCancel(event: PointerEvent) {
+  if (hold.value.phase !== 'holding') return
+  dispatch({ type: 'pointercancel', pointerId: event.pointerId, live: live() })
+  pointerOver(event)
+}
+
+/** The capture was taken away without a `pointerup` (the permission sheet, the element going): the same as a cancel. */
+function onLostCapture(event: PointerEvent) {
+  if (hold.value.phase !== 'holding') return
+  dispatch({ type: 'pointercancel', pointerId: event.pointerId, live: live() })
+  pointerOver(event)
+}
+
+/** A plain activation: Enter or Space, VoiceOver's double tap, a click with `voiceHold` off. It records hands-free. */
+function onRecordClick() {
+  if (swallowClick) {
+    swallowClick = false
+    return
+  }
+  if (recording.value) return
+  announcement.value = ''
+  dispatch({ type: 'tap' })
+}
+
+function onRecordKey() {
+  swallowClick = false
+}
+
+function onHidden() {
+  if (document.visibilityState === 'hidden') dispatch({ type: 'hidden' })
+}
+function onBlur() {
+  dispatch({ type: 'blur', live: live() })
+}
+function watchPage(on: boolean) {
+  const toggle = on ? 'addEventListener' : 'removeEventListener'
+  document[toggle]('visibilitychange', onHidden)
+  window[toggle]('pagehide', onHidden)
+  window[toggle]('blur', onBlur)
+}
+watch(
+  () => hold.value.phase === 'holding',
+  (now) => {
+    watchPage(now)
+    // Locked by the slide, the microphone leaves the page with the pointer's own click unsent: do not keep the flag.
+    if (!now) {
+      clearTimeout(clickTimer)
+      clickTimer = setTimeout(() => {
+        swallowClick = false
+      }, 400)
+    }
+  },
+)
+onBeforeUnmount(() => {
+  watchPage(false)
+  clearTimeout(discardTimer)
+  clearTimeout(clickTimer)
+})
+
+/** The hint fades as the thumb goes towards the start side, and (with motion) shifts a little with it (22 px at most). */
+const hintStyle = computed(() => {
+  const state = hold.value
+  const along = motion.value ? Math.min(state.cancel, HOLD_CANCEL_PX) * 0.25 * (state.rtl ? 1 : -1) : 0
+  return { opacity: 1 - cancelProgress(state), transform: `translateX(${along}px)` }
+})
+/** The lock mark rises with the thumb. */
+const lockStyle = computed(() => {
+  const progress = lockProgress(hold.value)
+  return { opacity: 0.55 + progress * 0.45, transform: `translateY(${motion.value ? -progress * 24 : 0}px)` }
+})
+/** The microphone, a little larger while it is held, goes with the thumb (not with reduced motion). */
+const micStyle = computed(() => {
+  if (!holding.value) return undefined
+  const state = hold.value
+  const x = motion.value ? Math.min(state.cancel, FOLLOW_PX) * (state.rtl ? 1 : -1) : 0
+  const y = motion.value ? -Math.min(state.lift, HOLD_LOCK_PX) : 0
+  return { transform: `translate(${x}px, ${y}px) scale(1.3)` }
 })
 
 const picker = ref<HTMLInputElement | null>(null)
@@ -200,6 +447,8 @@ defineExpose({ focus: () => field.value?.focus(), blur })
 
 <template>
   <div class="flex flex-col">
+    <!-- Locked, thrown away, too short: said politely, by a region that is always there (one that appears with its words is often missed). -->
+    <p v-if="voiceOffered" class="sr-only" role="status" aria-live="polite" :data-testid="`${testid}.voiceAnnounce`">{{ announcement }}</p>
     <!-- The ways of sending something that is not words, floating above the field. -->
     <div
       v-if="compact && (note || photoAccept || gifs || $slots.actions)"
@@ -276,9 +525,18 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         :data-testid="`${testid}.photoInput`"
         @change="picked"
       />
-      <!-- Recording: ✕, the live bars, the timer, send. -->
-      <div v-if="recording" class="flex min-w-0 flex-1 items-center gap-sm" role="group" :aria-label="chat.voice.recording" :data-testid="`${testid}.recorder`">
+      <!-- Recording. Held: the timer with its dot, the live bars, "Slide to cancel". Locked, or by a tap: ✕, the live bars, the timer, send. -->
+      <div
+        v-if="recording"
+        class="flex min-w-0 flex-1 items-center gap-sm"
+        :class="holding ? 'hold-row' : ''"
+        role="group"
+        :aria-label="chat.voice.recording"
+        :data-testid="`${testid}.recorder`"
+        :data-hold="holding || undefined"
+      >
         <button
+          v-if="panel"
           type="button"
           class="send -ml-sm flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill text-ink-muted"
           :aria-label="chat.voice.cancel"
@@ -296,10 +554,24 @@ defineExpose({ focus: () => field.value?.focus(), blur })
             :style="{ height: `${Math.max(8, Math.round(level * 100))}%` }"
           />
         </div>
-        <time class="figures shrink-0 text-body text-ink tabular-nums" role="timer" :aria-label="fillWords(chat.voice.timer, { elapsed: timer, max: clock((voiceMaxMs ?? 0) / 1000) })" :data-testid="`${testid}.voiceTimer`" :data-ms="Math.round(recorder.elapsedMs.value)">
-          {{ timer }}
-        </time>
+        <span class="flex shrink-0 items-center gap-xs" :class="holding ? 'order-first' : ''">
+          <span v-if="holding" class="dot pulse" aria-hidden="true" :data-testid="`${testid}.holdDot`" />
+          <time class="figures shrink-0 text-body text-ink tabular-nums" role="timer" :aria-label="fillWords(chat.voice.timer, { elapsed: timer, max: clock((voiceMaxMs ?? 0) / 1000) })" :data-testid="`${testid}.voiceTimer`" :data-ms="Math.round(recorder.elapsedMs.value)">
+            {{ timer }}
+          </time>
+        </span>
+        <span
+          v-if="holding"
+          class="hint me-xs flex shrink-0 items-center gap-xxs text-caption text-ink-muted"
+          aria-hidden="true"
+          :style="hintStyle"
+          :data-testid="`${testid}.holdHint`"
+        >
+          <UiIcon name="chevron" :size="14" :class="hold.rtl ? '' : 'rotate-180'" />
+          {{ chat.voice.slideToCancel }}
+        </span>
         <button
+          v-if="panel"
           type="button"
           class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill bg-ink text-on-ink shadow-button"
           :aria-label="chat.voice.send"
@@ -310,9 +582,13 @@ defineExpose({ focus: () => field.value?.focus(), blur })
           <UiIcon name="send" :size="18" class="send-icon" />
         </button>
       </div>
-      <label v-if="!recording" :for="`${testid}-input`" class="sr-only">{{ labelText }}</label>
+      <!-- A recording thrown away: the trash, for a moment, where the field comes back. -->
+      <div v-if="discarding && !recording" class="trash flex h-(--size-button-md) min-w-0 flex-1 items-center text-error" aria-hidden="true" :data-testid="`${testid}.holdTrash`">
+        <UiIcon name="trash" :size="20" />
+      </div>
+      <label v-if="!recording && !discarding" :for="`${testid}-input`" class="sr-only">{{ labelText }}</label>
       <textarea
-        v-if="!recording"
+        v-if="!recording && !discarding"
         :id="`${testid}-input`"
         ref="field"
         v-model="text"
@@ -339,17 +615,41 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       >
         <UiIcon name="send" :size="18" class="send-icon" />
       </button>
-      <!-- Nothing to send yet: the microphone takes its place. -->
-      <button
-        v-else-if="!recording && !compact && voiceOffered"
-        type="button"
-        class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill text-ink-muted"
-        :aria-label="chat.voice.record"
-        :data-testid="`${testid}.record`"
-        @click="startVoice"
-      >
-        <UiIcon name="mic" :size="20" />
-      </button>
+      <!-- Nothing to send yet: the microphone takes its place. Held, it stays (it owns the pointer) and the
+           lock mark stands over it; locked, the panel takes its place. -->
+      <span v-else-if="(!recording || holding) && !compact && voiceOffered" class="mic relative flex size-(--size-button-md) shrink-0">
+        <span
+          v-if="hold.phase === 'holding'"
+          class="lock glass edge pointer-events-none absolute flex flex-col items-center gap-xxs rounded-pill py-xs text-ink-muted"
+          aria-hidden="true"
+          :style="lockStyle"
+          :data-testid="`${testid}.holdLock`"
+        >
+          <UiIcon name="lock" :size="16" />
+          <UiIcon name="chevron" :size="14" class="-rotate-90" />
+        </span>
+        <span v-if="voiceHold" :id="`${testid}-recordHint`" class="sr-only">{{ chat.voice.recordHint }}</span>
+        <button
+          ref="mic"
+          type="button"
+          class="send flex size-full items-center justify-center rounded-pill text-ink-muted"
+          :class="voiceHold ? 'holdable' : ''"
+          :style="micStyle"
+          :aria-label="chat.voice.record"
+          :aria-describedby="voiceHold ? `${testid}-recordHint` : undefined"
+          :data-testid="`${testid}.record`"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerCancel"
+          @lostpointercapture="onLostCapture"
+          @contextmenu.prevent
+          @keydown="onRecordKey"
+          @click="onRecordClick"
+        >
+          <UiIcon name="mic" :size="20" />
+        </button>
+      </span>
     </form>
   </div>
 </template>
@@ -484,6 +784,61 @@ defineExpose({ focus: () => field.value?.focus(), blur })
   outline: var(--stroke-focus) solid var(--color-accent);
   outline-offset: 2px;
   border-radius: var(--radius-pill);
+}
+/* The held microphone: the pointer is the button's, so the page's own gestures (scroll, zoom, text
+   selection, the iPhone's long-press callout and context menu) must have nothing to do on it. */
+.holdable {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.hold-row {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.mic > .send {
+  /* Over the lock mark and the hint while it goes with the thumb. */
+  position: relative;
+  z-index: 1;
+}
+.mic > .send[style] {
+  background-color: var(--color-glass);
+  box-shadow: var(--shadow-button);
+  color: var(--color-ink);
+}
+.lock {
+  inset-inline-end: 0;
+  bottom: calc(100% + var(--spacing-sm));
+  width: var(--size-button-md);
+  background-color: var(--color-glass);
+  box-shadow: var(--shadow-palette);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mic > .send[style],
+  .lock,
+  .hint {
+    transition: opacity 80ms linear;
+  }
+  .pulse {
+    animation: pulse 1.1s var(--ease-standard) infinite;
+  }
+  .trash {
+    animation: trash-in var(--duration-quick) var(--ease-standard) both;
+  }
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes trash-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 /* The red dot of the recording line. */
 .dot {

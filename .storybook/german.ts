@@ -77,6 +77,12 @@ export const GERMAN = {
     },
     voice: {
       record: 'Sprachnachricht aufnehmen',
+      recordHint:
+        'Halten zum Aufnehmen, Loslassen zum Senden. Nach oben wischen zum Feststellen, nach links zum Abbrechen. Oder tippen für freihändiges Aufnehmen.',
+      slideToCancel: 'Zum Abbrechen wischen',
+      locked: 'Aufnahme festgestellt. Drücke auf Senden, wenn du fertig bist.',
+      discarded: 'Aufnahme verworfen.',
+      tooShort: 'Aufnahme zu kurz und deshalb verworfen. Halte das Mikrofon länger oder tippe darauf für freihändiges Aufnehmen.',
       recording: 'Aufnahme läuft',
       stopped: 'Aufnahme beendet',
       timer: '{elapsed} von {max}',

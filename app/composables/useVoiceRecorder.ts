@@ -11,8 +11,10 @@ import {
 } from '../utils/chat/voice'
 
 /**
- * The recorder behind the composer's microphone (UiComposer, voice messages): tap to start, tap to send, cancel
- * to throw away. `MediaRecorder` records in the best type the device has (`pickRecordingType`: AAC in
+ * The recorder behind the composer's microphone (UiComposer, voice messages). It is driven from outside: `start()`
+ * from the press of the microphone (a hold, a tap, Enter), `finish()` to send (the release of a hold, the send
+ * button), `cancel()` to throw away (a slide away, a release too short, the ✕, the page going to the background).
+ * `MediaRecorder` records in the best type the device has (`pickRecordingType`: AAC in
  * mp4 first, because every phone plays it), an `AnalyserNode` reads the loudness ten times a second for
  * the live bars and, at the end, the waveform that goes with the message.
  *
@@ -22,7 +24,9 @@ import {
  *   (the app's limit, e.g. two minutes) it stops itself (`limitReached`): the state is `stopped`, the recording is kept and can
  *   still be sent or thrown away.
  * - `finish()` resolves to the recording (stopping it first), or null when there is none; the
- *   recorder is `idle` again. `cancel()` throws it away. Leaving the page does the same.
+ *   recorder is `idle` again. `cancel()` throws it away, also while it is still `starting`: the
+ *   microphone the phone grants after that is stopped at once (`attempt`), so a hold that was let go
+ *   or slid away before the permission sheet closed never leaves a stream open. Leaving the page does the same.
  *
  * Nothing leaves the device here; the app uploads what `finish()` hands over.
  */
@@ -87,6 +91,8 @@ export function useVoiceRecorder(options: VoiceRecorderOptions) {
 
   function tick() {
     elapsedMs.value = Math.min(performance.now() - startedAt, maxMs())
+    // A context made in a press (not yet a tap) can still be suspended once the microphone is granted: ask again.
+    if (context?.state === 'suspended') void context.resume().catch(() => {})
     const now = level()
     levels.push(now)
     bars.value = [...bars.value, now].slice(-LIVE_BARS)

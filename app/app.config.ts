@@ -154,6 +154,20 @@ export default defineAppConfig({
         /** Voice messages: the microphone in the composer, the recording bar, the bubble. */
         voice: {
           record: 'Record a voice message',
+          /**
+           * Read after the microphone's name (its description): the gesture, and the way without one.
+           * Say which side "cancel" slides to in the language's own direction (left in LTR, right in RTL).
+           */
+          recordHint:
+            'Hold to record, release to send. Slide up to lock, slide left to cancel. Or tap to record hands-free.',
+          /** The hint in the capsule while the microphone is held; it fades as the thumb slides towards the start side. */
+          slideToCancel: 'Slide to cancel',
+          /** Announced (polite) when the thumb slides up and the recording goes on without the finger. */
+          locked: 'Recording locked. Press send when you are done.',
+          /** Announced (polite) when a recording is thrown away by the slide, the page leaving or the system taking the touch. */
+          discarded: 'Recording discarded.',
+          /** Announced (polite) when a held recording was too short to send. */
+          tooShort: 'Recording too short, so it was discarded. Hold the microphone longer, or tap it to record hands-free.',
           recording: 'Recording',
           stopped: 'Recording stopped',
           timer: '{elapsed} of {max}',
