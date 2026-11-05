@@ -343,6 +343,103 @@ export const HoldSlideLeftCancels: Story = {
   },
 }
 
+/** Stands a recorder in for `navigator.vibrate` (Android's Vibration API) while `run` goes; the calls, in order. */
+async function vibrating(run: (calls: unknown[]) => Promise<void>) {
+  const calls: unknown[] = []
+  const had = Object.getOwnPropertyDescriptor(navigator, 'vibrate')
+  Object.defineProperty(navigator, 'vibrate', { configurable: true, value: (pattern: unknown) => (calls.push(pattern), true) })
+  try {
+    await run(calls)
+  } finally {
+    if (had) Object.defineProperty(navigator, 'vibrate', had)
+    else delete (navigator as { vibrate?: unknown }).vibrate
+  }
+}
+
+/**
+ * Android haptics (utils/haptics.ts `VOICE_HAPTICS`), one per transition: hold → a firm pulse (45), slide past the
+ * cancel distance → a buzz (60) once, however many moves, back → a short pulse (20), release armed → the long
+ * "thrown away" pattern. The stand-in for `navigator.vibrate` records the patterns.
+ */
+export const HoldHapticsSlideLeft: Story = {
+  play: async ({ canvasElement }) => {
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    await vibrating(async (calls) => {
+      const { button, x, y } = await hold(canvas)
+      await expect(calls).toEqual([45])
+      for (const dx of [-40, -91, -100, -110, -120]) touch(button, 'pointermove', x + dx, y)
+      await expect(calls).toEqual([45, 60])
+      touch(button, 'pointermove', x - 20, y)
+      await expect(calls).toEqual([45, 60, 20])
+      touch(button, 'pointermove', x - 105, y)
+      touch(button, 'pointerup', x - 105, y)
+      await expect(calls).toEqual([45, 60, 20, 60, [60, 40, 90]])
+    })
+  },
+}
+
+/** Slide up to lock: the firm start pulse, then the double pulse, once; the finger lifting after it adds nothing. */
+export const HoldHapticsLock: Story = {
+  play: async ({ canvasElement }) => {
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    await vibrating(async (calls) => {
+      const { button, x, y } = await hold(canvas)
+      touch(button, 'pointermove', x, y - 40)
+      touch(button, 'pointermove', x, y - 80)
+      touch(button, 'pointermove', x, y - 120)
+      touch(button, 'pointerup', x, y - 120)
+      await sleep(100)
+      await expect(calls).toEqual([45, [35, 45, 70]])
+    })
+  },
+}
+
+/** Release to send: the start pulse and one medium pulse (30). A tap or a key (the panel) only gets the short start pulse (25). */
+export const HoldHapticsSend: Story = {
+  play: async ({ canvasElement, args }) => {
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    await vibrating(async (calls) => {
+      const { button, x, y } = await hold(canvas)
+      await sleep(800)
+      touch(button, 'pointerup', x, y)
+      await waitFor(() => expect(args.onVoice).toHaveBeenCalledTimes(1), { timeout: 5000 })
+      await expect(calls).toEqual([45, 30])
+    })
+  },
+}
+
+export const HoldHapticsTap: Story = {
+  play: async ({ canvasElement }) => {
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    await vibrating(async (calls) => {
+      canvas.getByTestId('chat.record').focus()
+      await userEvent.keyboard('{Enter}')
+      await waitFor(() => expect(canvas.getByTestId('chat.voiceSend')).toBeEnabled(), { timeout: 5000 })
+      await expect(calls).toEqual([25])
+    })
+  },
+}
+
+/** `haptics` off silences all of it. */
+export const HoldHapticsOff: Story = {
+  args: { haptics: false },
+  play: async ({ canvasElement, args }) => {
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    await vibrating(async (calls) => {
+      const { button, x, y } = await hold(canvas)
+      await sleep(800)
+      touch(button, 'pointerup', x, y)
+      await waitFor(() => expect(args.onVoice).toHaveBeenCalledTimes(1), { timeout: 5000 })
+      await expect(calls).toEqual([])
+    })
+  },
+}
+
 /** A hold let go too soon to send (under 0.7 s) is thrown away, and the announcement says why. */
 export const HoldTooShort: Story = {
   play: async ({ canvasElement, args }) => {

@@ -4,7 +4,7 @@ import UiIcon from './Icon.vue'
 import { useRovingToolbar } from '../../composables/useRovingToolbar'
 import { useUiText } from '../../composables/useUiText'
 import { useVoiceRecorder } from '../../composables/useVoiceRecorder'
-import { tick } from '../../utils/haptics'
+import { voiceHaptic } from '../../utils/haptics'
 import { prefersReducedMotion } from '../../utils/motion'
 import { clock, liveRow, type PreparedVoice } from '../../utils/chat/voice'
 import {
@@ -53,6 +53,12 @@ import type { BubbleQuote } from '../../utils/chat/message'
 //    to the background, or the window losing focus while the microphone is live, cancels. Whatever
 //    ends it, the recorder is stopped and the microphone released. Reduced motion: the dot does not
 //    pulse, the hint, lock mark and microphone do not move with the thumb (the distances still count).
+//  Haptics (`haptics`, default on; Reduce Motion does not silence them, they are not motion): one per
+//  transition, from the gesture's effects (voiceGesture.ts), never per move. Android (Vibration API,
+//  patterns in utils/haptics.ts `VOICE_HAPTICS`): a firm pulse when the microphone starts, a double pulse
+//  at the lock, a buzz when the thumb crosses the cancel distance and a short pulse if it comes back, a
+//  medium pulse when it sends, a long pattern when a slid-away recording is thrown away; a tap or key
+//  gets only a short pulse at the start. iOS: the switch tick on start and lock where WebKit allows it.
 //  In the locked panel nothing changes at `voiceMaxMs`: it stops by itself and waits for ✕ or send. The
 //  floating pills give way to one line, "Recording".
 // The words (`ui.text.chat.voice`, English defaults in app.config.ts, the app supplies its own):
@@ -90,6 +96,8 @@ const props = withDefaults(
      * a tap still records hands-free. False keeps tap-only: tap to start, the panel to send.
      */
     voiceHold?: boolean
+    /** The haptics of the held microphone (start, lock, cancel armed, send, thrown away); false silences them. Reduce Motion does not. */
+    haptics?: boolean
     /** A comment bar: the field and send, the note and the chips it is given, no microphone. */
     compact?: boolean
     /** The field's placeholder; when not given, `ui.text.chat.composer.placeholder`. */
@@ -111,6 +119,7 @@ const props = withDefaults(
     photoAccept: undefined,
     voiceMaxMs: undefined,
     voiceHold: true,
+    haptics: true,
     compact: false,
     placeholder: undefined,
     label: undefined,
@@ -215,7 +224,8 @@ function perform(effect: HoldEffect) {
     // A tap is today's behaviour, and the status line says it. The others say what happened.
     if (effect.how === 'tap') return
     announcement.value = chat.value.voice.locked
-    tick()
+  } else if (effect.type === 'haptic') {
+    if (props.haptics) voiceHaptic(effect.kind)
   } else {
     recorder.cancel()
     discarded(effect.why)
