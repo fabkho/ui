@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/fabkho/ui/compare/v0.11.0...v0.12.0) (2026-11-05)
+
+
+### Features
+
+* **chat:** firmer Android haptics for hold-to-record and a buzz when sliding to cancel ([#53](https://github.com/fabkho/ui/issues/53)) ([c29015e](https://github.com/fabkho/ui/commit/c29015e7305347823ec6030431fdaaba2da3f421))
+
 ## [0.11.0](https://github.com/fabkho/ui/compare/v0.10.6...v0.11.0) (2026-11-05)
 
 
