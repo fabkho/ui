@@ -18,6 +18,13 @@
  * recording yet: before that the phone's permission sheet may be up, and it eats the finger's
  * `pointerup`, so a release or a cancel before it means "a tap": lock, never lose the recording.
  *
+ * Haptics are effects too (`{ type: 'haptic', kind }`, see `VoiceHaptic` in utils/haptics.ts), one per
+ * transition and never from a move that stays where it is: `start` on a press (`tapStart`, shorter, on a
+ * plain activation), `lock` when the slide locks, `armed` when the thumb crosses the cancel distance
+ * and `disarmed` when it comes back before letting go (only after it armed), `send` on the release that
+ * sends, `discard` on the release that throws away an armed slide. Nothing for a tap's lock, a hold too
+ * short, a `pointercancel`, the page leaving: no gesture of the person's is going on then.
+ *
  * Direction: "towards the cancel side" is the start side of the line, so left in LTR and right in
  * RTL (the caller says which, `rtl`); up is up in both.
  */
@@ -33,6 +40,8 @@ export const TAP_MS = 300
 
 /** A held recording released before this many ms is too short to send and is discarded. */
 export const TOO_SHORT_MS = 700
+
+import type { VoiceHaptic } from '../haptics'
 
 export type HoldPhase = 'idle' | 'holding' | 'locked' | 'cancelled' | 'sent'
 
@@ -80,6 +89,8 @@ export type HoldEffect =
   | { type: 'send' }
   | { type: 'discard'; why: DiscardWhy }
   | { type: 'lock'; how: LockHow }
+  /** One haptic, for a transition (never repeated while the thumb stays past a threshold). */
+  | { type: 'haptic'; kind: VoiceHaptic }
 
 export interface HoldStep {
   state: HoldState
@@ -112,14 +123,16 @@ export function lockProgress(state: Pick<HoldState, 'lift'>): number {
   return Math.min(1, Math.max(0, state.lift / HOLD_LOCK_PX))
 }
 
+const haptic = (kind: VoiceHaptic): HoldEffect => ({ type: 'haptic', kind })
+
 const stay = (state: HoldState): HoldStep => ({ state, effects: [] })
 
-function lock(state: HoldState, how: LockHow): HoldStep {
-  return { state: { ...state, phase: 'locked', armed: false, lockedBy: how }, effects: [{ type: 'lock', how }] }
+function lock(state: HoldState, how: LockHow, ...extra: HoldEffect[]): HoldStep {
+  return { state: { ...state, phase: 'locked', armed: false, lockedBy: how }, effects: [{ type: 'lock', how }, ...extra] }
 }
 
-function discard(state: HoldState, why: DiscardWhy): HoldStep {
-  return { state: { ...state, phase: 'cancelled', armed: false, discardedFor: why }, effects: [{ type: 'discard', why }] }
+function discard(state: HoldState, why: DiscardWhy, ...extra: HoldEffect[]): HoldStep {
+  return { state: { ...state, phase: 'cancelled', armed: false, discardedFor: why }, effects: [{ type: 'discard', why }, ...extra] }
 }
 
 /** The next state for an event, and what to do about it. Events that mean nothing in a state change nothing. */
@@ -140,14 +153,14 @@ export function holdStep(state: HoldState, event: HoldEvent): HoldStep {
           startY: event.y,
           startedAt: event.at,
         },
-        effects: [{ type: 'start' }],
+        effects: [{ type: 'start' }, haptic('start')],
       }
     }
 
     case 'tap': {
       if (!free) return stay(state)
       const locked: HoldState = { ...initialHold(), phase: 'locked', lockedBy: 'tap' }
-      return { state: locked, effects: [{ type: 'start' }, { type: 'lock', how: 'tap' }] }
+      return { state: locked, effects: [{ type: 'start' }, { type: 'lock', how: 'tap' }, haptic('tapStart')] }
     }
 
     case 'move': {
@@ -157,17 +170,20 @@ export function holdStep(state: HoldState, event: HoldEvent): HoldStep {
       const lift = Math.max(0, state.startY - event.y)
       const moved = { ...state, cancel, lift }
       // Whichever way the thumb mostly goes decides: up locks at once, the cancel waits for the release.
-      if (lift >= HOLD_LOCK_PX && lift >= cancel) return lock(moved, 'slide')
-      return { state: { ...moved, armed: cancel >= HOLD_CANCEL_PX && cancel > lift }, effects: [] }
+      if (lift >= HOLD_LOCK_PX && lift >= cancel) return lock(moved, 'slide', haptic('lock'))
+      const armed = cancel >= HOLD_CANCEL_PX && cancel > lift
+      // One buzz when it arms, one short pulse when it disarms: on the change, not on every move past it.
+      const effects: HoldEffect[] = armed === state.armed ? [] : [haptic(armed ? 'armed' : 'disarmed')]
+      return { state: { ...moved, armed }, effects }
     }
 
     case 'release': {
       if (state.phase !== 'holding' || event.pointerId !== state.pointerId) return stay(state)
-      if (state.armed) return discard(state, 'slide')
+      if (state.armed) return discard(state, 'slide', haptic('discard'))
       const held = event.at - state.startedAt
       if (!event.live || held < TAP_MS) return lock(state, 'tap')
       if (held < TOO_SHORT_MS) return discard(state, 'short')
-      return { state: { ...state, phase: 'sent' }, effects: [{ type: 'send' }] }
+      return { state: { ...state, phase: 'sent' }, effects: [{ type: 'send' }, haptic('send')] }
     }
 
     case 'pointercancel': {

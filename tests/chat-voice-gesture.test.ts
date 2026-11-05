@@ -22,16 +22,21 @@ import {
 const X = 300
 const Y = 600
 
-/** Runs the events in order from a state, returning the last state and every effect there was. */
+/** The effects that are not haptics (the recorder's: start, send, discard, lock). */
+const plain = (effects: HoldEffect[]) => effects.filter(effect => effect.type !== 'haptic')
+/** The haptics among them, by kind. */
+const kinds = (effects: HoldEffect[]) => effects.flatMap(effect => (effect.type === 'haptic' ? [effect.kind] : []))
+
+/** Runs the events in order from a state: the last state, the recorder's effects, and the haptics (by kind). */
 function run(events: HoldEvent[], from: HoldState = initialHold()) {
   let state = from
-  const effects: HoldEffect[] = []
+  const all: HoldEffect[] = []
   for (const event of events) {
     const step = holdStep(state, event)
     state = step.state
-    effects.push(...step.effects)
+    all.push(...step.effects)
   }
-  return { state, effects }
+  return { state, effects: plain(all), haptics: kinds(all) }
 }
 
 const press = (at = 0, rtl = false): HoldEvent => ({ type: 'press', pointerId: 1, x: X, y: Y, at, rtl })
@@ -279,7 +284,7 @@ describe('one pointer', () => {
       expect(again.state.phase).toBe('holding')
       expect(again.state.pointerId).toBe(7)
       expect(again.state.cancel).toBe(0)
-      expect(again.effects).toEqual([{ type: 'start' }])
+      expect(plain(again.effects)).toEqual([{ type: 'start' }])
     }
   })
 
@@ -289,5 +294,58 @@ describe('one pointer', () => {
       expect(step.state.phase).toBe('idle')
       expect(step.effects).toEqual([])
     }
+  })
+})
+
+describe('the haptics', () => {
+  it('buzzes once on the press: the microphone is on', () => {
+    expect(run([press()]).haptics).toEqual(['start'])
+  })
+
+  it('gives a tap or a key only the short start pulse, nothing for its lock', () => {
+    expect(run([{ type: 'tap' }]).haptics).toEqual(['tapStart'])
+    // A press let go at once is a tap too: the start pulse of the press, and none for the lock it falls back to.
+    expect(run([press(0), release(TAP_MS - 1)]).haptics).toEqual(['start'])
+    expect(run([press(0), release(2500, false)]).haptics).toEqual(['start'])
+  })
+
+  it('pulses the lock once, when the slide locks, and not again for what the finger does after', () => {
+    expect(run([press(0), move(0, -40), move(0, -HOLD_LOCK_PX), move(0, -120), release(3000)]).haptics).toEqual(['start', 'lock'])
+  })
+
+  it('buzzes once when the thumb crosses the cancel distance, however far it goes on or how many moves', () => {
+    const moves = [-30, -HOLD_CANCEL_PX + 1, -HOLD_CANCEL_PX, -HOLD_CANCEL_PX - 10, -HOLD_CANCEL_PX - 40, -HOLD_CANCEL_PX - 41, -HOLD_CANCEL_PX - 41].map(dx => move(dx, 0))
+    expect(run([press(0), ...moves]).haptics).toEqual(['start', 'armed'])
+  })
+
+  it('gives the short pulse back only when it disarms, and not for moves that never armed', () => {
+    expect(run([press(0), move(-20, 0), move(-60, 0), move(-10, 0)]).haptics).toEqual(['start'])
+    expect(run([press(0), move(-HOLD_CANCEL_PX, 0), move(-20, 0), move(-10, 0), move(-5, 0)]).haptics).toEqual(['start', 'armed', 'disarmed'])
+  })
+
+  it('arms and disarms again each time the thumb crosses', () => {
+    const { haptics } = run([press(0), move(-HOLD_CANCEL_PX, 0), move(-10, 0), move(-HOLD_CANCEL_PX - 5, 0)])
+    expect(haptics).toEqual(['start', 'armed', 'disarmed', 'armed'])
+  })
+
+  it('confirms a slide-away on the release with the long pattern, once, after the arming buzz', () => {
+    expect(run([press(0), move(-HOLD_CANCEL_PX, 0), release(3000)]).haptics).toEqual(['start', 'armed', 'discard'])
+  })
+
+  it('pulses once for the release that sends', () => {
+    expect(run([press(0), move(-10, -10), release(TOO_SHORT_MS + 1)]).haptics).toEqual(['start', 'send'])
+  })
+
+  it('stays silent when a hold is thrown away by being too short, a pointercancel or the page leaving', () => {
+    expect(run([press(0), release(TAP_MS + 10)]).haptics).toEqual(['start'])
+    expect(run([press(0), { type: 'pointercancel', pointerId: 1, live: true }]).haptics).toEqual(['start'])
+    expect(run([press(0), { type: 'hidden' }]).haptics).toEqual(['start'])
+    expect(run([press(0), { type: 'blur', live: true }]).haptics).toEqual(['start'])
+  })
+
+  it('has none for a locked-by-system pointercancel, and none for ignored events (a second finger, nothing held)', () => {
+    expect(run([press(0), move(-(HOLD_LOCK_PX + 20), -(HOLD_LOCK_PX + 5)), { type: 'pointercancel', pointerId: 1, live: true }]).haptics).toEqual(['start', 'armed'])
+    expect(run([press(0), move(-HOLD_CANCEL_PX, 0, 2), release(5000, true, 2)]).haptics).toEqual(['start'])
+    expect(run([move(-200, 0), release(1000)]).haptics).toEqual([])
   })
 })
