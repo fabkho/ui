@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/fabkho/ui/compare/v0.12.0...v0.13.0) (2026-11-07)
+
+
+### Features
+
+* **chat:** a split send button for the audience, and the actions row folds with the keyboard, not the focus ([#55](https://github.com/fabkho/ui/issues/55)) ([4eb5f06](https://github.com/fabkho/ui/commit/4eb5f068ad3ae3009a643c21a754b14947618ff1))
+
 ## [0.12.0](https://github.com/fabkho/ui/compare/v0.11.0...v0.12.0) (2026-11-05)
 
 
