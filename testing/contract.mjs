@@ -50,6 +50,10 @@ export const OWN_VARIABLES = [
   '--voice-corner-tail',
   '--face',
   '--ring',
+  '--split-bg',
+  '--split-fg',
+  '--split-idle',
+  '--split-edge',
 ]
 
 /**
@@ -65,6 +69,12 @@ export const OPTIONAL_VARIABLES = [
   '--hit-up',
   '--hit-down',
   '--avatar-stack-ring',
+  '--composer-tone-neutral-bg',
+  '--composer-tone-neutral-fg',
+  '--composer-tone-accent-bg',
+  '--composer-tone-accent-fg',
+  '--composer-tone-quiet-bg',
+  '--composer-tone-quiet-fg',
 ]
 
 const read = (path) => readFileSync(path, 'utf8')

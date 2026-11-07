@@ -63,6 +63,7 @@ layer's components.
    Families: colours (`--color-*`, incl. `cloth1…6`), elevation (`shadow-*`), `--opacity-glow` and `--opacity-halo`,
    blur, spacing, radius, sizes, strokes, `--font-sans|mono|serif`, text styles, `--duration-*` and `--ease-*`,
    `color-scheme`. Optional, with fallbacks: `--glass-solid`, `--glass-scale`, `--veil-solid`, `--size-target`, `--avatar-stack-ring` (the ring round a stack of faces),
+   `--composer-tone-{neutral,accent,quiet}-{bg,fg}` (the split send button's cues),
    `--hit-up`, `--hit-down`. Themes are `html[data-theme='<name>']`; only colours change between them.
 2. **Copy** (`app.config.ts`, `ui.text`). English defaults; an app overrides them:
 
@@ -135,6 +136,13 @@ one accessible name), `UiSheet` prop `back` + event `back` (a configurable left 
 **Added for confirmations (additive, next minor):** `UiConfirm` prop `cancelLabel` (this one question's own word for
 Cancel, "Keep it", where the app's `ui.text.cancel` is not what it should say; without it the dialog says exactly what
 it said before, and Cancel keeps its place, its test id and its job).
+
+**Added for the notes composer (additive, 0.13):** `UiComposer` props `sendOptions` (`{ value, label, hint?, icon?, tone?, disabled? }[]`),
+`v-model:sendAs` and `sendAsLabel`, slot `sendMenu`, the word `ui.text.chat.composer.sendAs` and the optional variables
+`--composer-tone-{neutral,accent,quiet}-{bg,fg}`: a split send button, a tab that opens a "Send as" menu (APG menu button) and
+a send button that sends in the selected option and shows it (icon, tone, words), with the microphone beside the tab. The
+`actions` row of the composer now folds only while the field has the focus **and** a soft keyboard is up (it stayed folded
+after Android's back button closed the keyboard; it never folds without a soft keyboard). Without `sendOptions` nothing changes.
 
 ## Developing it
 

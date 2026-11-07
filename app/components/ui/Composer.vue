@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UiComposerChip from './ComposerChip.vue'
 import UiIcon from './Icon.vue'
+import { useKeyboardViewport } from '../../composables/useKeyboardInset'
 import { useRovingToolbar } from '../../composables/useRovingToolbar'
 import { useUiText } from '../../composables/useUiText'
 import { useVoiceRecorder } from '../../composables/useVoiceRecorder'
@@ -21,6 +22,7 @@ import {
 } from '../../utils/chat/voiceGesture'
 import { fillWords } from '../../utils/chat/words'
 import type { BubbleQuote } from '../../utils/chat/message'
+import { actionsFold, isMarked, menuHints, menuMaxHeight, menuTarget, selectedOption, toneOf, type SendOption } from '../../utils/chat/sendAs'
 
 // The composer (moved into the base unchanged in look and behaviour): a search palette's query
 // row — a glass capsule floating over the page where the tab bar
@@ -28,10 +30,44 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // there is nothing to send). "Photo" (the phone's own picker; with `photoAccept`), "GIF" (the app's
 // GIF picker, UiGifPicker; with `gifs` — keyboard GIFs cannot work, Chrome on Android refuses
 // inserting images from the keyboard into a web page) and the app's own chips (the `actions` slot,
-// UiComposerChip: "Share number", say; a toolbar for assistive tech, one tab stop with the arrow keys along it) float above it as small glass pills, as filter chips float. While the field has the keyboard they fold away: the row's room goes to the thread
-// and the capsule stands alone on the keyboard, as in iMessage. They come back when the field is left
-// (a drag on the thread closes the keyboard, UiChatThread). Sending never waits: the app shows the
+// UiComposerChip: "Share number", say; a toolbar for assistive tech, one tab stop with the arrow keys along it) float above it as small glass pills, as filter chips float.
+// THE FOLD RULE: the row folds (its room goes to the thread and the capsule stands alone on the keyboard, as in
+// iMessage) only while the field has the focus AND a soft keyboard is up (`useKeyboardViewport`, as UiChatThread
+// reads it: `shown`); it unfolds when the keyboard goes away even if the field keeps the focus (Android's back
+// button closes the keyboard without a blur), and where there is no soft keyboard (a desktop) it never folds.
+// A drag on the thread closes the keyboard (UiChatThread). Sending never waits: the app shows the
 // message at once.
+//
+// SEND AS (`sendOptions`, `v-model:sendAs`, `sendAsLabel`; added in 0.13): the send button becomes a split button.
+// A small TAB at its start side opens a compact menu of the ways of sending (an audience, say: Only me, Friends,
+// Everyone: `{ value, label, hint?, icon?, tone?, disabled? }`, icons from UiIcon); the button itself still sends,
+// in the option that is selected. Absent or empty `sendOptions`: nothing of this is drawn and the button is as
+// it was (Trappist, BetterReads' buddy room). The options live IN the button, so nothing about them ever folds with
+// the keyboard.
+//  - THE CUE RULE: the selected option is shown by the button itself, before anything is sent. Its icon is on the
+//    tab; its `tone` colours the whole pill while there is something to send (`data-tone` on the capsule):
+//    `neutral` (default) the usual ink button, `accent` the deep amber (`--color-accent-ink`), `quiet` a raised,
+//    calmer one. A MARKED option (any tone but neutral, or one without an icon) also says its `label` on the tab, so
+//    the audience is read, not only seen; the neutral one is the icon alone. The send button's name says it too
+//    ("Send · Everyone"), the tab's is "`sendAsLabel`: label" (words: `ui.text.chat.composer.sendAs`). With nothing
+//    to send the pill is a quiet fill whatever the tone. An app restyles a tone with `--composer-tone-<tone>-bg` and
+//    `-fg` (optional variables, set on the composer or above it); the slot `sendMenu` (scoped `close`) adds the app's
+//    own rows to the menu (role="menuitem", "menuitemcheckbox" or "menuitemradio", tabindex="-1", they join the arrows).
+//  - THE MENU is the APG menu button: the tab has aria-haspopup="menu" and aria-expanded; the popover is
+//    role="menu" with "menuitemradio" items (aria-checked, 44 px high, label and hint, the words wrap at 200 %); the
+//    focus moves in to the selected one on open; Arrow Up / Down move (and wrap), Home / End jump, Enter or Space
+//    chooses and closes, Escape closes and the focus goes back to the tab, Tab leaves from the tab, a tap outside
+//    closes. It opens ABOVE the capsule, on its end side. With the keyboard up (the same visual-viewport reading as
+//    the fold) a tap on the tab keeps the field's focus, so the keyboard stays and the menu does not jump; the menu
+//    stays within what is in view, and on a short screen (under `MENU_FULL_ROOM`) drops its hint lines (a held-back
+//    option keeps its reason). Reduced motion: no rise.
+//  - WITH THE MICROPHONE the tab stays beside it, so the audience is chosen before recording; the hold gesture's
+//    press target is the microphone alone, never the tab. The tab goes while recording (the audience was chosen). The
+//    app may pass `voiceMaxMs` for some options only; when it changes at run time the microphone and send trade
+//    places beside the field, which is not touched: the text and the focus stay (a keyboard focus that stood on the
+//    button moves to the one that replaces it, and a recording whose microphone is gone is thrown away).
+//  - The selected option is the one whose `value` is in `sendAs` (else the first; without a bound value the choice
+//    is kept inside). `send` and `voice` carry no audience: the app reads its own `sendAs`. Rules: utils/chat/sendAs.ts.
 //
 // Voice messages (with `voiceMaxMs`, the app's longest recording), as WhatsApp does them: while the field
 // is empty the microphone stands where send is.
@@ -83,6 +119,8 @@ import type { BubbleQuote } from '../../utils/chat/message'
 // takes it back. It stays while the keyboard is up (the chips fold away, the quote is what is being
 // written about), and the field keeps the focus through both.
 const text = defineModel<string>({ required: true })
+/** The selected option of `sendOptions` (its `value`). Without a bound value the first one is selected, and the choice is kept here. */
+const sendAs = defineModel<string>('sendAs')
 const props = withDefaults(
   defineProps<{
     /** The GIF chip (the app has a GIF provider). */
@@ -113,6 +151,15 @@ const props = withDefaults(
     noteLabel?: string
     /** The message being answered, as the quote over the capsule; null when it answers nothing. */
     quote?: Pick<BubbleQuote, 'name' | 'preview'> | null
+    /**
+     * The ways of sending, as a split send button: a small tab beside the send button opens a menu of them, the
+     * send button sends in the selected one. Each is `{ value, label, hint?, icon?, tone?, disabled? }`; the
+     * selected one is shown by the button itself (its icon, its `tone`, its words when the tone is not
+     * `neutral`). Absent or empty: the send button is what it always was.
+     */
+    sendOptions?: SendOption[]
+    /** The tab's accessible name and the menu's title; when not given, `ui.text.chat.composer.sendAs`. */
+    sendAsLabel?: string
   }>(),
   {
     gifs: false,
@@ -128,6 +175,8 @@ const props = withDefaults(
     note: null,
     noteLabel: undefined,
     quote: null,
+    sendOptions: undefined,
+    sendAsLabel: undefined,
   },
 )
 const emit = defineEmits<{
@@ -392,8 +441,18 @@ function picked(event: Event) {
 }
 
 const field = ref<HTMLTextAreaElement | null>(null)
-/** The field has the focus (the keyboard is up): the chips fold away. */
+/** The field has the focus. */
 const focused = ref(false)
+/** The split send button's menu is open. */
+const menuOpen = ref(false)
+/**
+ * The soft keyboard (useKeyboardViewport, as UiChatThread reads it): `shown` is false where there is none (a desktop,
+ * a hardware keyboard) and after Android's back button has closed it with the field still focused. Read while the field
+ * has the focus, and while the menu is open (its room above the keyboard).
+ */
+const keyboard = useKeyboardViewport(() => focused.value || menuOpen.value)
+/** The chips fold away only while the field has the focus AND the keyboard is up: not for the focus alone. */
+const folded = computed(() => actionsFold({ focused: focused.value, keyboard: keyboard.shown.value }))
 const canSend = computed(() => text.value.trim().length > 0)
 const placeholderText = computed(() => props.placeholder ?? chat.value.composer.placeholder)
 const labelText = computed(() => props.label ?? chat.value.composer.label)
@@ -416,6 +475,7 @@ function grow() {
   const wanted = el.scrollHeight + Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth)
   el.style.height = `${Math.min(wanted, max)}px`
   el.style.overflowY = wanted > max ? 'auto' : 'hidden'
+
 }
 
 watch(text, () => nextTick(grow))
@@ -432,10 +492,134 @@ onMounted(() => {
 })
 
 function onKey(event: KeyboardEvent) {
+  // The field kept the focus while the menu opened (a tap with the keyboard up): Escape closes it from here.
+  if (event.key === 'Escape' && menuOpen.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    return closeMenu()
+  }
   if (event.key !== 'Enter' || event.shiftKey || event.isComposing || !desktop) return
   event.preventDefault()
   submit()
 }
+
+// ---------------------------------------------------------------- the split send button
+// `sendOptions`: the tab opens a menu (APG "Menu button": aria-haspopup, aria-expanded, role="menu" with
+// "menuitemradio" items, arrow keys, Home / End, Escape closes and gives the focus back to the tab), the button
+// sends in the selected option. The rules are utils/chat/sendAs.ts (pure, tests/chat-send-as.test.ts).
+
+const splitOn = computed(() => (props.sendOptions?.length ?? 0) > 0)
+const current = computed(() => selectedOption(props.sendOptions, sendAs.value))
+const tone = computed(() => toneOf(current.value))
+/** The tab says the option's words when it is marked (a tone), or has no icon to say it with. */
+const tabWord = computed(() => isMarked(current.value) || !current.value?.icon)
+const sendAsText = computed(() => props.sendAsLabel ?? chat.value.composer.sendAs)
+const tabName = computed(() => (current.value ? `${sendAsText.value}: ${current.value.label}` : sendAsText.value))
+const sendName = computed(() => (splitOn.value && current.value ? `${chat.value.composer.send} · ${current.value.label}` : chat.value.composer.send))
+
+const menuId = computed(() => `${props.testid}-sendAsMenu`)
+const splitEl = ref<HTMLElement | null>(null)
+const tab = ref<HTMLButtonElement | null>(null)
+const menu = ref<HTMLElement | null>(null)
+/** With the keyboard up on a short screen the menu drops its hint lines and stays within what is in view. */
+const menuHint = computed(() => menuHints(keyboard.room.value))
+const menuStyle = computed(() => {
+  const height = menuMaxHeight(keyboard.room.value)
+  return height === null ? undefined : { maxHeight: `${height}px` }
+})
+
+const menuItems = () => Array.from(menu.value?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])
+
+/** Opens the menu; the focus goes in (the selected item), unless the field keeps it (see `onTab`). */
+async function openMenu(keepField: boolean) {
+  if (menuOpen.value) return
+  menuOpen.value = true
+  await nextTick()
+  if (keepField) return
+  const items = menuItems()
+  const checked = items.find(item => item.getAttribute('aria-checked') === 'true')
+  ;(checked ?? items[0])?.focus({ preventScroll: true })
+}
+
+/** Closes it; if the focus was inside, it goes back to the tab (the item it stood on is leaving). */
+function closeMenu() {
+  if (!menuOpen.value) return
+  if (menu.value?.contains(document.activeElement)) tab.value?.focus({ preventScroll: true })
+  menuOpen.value = false
+}
+
+/**
+ * A tap on the tab with the keyboard up keeps the field's focus (the tab and the items take no focus from a
+ * pointer): moving it into the menu would close the keyboard and the menu would jump with it. Everything else
+ * (the keyboard, a screen reader's activation, a mouse, no soft keyboard) moves the focus in.
+ */
+function onTab(event: MouseEvent) {
+  if (menuOpen.value) return closeMenu()
+  const keepField = event.detail > 0 && keyboard.shown.value && document.activeElement === field.value
+  void openMenu(keepField)
+}
+
+function choose(option: SendOption) {
+  if (option.disabled) return
+  sendAs.value = option.value
+  closeMenu()
+}
+
+function onMenuKey(event: KeyboardEvent) {
+  if (event.altKey || event.ctrlKey || event.metaKey) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    // Not the sheet's or the page's Escape as well.
+    event.stopPropagation()
+    return closeMenu()
+  }
+  if (event.key === 'Tab') {
+    // The menu is not a tab stop: the focus leaves from the tab, the way it came.
+    tab.value?.focus({ preventScroll: true })
+    menuOpen.value = false
+    return
+  }
+  const items = menuItems()
+  const to = menuTarget(event.key, items.indexOf(document.activeElement as HTMLElement), items.length)
+  if (to === null) return
+  event.preventDefault()
+  items[to]?.focus({ preventScroll: true })
+}
+
+/** The focus went somewhere else for good (a script, a screen reader's swipe out of the menu): the menu is over. */
+function onMenuFocusout(event: FocusEvent) {
+  const to = event.relatedTarget
+  if (to instanceof Node && !splitEl.value?.contains(to)) menuOpen.value = false
+}
+
+/** A tap or click outside the split button closes the menu; the focus goes where the person put it. */
+function onOutside(event: PointerEvent) {
+  if (event.target instanceof Node && splitEl.value?.contains(event.target)) return
+  menuOpen.value = false
+}
+watch(menuOpen, (open) => {
+  if (open) document.addEventListener('pointerdown', onOutside, true)
+  else document.removeEventListener('pointerdown', onOutside, true)
+})
+onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside, true))
+// Recording takes the tab away (the audience is chosen before it); no options, no menu.
+watch([recording, splitOn], ([isRecording, on]) => {
+  if (isRecording || !on) menuOpen.value = false
+})
+
+// The app changes `voiceMaxMs` as the option changes (voice for a private scope only): the microphone and send trade
+// places beside the field, which is not touched, so the text and the focus stay. A keyboard focus that stood on the
+// button that is leaving moves to its replacement; a recording whose microphone is gone is thrown away.
+watch(
+  voiceOffered,
+  (offered) => {
+    const active = document.activeElement
+    const onButton = active instanceof HTMLElement && active.hasAttribute('data-go') && splitEl.value?.contains(active)
+    if (!offered && recording.value) recorder.cancel()
+    if (onButton) void nextTick(() => splitEl.value?.querySelector<HTMLElement>('[data-go]')?.focus({ preventScroll: true }))
+  },
+  { flush: 'pre' },
+)
 
 /**
  * Closes the keyboard, as a drag on the thread does (iMessage): not while a voice message is being
@@ -463,8 +647,8 @@ defineExpose({ focus: () => field.value?.focus(), blur })
     <div
       v-if="compact && (note || photoAccept || gifs || $slots.actions)"
       class="actions"
-      :data-folded="(!note && focused) || undefined"
-      :inert="(!note && focused) || undefined"
+      :data-folded="(!note && folded) || undefined"
+      :inert="(!note && folded) || undefined"
       :data-testid="`${testid}.actions`"
     >
       <div ref="chips" class="actions-row flex flex-wrap gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
@@ -491,8 +675,8 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         <span>{{ recorder.limitReached.value ? chat.voice.limit : recorder.state.value === 'stopped' ? chat.voice.stopped : chat.voice.recording }}</span>
       </p>
     </div>
-    <!-- The row folds (its room goes to 0) while the field has the keyboard. -->
-    <div v-else-if="photoAccept || gifs || $slots.actions" class="actions" :data-folded="focused || undefined" :inert="focused || undefined" :data-testid="`${testid}.actions`">
+    <!-- The row folds (its room goes to 0) while the field has the focus and the soft keyboard is up. -->
+    <div v-else-if="photoAccept || gifs || $slots.actions" class="actions" :data-folded="folded || undefined" :inert="folded || undefined" :data-testid="`${testid}.actions`">
       <div ref="chips" class="actions-row flex flex-wrap gap-sm" role="toolbar" :aria-label="chat.composer.actions" @keydown="chipKeys.onKeydown" @focusin="chipKeys.onFocusin">
         <UiComposerChip v-if="photoAccept" :label="chat.composer.photoLabel" icon="camera" :data-testid="`${testid}.photo`" @click="picker?.click()">
           {{ chat.composer.photo }}
@@ -523,7 +707,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       </button>
     </div>
 
-    <form class="capsule glass edge relative flex items-end gap-xs pl-md shadow-palette" :data-testid="`${testid}.composer`" @submit.prevent="submit">
+    <form class="capsule glass edge relative flex items-end gap-xs pl-md shadow-palette" :data-tone="splitOn ? tone : undefined" :data-testid="`${testid}.composer`" @submit.prevent="submit">
       <input
         v-if="photoAccept"
         ref="picker"
@@ -583,7 +767,8 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         <button
           v-if="panel"
           type="button"
-          class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill bg-ink text-on-ink shadow-button"
+          class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill shadow-button"
+            :class="splitOn ? 'voice-send' : 'bg-ink text-on-ink'"
           :aria-label="chat.voice.send"
           :disabled="recorder.state.value === 'starting' || undefined"
           :data-testid="`${testid}.voiceSend`"
@@ -613,53 +798,103 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         @focus="focused = true"
         @blur="focused = false"
       />
-      <button
-        v-if="!recording && (canSend || compact || !voiceOffered)"
-        type="submit"
-        class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill"
-        :class="canSend ? 'bg-ink text-on-ink shadow-button' : 'text-ink-ghost'"
-        :aria-label="chat.composer.send"
-        :aria-disabled="!canSend || undefined"
-        :data-testid="`${testid}.send`"
-        @pointerdown.prevent
-      >
-        <UiIcon name="send" :size="18" class="send-icon" />
-      </button>
-      <!-- Nothing to send yet: the microphone takes its place. Held, it stays (it owns the pointer) and the
-           lock mark stands over it; locked, the panel takes its place. -->
-      <span v-else-if="(!recording || holding) && !compact && voiceOffered" class="mic relative flex size-(--size-button-md) shrink-0">
-        <span
-          v-if="hold.phase === 'holding'"
-          class="lock glass edge pointer-events-none absolute flex flex-col items-center gap-xxs rounded-pill py-xs text-ink-muted"
-          aria-hidden="true"
-          :style="lockStyle"
-          :data-testid="`${testid}.holdLock`"
-        >
-          <UiIcon name="lock" :size="16" />
-          <UiIcon name="chevron" :size="14" class="-rotate-90" />
-        </span>
-        <span v-if="voiceHold" :id="`${testid}-recordHint`" class="sr-only">{{ chat.voice.recordHint }}</span>
+      <!-- The send button, split when the app gives `sendOptions`: the tab opens the menu, the button sends (or records) in the option that is selected. One wrapper either way; it is only drawn as the pill with the tab. -->
+      <div ref="splitEl" :class="splitOn && !recording ? 'split' : 'contents'" :data-live="(splitOn && canSend) || undefined" :data-testid="splitOn ? `${testid}.split` : undefined">
         <button
-          ref="mic"
+          v-if="splitOn && !recording"
+          ref="tab"
           type="button"
-          class="send flex size-full items-center justify-center rounded-pill text-ink-muted"
-          :class="voiceHold ? 'holdable' : ''"
-          :style="micStyle"
-          :aria-label="chat.voice.record"
-          :aria-describedby="voiceHold ? `${testid}-recordHint` : undefined"
-          :data-testid="`${testid}.record`"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointercancel="onPointerCancel"
-          @lostpointercapture="onLostCapture"
-          @contextmenu.prevent
-          @keydown="onRecordKey"
-          @click="onRecordClick"
+          class="tab"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
+          :aria-controls="menuOpen ? menuId : undefined"
+          :aria-label="tabName"
+          :data-testid="`${testid}.sendAs`"
+          @pointerdown.prevent
+          @click="onTab"
         >
-          <UiIcon name="mic" :size="20" />
+          <UiIcon v-if="current?.icon" :name="current.icon" :size="18" />
+          <span v-if="tabWord" class="tab-word" :data-testid="`${testid}.sendAsWord`">{{ current?.label }}</span>
+          <UiIcon name="chevron" :size="10" class="-rotate-90" />
         </button>
-      </span>
+        <div v-if="menuOpen && splitOn && !recording" class="pop" :style="menuStyle" :data-testid="`${testid}.sendAsPopover`">
+          <p v-if="menuHint" class="menu-cap" aria-hidden="true">{{ sendAsText }}</p>
+          <div :id="menuId" ref="menu" role="menu" :aria-label="sendAsText" :data-testid="`${testid}.sendAsMenu`" @keydown="onMenuKey" @focusout="onMenuFocusout">
+            <button
+              v-for="option in sendOptions"
+              :key="option.value"
+              type="button"
+              role="menuitemradio"
+              tabindex="-1"
+              class="menu-item"
+              :aria-checked="option.value === current?.value"
+              :aria-disabled="option.disabled || undefined"
+              :data-tone="toneOf(option)"
+              :data-testid="`${testid}.sendAs.${option.value}`"
+              @pointerdown.prevent
+              @click="choose(option)"
+            >
+              <UiIcon v-if="option.icon" :name="option.icon" :size="20" class="menu-icon" />
+              <span class="menu-text">
+                <span>{{ option.label }}</span>
+                <small v-if="option.hint && (menuHint || option.disabled)">{{ option.hint }}</small>
+              </span>
+              <UiIcon name="check" :size="18" class="menu-check" />
+            </button>
+            <!-- The app's own rows (a switch, say): role="menuitem", "menuitemcheckbox" or "menuitemradio" and tabindex="-1" take part in the arrow keys. -->
+            <slot name="sendMenu" :close="closeMenu" />
+          </div>
+        </div>
+        <button
+          v-if="!recording && (canSend || compact || !voiceOffered)"
+          type="submit"
+          class="send flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill"
+          :class="splitOn ? 'gb' : canSend ? 'bg-ink text-on-ink shadow-button' : 'text-ink-ghost'"
+          :aria-label="sendName"
+          data-go
+          :aria-disabled="!canSend || undefined"
+          :data-testid="`${testid}.send`"
+          @pointerdown.prevent
+        >
+          <UiIcon name="send" :size="18" class="send-icon" />
+        </button>
+        <!-- Nothing to send yet: the microphone takes its place. Held, it stays (it owns the pointer) and the
+             lock mark stands over it; locked, the panel takes its place. -->
+        <span v-else-if="(!recording || holding) && !compact && voiceOffered" class="mic relative flex size-(--size-button-md) shrink-0" :class="splitOn ? 'mic-split' : ''">
+          <span
+            v-if="hold.phase === 'holding'"
+            class="lock glass edge pointer-events-none absolute flex flex-col items-center gap-xxs rounded-pill py-xs text-ink-muted"
+            aria-hidden="true"
+            :style="lockStyle"
+            :data-testid="`${testid}.holdLock`"
+          >
+            <UiIcon name="lock" :size="16" />
+            <UiIcon name="chevron" :size="14" class="-rotate-90" />
+          </span>
+          <span v-if="voiceHold" :id="`${testid}-recordHint`" class="sr-only">{{ chat.voice.recordHint }}</span>
+          <button
+            ref="mic"
+            type="button"
+            data-go
+            class="send flex size-full items-center justify-center rounded-pill text-ink-muted"
+            :class="voiceHold ? 'holdable' : ''"
+            :style="micStyle"
+            :aria-label="chat.voice.record"
+            :aria-describedby="voiceHold ? `${testid}-recordHint` : undefined"
+            :data-testid="`${testid}.record`"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerCancel"
+            @lostpointercapture="onLostCapture"
+            @contextmenu.prevent
+            @keydown="onRecordKey"
+            @click="onRecordClick"
+          >
+            <UiIcon name="mic" :size="20" />
+          </button>
+        </span>
+      </div>
     </form>
   </div>
 </template>
@@ -878,5 +1113,192 @@ defineExpose({ focus: () => field.value?.focus(), blur })
 .field {
   padding-block: calc((var(--size-button-md) - var(--text-body--line-height)) / 2);
   line-height: var(--text-body--line-height);
+}
+
+/* ------------------------------------------------------------------ the split send button
+   One pill: the tab (the option's icon, its words when marked, a chevron) and the send button (or the
+   microphone). The button itself is the cue: idle it is a quiet fill; with something to send it takes the
+   option's tone. The tone hooks are on the capsule (`data-tone`: neutral, accent, quiet) and an app may set
+   `--composer-tone-<tone>-bg` and `-fg` (optional, these are the fallbacks). Accent is the deep amber
+   (`--color-accent-ink`, 5.5:1 under the light text in the light theme), not the bright one. */
+.capsule {
+  --split-bg: var(--composer-tone-neutral-bg, var(--color-ink));
+  --split-fg: var(--composer-tone-neutral-fg, var(--color-on-ink));
+  --split-idle: var(--color-ink-muted);
+  --split-edge: 0 0 #0000;
+}
+.capsule[data-tone='accent'] {
+  --split-bg: var(--composer-tone-accent-bg, var(--color-accent-ink));
+  --split-fg: var(--composer-tone-accent-fg, var(--color-on-ink));
+  --split-idle: var(--color-accent-ink);
+}
+.capsule[data-tone='quiet'] {
+  --split-bg: var(--composer-tone-quiet-bg, var(--color-surface-raised));
+  --split-fg: var(--composer-tone-quiet-fg, var(--color-ink));
+  --split-edge: inset 0 0 0 var(--stroke-hairline) var(--color-hairline-strong);
+}
+.split {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  height: var(--size-button-md);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-fill-strong);
+  color: var(--split-idle);
+  transition:
+    background-color var(--duration-quick) var(--ease-standard),
+    color var(--duration-quick) var(--ease-standard);
+}
+.split[data-live] {
+  background-color: var(--split-bg);
+  color: var(--split-fg);
+  box-shadow: var(--shadow-button), var(--split-edge);
+}
+.tab,
+.gb {
+  position: relative;
+  color: inherit;
+}
+/* The finger's 44 around the 40 drawn. */
+.tab::after,
+.gb::after {
+  position: absolute;
+  inset: -2px 0;
+  content: '';
+}
+.tab {
+  display: inline-flex;
+  min-width: var(--size-touch);
+  min-height: var(--size-button-md);
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding-inline: var(--spacing-ms) var(--spacing-xs);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+/* The seam between the tab and the button. */
+.tab::before {
+  position: absolute;
+  inset-block: calc(var(--spacing-sm) + var(--spacing-xxs));
+  inset-inline-end: 0;
+  width: var(--stroke-hairline);
+  background-color: currentcolor;
+  content: '';
+  opacity: 0.3;
+}
+.gb {
+  width: var(--size-touch);
+}
+.gb[aria-disabled='true'] {
+  color: var(--color-ink-ghost);
+}
+.mic-split {
+  width: var(--size-touch);
+}
+.tab:focus-visible {
+  outline: var(--stroke-focus) solid var(--color-accent);
+  outline-offset: 2px;
+}
+/* Inside the row: the menu scrolls, and a ring outside would be cut. */
+.menu-item:focus-visible {
+  outline: var(--stroke-focus) solid var(--color-accent);
+  outline-offset: calc(var(--stroke-focus) * -1);
+}
+/* The recording panel's send keeps the audience's cue. */
+.voice-send {
+  background-color: var(--split-bg);
+  color: var(--split-fg);
+}
+
+/* The menu: above the capsule, on its end side, raised. It grows with the words (rem), never wider than the capsule. */
+.pop {
+  position: absolute;
+  z-index: 6;
+  inset-inline-end: 0;
+  bottom: calc(100% + var(--spacing-sm));
+  box-sizing: border-box;
+  width: max-content;
+  min-width: min(16rem, 100%);
+  max-width: 100%;
+  max-height: 70dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-raised);
+  box-shadow: var(--shadow-palette), inset 0 0 0 var(--stroke-hairline) var(--color-hairline-strong);
+}
+.menu-cap {
+  padding: var(--spacing-sm) var(--spacing-ms) var(--spacing-xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+.menu-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: var(--size-touch);
+  align-items: center;
+  gap: var(--spacing-ms);
+  padding: var(--spacing-xs) var(--spacing-ms);
+  border-radius: var(--radius-md);
+  text-align: start;
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  color: var(--color-ink);
+}
+.menu-item[aria-checked='true'] {
+  background-color: var(--color-fill);
+}
+.menu-item[aria-disabled='true'] {
+  opacity: 0.55;
+}
+.menu-text {
+  min-width: 0;
+  flex: 1;
+}
+.menu-text small {
+  display: block;
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  color: var(--color-ink-muted);
+}
+.menu-icon {
+  flex: none;
+  color: var(--color-ink-muted);
+}
+.menu-check {
+  flex: none;
+  visibility: hidden;
+}
+.menu-item[aria-checked='true'] .menu-check {
+  visibility: visible;
+}
+.menu-item[data-tone='accent'][aria-checked='true'] .menu-icon,
+.menu-item[data-tone='accent'][aria-checked='true'] .menu-check {
+  color: var(--color-accent-ink);
+}
+@media (hover: hover) {
+  .menu-item:not([aria-disabled='true']):hover {
+    background-color: var(--color-fill);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pop {
+    animation: pop-in var(--duration-quick) var(--ease-standard) both;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 </style>
