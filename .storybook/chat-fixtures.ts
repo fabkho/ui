@@ -194,3 +194,36 @@ export const PEOPLE = [
   { id: 'jose', initials: 'JA', label: 'José Álvarez', sublabel: 'Reads with you' },
   { id: 'mira', initials: 'MK', label: 'Mira Keller' },
 ]
+
+/**
+ * Stands in for a soft keyboard in a desktop browser: the visual viewport reads shorter (and says so with a
+ * `resize`), which is all `useKeyboardViewport` goes by. `show()` takes the height of what stays in view (by
+ * default 300 px less than the window); `hide()` is the keyboard closed (Android's back button: the field keeps
+ * its focus). The stand-in is taken away again when a story ends (`resetKeyboard`, in the meta's `afterEach`).
+ */
+let keyboardLevel: number | null = null
+export function fakeKeyboard() {
+  const viewport = window.visualViewport
+  const resize = () => viewport?.dispatchEvent(new Event('resize'))
+  if (viewport && keyboardLevel === null) {
+    Object.defineProperty(viewport, 'height', { configurable: true, get: () => keyboardLevel ?? window.innerHeight })
+  }
+  keyboardLevel = null
+  return {
+    show(height = window.innerHeight - 300) {
+      keyboardLevel = height
+      resize()
+    },
+    hide() {
+      keyboardLevel = null
+      resize()
+    },
+  }
+}
+export function resetKeyboard() {
+  const viewport = window.visualViewport
+  if (!viewport || !Object.getOwnPropertyDescriptor(viewport, 'height')) return
+  keyboardLevel = null
+  viewport.dispatchEvent(new Event('resize'))
+  delete (viewport as { height?: number }).height
+}
