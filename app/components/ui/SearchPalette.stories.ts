@@ -153,3 +153,38 @@ export const Action: Story = {
 
 /** The dark theme, open. */
 export const Night: Story = { args: { query: 'le guin' }, globals: { theme: 'night' }, play: Open.play, render: renderPalette(true) }
+
+/**
+ * As a panel (`inline`): the same card, standing in the page instead of over it — its query row alone at rest,
+ * its answers out while it is open. No veil, no inert page, no rise: it is an app's input, not a layer.
+ */
+function renderInline(startOpen: boolean) {
+  return (args: Record<string, any>) => ({
+    components: { UiSearchPalette },
+    setup() {
+      const query = ref<string>(args.query ?? '')
+      const open = ref(startOpen)
+      const found = computed(() => {
+        const q = query.value.trim().toLowerCase()
+        return q ? BOOKS.filter(book => `${book.title} ${book.author}`.toLowerCase().includes(q)) : []
+      })
+      return { args, open, query, found }
+    },
+    template: `
+      <div class="relative min-h-[520px] bg-surface px-lg pt-xl">
+        <p class="text-body text-ink-muted">The page runs underneath the card: it is fixed to the bottom.</p>
+        <UiSearchPalette
+          v-bind="args"
+          v-model:open="open"
+          v-model:query="query"
+          :status="found.length ? found.length + ' books found' : ''"
+        >${RESULTS}</UiSearchPalette>
+      </div>`,
+  })
+}
+
+/** At rest: the card is its query row and nothing else — the app's input at the bottom of the screen. */
+export const Inline: Story = { args: { inline: true }, render: renderInline(false) }
+
+/** Open: the same card, its answers out above the field; the page behind it keeps its pixels. */
+export const InlineOpen: Story = { args: { inline: true, query: 'le guin' }, render: renderInline(true) }

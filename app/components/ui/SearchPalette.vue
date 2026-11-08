@@ -22,6 +22,13 @@ import { useUiText } from '../../composables/useUiText'
 // goes to the page behind (r10, measured in the iOS Simulator; a Vue `<Transition>` puts its `enter-from`
 // opacity on before the focus could come). Interruptible both ways: a close mid-opening plays back from where
 // the opening had got to, and the other way round.
+//
+// `inline` (added for Einkauf's add field, `polish`: the input at rest *is* the palette): the card is not a
+// layer but a panel standing in the page — the same card, chrome and query row, drawn where the app put it,
+// with the answers in its own room above the field. Nothing of a mode change: no teleport, no veil, no
+// `inert` on the rest of the app, no rise or fade, and no focus taken (the app's field is focused by the
+// finger that tapped it). `open` still means „the answers are out"; the card stands either way, at rest as
+// its query row alone. Escape and a swipe down still close it — closed, the app's field is blurred.
 import { durationToken, easingToken, prefersReducedMotion, timeAt } from '../../utils/motion'
 
 defineOptions({ inheritAttrs: false })
@@ -44,8 +51,13 @@ const props = withDefaults(
     status?: string
     /** `data-testid` prefix: `Palette`, `Backdrop`, `Query`, `Clear`, `Cancel`, `Status`. */
     testid: string
+    /**
+     * A panel in the page, not a modal layer over it (see the top of this file): the card stands at rest,
+     * and `open` only says whether the answers are out. Default `false`, the layer it has always been.
+     */
+    inline?: boolean
   }>(),
-  { cancel: undefined, status: '' },
+  { cancel: undefined, status: '', inline: false },
 )
 const emit = defineEmits<{
   /** A tap on clear emptied the query (the app clears its answers). */
@@ -65,8 +77,10 @@ const veil = useTemplateRef<HTMLElement>('veil')
 const palette = useTemplateRef<HTMLElement>('palette')
 const input = useTemplateRef<HTMLInputElement>('input')
 
-/** On screen: open, or still on its way out. */
+/** On screen: open, or still on its way out — and in a panel, always (it is the app's input at rest). */
 const rendered = ref(false)
+/** The card in the document: the layer's while it is open or leaving, the panel's from the start. */
+const standing = computed(() => props.inline || rendered.value)
 /** On its way out: no taps any more. */
 const closing = ref(false)
 
@@ -83,7 +97,10 @@ function onWindowKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') close()
 }
 
-const { afterLeave } = useModalLayer(open, {
+// Not a layer as a panel: nothing of the app goes inert, focus stays where the finger put it, and the system
+// Back keeps its meaning (it leaves the page; Escape is what closes the panel).
+const layerOpen = computed(() => !props.inline && open.value)
+const { afterLeave } = useModalLayer(layerOpen, {
   elements: () => [veil.value, palette.value],
   initialFocus: () => input.value,
   close,
@@ -128,8 +145,12 @@ function frames(reduced: boolean): [HTMLElement | null, Keyframe[]][] {
   ]
 }
 
-/** Plays the opening or the close from wherever the screen is now (the other one's point, if it was running). */
+/**
+ * Plays the opening or the close from wherever the screen is now (the other one's point, if it was running).
+ * A panel does not play: its answers are out or they are not, and the card is the app's input either way.
+ */
 function play(direction: Direction) {
+  if (props.inline) return settle(direction)
   const reduced = prefersReducedMotion()
   const at = shown() ?? (direction === 'open' ? 0 : 1)
   for (const animation of animations) animation.cancel()
@@ -171,6 +192,9 @@ watch(
     if (isOpen) {
       window.addEventListener('keydown', onWindowKeydown)
       closing.value = false
+      // A panel was already there, and the finger that tapped the field is what focused it: nothing to
+      // bring in, nothing to focus, nothing to play. Only its answers come out.
+      if (props.inline) return
       rendered.value = true
       await nextTick()
       if (!open.value) return
@@ -180,6 +204,11 @@ watch(
       play('open')
     } else {
       window.removeEventListener('keydown', onWindowKeydown)
+      // Closed, a panel gives the keyboard back: the app's field is blurred, and its own answers are gone.
+      if (props.inline) {
+        input.value?.blur()
+        return
+      }
       if (!rendered.value) return
       closing.value = true
       input.value?.blur()
@@ -204,9 +233,10 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
 </script>
 
 <template>
-  <Teleport to="body">
+  <!-- As a panel the card stays in the app's own tree (nothing teleported) and the page behind keeps taking taps. -->
+  <Teleport to="body" :disabled="inline">
     <button
-      v-if="rendered"
+      v-if="rendered && !inline"
       ref="veil"
       type="button"
       tabindex="-1"
@@ -217,10 +247,10 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
       @click="close"
     />
     <section
-      v-if="rendered"
+      v-if="standing"
       ref="palette"
-      role="dialog"
-      aria-modal="true"
+      :role="inline ? undefined : 'dialog'"
+      :aria-modal="inline ? undefined : 'true'"
       :aria-label="label"
       class="palette float-bottom fixed inset-x-ms z-50 mx-auto flex max-w-(--size-max-content) flex-col overflow-hidden rounded-xl bg-surface-raised shadow-palette edge"
       :class="closing && 'pointer-events-none'"
@@ -228,8 +258,11 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
       :data-testid="`${testid}Palette`"
       v-on="handlers"
     >
-      <!-- The answers, nearest the query at the bottom; the app's list scrolls in here. -->
-      <div class="flex min-h-0 flex-1 flex-col justify-end" data-no-swipe>
+      <!--
+        The answers, nearest the query at the bottom; the app's list scrolls in here. A panel shows them only
+        while it is open, and they do not lift the card: the field at rest is the same field, where it stands.
+      -->
+      <div v-if="!inline || open" class="flex min-h-0 flex-1 flex-col justify-end" data-no-swipe>
         <slot />
         <div class="h-(--stroke-hairline) shrink-0 bg-hairline" aria-hidden="true" />
       </div>
