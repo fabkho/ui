@@ -7,9 +7,10 @@ import { useUiText } from '../../composables/useUiText'
 // A search palette (added for Bookretreats; Libellus' search palette, `components/shell/SearchOverlay.vue`,
 // without its morph out of the tab bar): over the page, which stays put behind it, blurred and veiled, a raised
 // card right above the keyboard. The query row is at its bottom (the search glyph in the lamp colour, the field,
-// clear, Cancel); the answers, the default slot, stand above it, the nearest at the bottom. Closed by Cancel, a
-// tap on the page behind, a swipe down, Escape or the system Back. A modal layer (useModalLayer): the rest of the
-// app is inert, and focus goes back to what opened it.
+// clear, and the row's end after a divider — the `action` slot, Cancel by default); the answers, the default
+// slot, stand above it, the nearest at the bottom. Closed by Cancel, a tap on the page behind, a swipe down,
+// Escape or the system Back. A modal layer (useModalLayer): the rest of the app is inert, and focus goes back to
+// what opened it.
 //
 // The query is the app's: `v-model:query`, and everything else given to the component goes to the `<input>`
 // (`maxlength`, `name`, `autocapitalize`, the combobox's `aria-expanded` / `aria-controls` /
@@ -37,7 +38,7 @@ const props = withDefaults(
     placeholder: string
     /** The clear button's name. */
     clear: string
-    /** Cancel's word; the layer's own (`ui.text.cancel`) by default. */
+    /** Cancel's word, where the `action` slot is not given; the layer's own (`ui.text.cancel`) by default. */
     cancel?: string
     /** What the polite live region says (how many answers came). */
     status?: string
@@ -50,8 +51,11 @@ const emit = defineEmits<{
   /** A tap on clear emptied the query (the app clears its answers). */
   cleared: []
 }>()
-/** The answers, drawn above the query row, the nearest at the bottom. */
-defineSlots<{ default?: () => unknown }>()
+/**
+ * The answers, drawn above the query row, the nearest at the bottom (`default`), and what stands at
+ * the row's end after the divider (`action`): the app's action, or Cancel by default.
+ */
+defineSlots<{ default?: () => unknown; action?: () => unknown }>()
 
 const uiText = useUiText()
 const cancelWord = computed(() => props.cancel ?? uiText.value.cancel)
@@ -263,15 +267,22 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
           <UiIcon name="close" :size="13" bold />
         </button>
         <span class="ml-xs h-ml w-(--stroke-hairline) shrink-0 bg-hairline-strong" aria-hidden="true" />
-        <button
-          type="button"
-          class="min-h-(--size-touch) shrink-0 pl-xs text-body text-ink-muted"
-          :data-testid="`${testid}Cancel`"
-          @pointerdown.prevent
-          @click="close"
-        >
-          {{ cancelWord }}
-        </button>
+        <!--
+          The row's end, after the divider: the app's own action where the palette carries a flow
+          („Add"), and Cancel — the palette's way out — where it is a search. The slot is the app's;
+          what stands there is its drawing, so it decides its own weight and its own size.
+        -->
+        <slot name="action">
+          <button
+            type="button"
+            class="min-h-(--size-touch) shrink-0 pl-xs text-body text-ink-muted"
+            :data-testid="`${testid}Cancel`"
+            @pointerdown.prevent
+            @click="close"
+          >
+            {{ cancelWord }}
+          </button>
+        </slot>
       </div>
       <p class="sr-only" role="status" aria-live="polite" :data-testid="`${testid}Status`">{{ status }}</p>
     </section>
