@@ -57,6 +57,7 @@ async function settled({ open = false } = {}) {
 /** An `action` slot for the flow story: the app's own confirm instead of Cancel. */
 const ADD_ACTION = `
           <template #action>
+            <span class="ml-xs h-ml w-(--stroke-hairline) shrink-0 bg-hairline-strong" aria-hidden="true" />
             <button
               type="button"
               class="flex size-(--size-button-sm) shrink-0 items-center justify-center rounded-pill bg-surface-raised text-ink edge"

@@ -7,7 +7,7 @@ import { useUiText } from '../../composables/useUiText'
 // A search palette (added for Bookretreats; Libellus' search palette, `components/shell/SearchOverlay.vue`,
 // without its morph out of the tab bar): over the page, which stays put behind it, blurred and veiled, a raised
 // card right above the keyboard. The query row is at its bottom (the search glyph in the lamp colour, the field,
-// clear, and the row's end after a divider — the `action` slot, Cancel by default); the answers, the default
+// clear, and the divider and row's end — the `action` slot, Cancel by default); the answers, the default
 // slot, stand above it, the nearest at the bottom. Closed by Cancel, a tap on the page behind, a swipe down,
 // Escape or the system Back. A modal layer (useModalLayer): the rest of the app is inert, and focus goes back to
 // what opened it.
@@ -299,13 +299,14 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
         >
           <UiIcon name="close" :size="13" bold />
         </button>
-        <span class="ml-xs h-ml w-(--stroke-hairline) shrink-0 bg-hairline-strong" aria-hidden="true" />
         <!--
-          The row's end, after the divider: the app's own action where the palette carries a flow
-          („Add"), and Cancel — the palette's way out — where it is a search. The slot is the app's;
-          what stands there is its drawing, so it decides its own weight and its own size.
+          The row's end, after its divider: the app's own action where the palette carries a flow („Add"),
+          and Cancel — the palette's way out — where it is a search. The slot is the app's, divider and all
+          (v0.10.9: it moved in here), so it decides its own weight, its own size and whether anything stands
+          there at all — an add flow whose confirm only belongs to the typing can leave the row bare.
         -->
         <slot name="action">
+          <span class="ml-xs h-ml w-(--stroke-hairline) shrink-0 bg-hairline-strong" aria-hidden="true" />
           <button
             type="button"
             class="min-h-(--size-touch) shrink-0 pl-xs text-body text-ink-muted"
