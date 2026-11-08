@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.9](https://github.com/fabkho/ui/compare/v0.10.8...v0.10.9) (2026-11-08)
+
+
+### Features
+
+* **search palette:** the divider before the row's end belongs to the `action` slot now — an app that puts its own action there draws the rule with it, and one that leaves the row bare at rest (adding, before the typing) keeps nothing standing. Cancel, the default, is drawn exactly as before
+
 ## [0.10.8](https://github.com/fabkho/ui/compare/v0.10.7...v0.10.8) (2026-11-08)
 
 
