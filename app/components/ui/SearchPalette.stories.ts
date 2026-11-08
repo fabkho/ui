@@ -54,7 +54,19 @@ async function settled({ open = false } = {}) {
 }
 
 /** The palette with a button that opens it (or already open) and a listbox of answers filtered by the query. */
-function renderPalette(startOpen: boolean) {
+/** An `action` slot for the flow story: the app's own confirm instead of Cancel. */
+const ADD_ACTION = `
+          <template #action>
+            <button
+              type="button"
+              class="flex size-(--size-button-sm) shrink-0 items-center justify-center rounded-pill bg-surface-raised text-ink edge"
+              aria-label="Add"
+            >
+              <UiIcon name="plus" :size="16" bold />
+            </button>
+          </template>`
+
+function renderPalette(startOpen: boolean, action = '') {
   return (args: Record<string, any>) => ({
     components: { UiSearchPalette, UiButton, UiIcon },
     setup() {
@@ -75,7 +87,7 @@ function renderPalette(startOpen: boolean) {
           :status="found.length ? found.length + ' books found' : ''"
           :aria-expanded="found.length > 0"
           aria-controls="results"
-        >${RESULTS}</UiSearchPalette>
+        >${action}${RESULTS}</UiSearchPalette>
       </div>`,
   })
 }
@@ -130,6 +142,13 @@ export const Open: Story = {
   args: { query: 'le guin' },
   play: () => settled({ open: true }),
   render: renderPalette(true),
+}
+
+/** The row's end is the app's: the `action` slot replaces Cancel where the palette carries a flow (here an add). */
+export const Action: Story = {
+  args: { query: 'le guin' },
+  play: Open.play,
+  render: renderPalette(true, ADD_ACTION),
 }
 
 /** The dark theme, open. */

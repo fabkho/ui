@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.7](https://github.com/fabkho/ui/compare/v0.10.6...v0.10.7) (2026-11-08)
+
+
+### Features
+
+* **search palette:** the end of the query row is the app's — an `action` slot, Cancel by default, so a palette that carries a flow (adding an item) can put its own confirm where Cancel would be
+
 ## [0.10.6](https://github.com/fabkho/ui/compare/v0.10.5...v0.10.6) (2026-10-30)
 
 
