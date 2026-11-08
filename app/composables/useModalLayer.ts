@@ -103,7 +103,7 @@ function contains(layer: Layer, node: Node | null) {
  * `<Transition>`, so the layer counts as shown until it has left.
  */
 export function useModalLayer(
-  open: Ref<boolean>,
+  open: Readonly<Ref<boolean>>,
   {
     elements,
     initialFocus,

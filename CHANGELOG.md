@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.8](https://github.com/fabkho/ui/compare/v0.10.7...v0.10.8) (2026-11-08)
+
+
+### Features
+
+* **search palette:** an `inline` panel — the same card, query row, keyboard lift and slots, standing in the page instead of over it: no teleport, no veil, no `inert` on the rest of the app, no opening motion, no focus taken. At rest it is its query row alone, and `open` only says whether the answers are out. The modal layer, and every app that gives no `inline`, draws exactly what it drew before
+
 ## [0.10.7](https://github.com/fabkho/ui/compare/v0.10.6...v0.10.7) (2026-11-08)
 
 
