@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/fabkho/ui/compare/v0.13.1...v0.13.2) (2026-11-09)
+
+
+### Fixes
+
+* **chat:** the tab says "Send to", and the keyboard stays up while a voice message is recorded ([#58](https://github.com/fabkho/ui/issues/58)) ([5ca55bc](https://github.com/fabkho/ui/commit/5ca55bc439f6e75aeb27e9127b28c44e7320a0e7))
+
 ## [0.13.1](https://github.com/fabkho/ui/compare/v0.13.0...v0.13.1) (2026-11-09)
 
 ### Fixes
