@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.13.1](https://github.com/fabkho/ui/compare/v0.13.0...v0.13.1) (2026-11-09)
+
+### Fixes
+
+* **search palette:** the combobox carries `aria-expanded` and names its answers' room with `aria-controls`, so the two `Inline` stories pass axe, and a new `beforeClose` seam lets an app wrap the palette's own way out (Cancel, the veil, a swipe down, Escape, the system Back) in a transition of its own — additive, the default close untouched
+
 ## [0.13.0](https://github.com/fabkho/ui/compare/v0.12.0...v0.13.0) (2026-11-07)
 
 

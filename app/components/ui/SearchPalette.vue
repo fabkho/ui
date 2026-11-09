@@ -56,8 +56,16 @@ const props = withDefaults(
      * and `open` only says whether the answers are out. Default `false`, the layer it has always been.
      */
     inline?: boolean
+    /**
+     * A close the app wraps in a transaction of its own — Einkauf's `morph` (`~/utils/viewTransition`): awaited
+     * before the palette closes itself, on every way out (Cancel, the `action` slot's own, a tap on the veil, a
+     * swipe down, Escape, the system Back). The palette writes `open` itself, *after* it resolves, so the state
+     * change lands inside the app's transition instead of after it; a consumer that writes the model in there as
+     * well makes the palette's own write a no-op. Omitted, the palette closes as it always has.
+     */
+    beforeClose?: () => void | Promise<void>
   }>(),
-  { cancel: undefined, status: '', inline: false },
+  { cancel: undefined, status: '', inline: false, beforeClose: undefined },
 )
 const emit = defineEmits<{
   /** A tap on clear emptied the query (the app clears its answers). */
@@ -73,6 +81,13 @@ const uiText = useUiText()
 const cancelWord = computed(() => props.cancel ?? uiText.value.cancel)
 const id = useId()
 
+/**
+ * The answers' room in the document, and what the combobox's `aria-controls` names: the card's own id, so two
+ * palettes on one page never point at each other's list. The room stands whenever the card does — hidden, in a
+ * panel at rest — because a required `aria-controls` has to name something that is there.
+ */
+const answersId = `${id}-answers`
+
 const veil = useTemplateRef<HTMLElement>('veil')
 const palette = useTemplateRef<HTMLElement>('palette')
 const input = useTemplateRef<HTMLInputElement>('input')
@@ -84,8 +99,21 @@ const standing = computed(() => props.inline || rendered.value)
 /** On its way out: no taps any more. */
 const closing = ref(false)
 
-function close() {
-  open.value = false
+/**
+ * The palette's one way out — Cancel, the action slot's own, the veil, a swipe down, Escape, the system Back.
+ *
+ * With a `beforeClose` the app's transaction runs first and the model is written after it, so a close the app
+ * wraps in a View Transition is *inside* that transition (Einkauf's morph from the finish circle). The write
+ * happens whatever the app's function did: a transition that throws, or asks the browser for one it refuses,
+ * must never leave the palette standing over a member who asked it to go. Without one it is the plain write
+ * it has always been.
+ */
+async function close() {
+  try {
+    await props.beforeClose?.()
+  } finally {
+    open.value = false
+  }
 }
 
 function clearQuery() {
@@ -94,7 +122,7 @@ function clearQuery() {
 }
 
 function onWindowKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') close()
+  if (event.key === 'Escape') void close()
 }
 
 // Not a layer as a panel: nothing of the app goes inert, focus stays where the finger put it, and the system
@@ -261,8 +289,18 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
       <!--
         The answers, nearest the query at the bottom; the app's list scrolls in here. A panel shows them only
         while it is open, and they do not lift the card: the field at rest is the same field, where it stands.
+
+        This is also the room the combobox's `aria-controls` names (`answersId`), so it stands with the card —
+        `v-show`, not `v-if`: axe requires a `role="combobox"` to carry both `aria-expanded` and `aria-controls`
+        at all times, and an `aria-controls` that names nothing is a value it refuses. A panel at rest hides it,
+        so the card is still the app's input and nothing else; the layer keeps it, as it always did.
       -->
-      <div v-if="!inline || open" class="flex min-h-0 flex-1 flex-col justify-end" data-no-swipe>
+      <div
+        v-show="!inline || open"
+        :id="answersId"
+        class="flex min-h-0 flex-1 flex-col justify-end"
+        data-no-swipe
+      >
         <slot />
         <div class="h-(--stroke-hairline) shrink-0 bg-hairline" aria-hidden="true" />
       </div>
@@ -270,6 +308,12 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
       <!-- The query row: glyph, field, clear, Cancel. -->
       <div class="flex h-(--size-query) shrink-0 items-center gap-sm pr-inset pl-md">
         <span class="flex shrink-0 text-accent" aria-hidden="true"><UiIcon name="search" :size="19" /></span>
+        <!--
+          The popup the combobox owns: `aria-expanded` says whether its answers are out, `aria-controls` names the
+          room they are drawn in. Both are required of `role="combobox"` and both have a default here, so a palette
+          with nothing but the slot is a valid combobox; the app's own pair arrives through `$attrs` and wins, being
+          bound last — an app that knows better (a panel whose answers wait for a query) hands it down that way.
+        -->
         <input
           :id="`${id}-search`"
           ref="input"
@@ -277,6 +321,8 @@ const { style: paletteStyle } = usePaletteKeyboard(() => open.value, palette, { 
           type="search"
           role="combobox"
           aria-autocomplete="list"
+          :aria-expanded="open ? 'true' : 'false'"
+          :aria-controls="answersId"
           :aria-label="label"
           :placeholder="placeholder"
           inputmode="search"
