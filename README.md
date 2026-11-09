@@ -139,10 +139,20 @@ it said before, and Cancel keeps its place, its test id and its job).
 
 **Added for the notes composer (additive, 0.13):** `UiComposer` props `sendOptions` (`{ value, label, hint?, icon?, tone?, disabled? }[]`),
 `v-model:sendAs` and `sendAsLabel`, slot `sendMenu`, the word `ui.text.chat.composer.sendAs` and the optional variables
-`--composer-tone-{neutral,accent,quiet}-{bg,fg}`: a split send button, a tab that opens a "Send as" menu (APG menu button) and
+`--composer-tone-{neutral,accent,quiet}-{bg,fg}`: a split send button, a tab that opens a "Send to" menu (APG menu button) and
 a send button that sends in the selected option and shows it (icon, tone, words), with the microphone beside the tab. The
 `actions` row of the composer now folds only while the field has the focus **and** a soft keyboard is up (it stayed folded
 after Android's back button closed the keyboard; it never folds without a soft keyboard). Without `sendOptions` nothing changes.
+The tab and the menu were called "Send as" in 0.13.0; from 0.13.2 the word says whom the message goes to, not how it is
+sent: **"Send to"** (`sendAs: 'Send to'` in `app.config.ts`, "Senden an" in the German sample), the API names unchanged.
+
+**Fixed for voice messages (0.13.2):** the soft keyboard stays up while a recording runs. The field is no longer
+unmounted for it (an element that is removed sends no blur, and a blur closes the keyboard): it leaves the layout
+(absolute, one drawn pixel, transparent, no pointer, `tabindex="-1"`) and keeps the focus, so on Android and the iPhone
+the keyboard holds through the hold, the lock and the panel. A recording that was sent, too short or failed gives the
+field its focus back; only a cancel (✕, a slide away) blurs it and closes the keyboard, and a composer at rest stays at
+rest (a recording never opens a keyboard). The capsule reads `data-keyboard` (the soft keyboard, as the fold reads it);
+nothing about the panel's look or words changed.
 
 ## Developing it
 

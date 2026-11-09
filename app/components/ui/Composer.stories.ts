@@ -577,6 +577,177 @@ export const HoldReducedMotion: Story = {
   },
 }
 
+// ------------------------------------------------------- the keyboard stays up while a recording runs
+
+// The owner, on Android: the keyboard closed the moment a recording started. It was the field leaving the page with the
+// recording (`v-if`), and an element that is removed sends no blur. The field is not unmounted now: it leaves the LAYOUT
+// only (one drawn pixel, transparent, no pointer, out of the tab order) and keeps the focus, so nothing closes the
+// keyboard. Sent, too short or failed, the field has its focus back; only a cancel (✕, a slide away) blurs it; a
+// composer at rest is left at rest. The soft keyboard is the `fakeKeyboard` stand-in the fold stories use.
+
+/** The composer's own reading of the soft keyboard (`data-keyboard`): the fold's reading, on the capsule. */
+const keyboardUp = (canvas: ReturnType<typeof within>) => canvas.getByTestId('chat.composer').hasAttribute('data-keyboard')
+
+/** Focuses the field and stands the keyboard in, as a tap on the field does on a phone. */
+async function typing(canvas: ReturnType<typeof within>, keyboard: ReturnType<typeof fakeKeyboard>) {
+  const field = canvas.getByRole('textbox')
+  await userEvent.click(field)
+  await expect(field).toHaveFocus()
+  keyboard.show()
+  await waitFor(() => expect(keyboardUp(canvas)).toBe(true))
+  return field
+}
+
+/**
+ * Held, then locked: the field is still in the page and still focused, out of the layout under the panel, and the
+ * keyboard stays up through both. The panel itself is as it always was: the ✕, the bars, the timer, send, and the
+ * polite "locked" line.
+ */
+export const KeyboardHeldThroughHoldAndLock: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = await typing(canvas, keyboard)
+    const { button, x, y } = await hold(canvas)
+    await expect(field).toBeInTheDocument()
+    await expect(field).toHaveFocus()
+    await expect(field).not.toBeVisible()
+    await expect(field).toHaveAttribute('tabindex', '-1')
+    await expect(keyboardUp(canvas)).toBe(true)
+    await expect(canvas.getByTestId('chat.recorder')).toHaveAttribute('data-hold')
+    // The lock: the panel takes the row, the field still holds the keyboard.
+    touch(button, 'pointermove', x, y - 40)
+    touch(button, 'pointermove', x - 3, y - 80)
+    touch(button, 'pointerup', x - 3, y - 80)
+    await waitFor(() => expect(canvas.getByTestId('chat.voiceSend')).toBeEnabled(), { timeout: 5000 })
+    await expect(canvas.getByTestId('chat.recorder')).not.toHaveAttribute('data-hold')
+    await expect(field).toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(true)
+    // The panel's words, unchanged.
+    await expect(canvas.getByRole('group', { name: 'Recording' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Discard recording' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Send voice message' })).toBeVisible()
+    await expect(canvas.getByTestId('chat.voiceTimer')).toBeVisible()
+    await expect(canvas.getByTestId('chat.voiceAnnounce')).toHaveTextContent('Recording locked')
+  },
+}
+
+/**
+ * A tap on the microphone (a real click, with the field focused) starts the recording without taking the focus, and
+ * sending from the panel gives the field the layout back — focused, with the keyboard still up.
+ */
+export const KeyboardKeptThroughATapAndASend: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement, args }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = await typing(canvas, keyboard)
+    await userEvent.click(canvas.getByTestId('chat.record'))
+    await waitFor(() => expect(canvas.getByTestId('chat.voiceSend')).toBeEnabled(), { timeout: 5000 })
+    await expect(field).toHaveFocus()
+    await expect(field).not.toBeVisible()
+    await expect(keyboardUp(canvas)).toBe(true)
+    await userEvent.click(canvas.getByTestId('chat.voiceSend'))
+    await waitFor(() => expect(args.onVoice).toHaveBeenCalledTimes(1), { timeout: 5000 })
+    await waitFor(() => expect(field).toBeVisible())
+    await expect(field).not.toHaveAttribute('tabindex')
+    await expect(field).toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(true)
+    await expect(canvas.queryByTestId('chat.recorder')).toBeNull()
+  },
+}
+
+/** A hold let go too soon is no cancel: the field comes back as it was, focused, and the keyboard stays. */
+export const KeyboardKeptAfterTooShort: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement, args }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = await typing(canvas, keyboard)
+    const { button, x, y } = await hold(canvas)
+    const held = Number(canvas.getByTestId('chat.voiceTimer').getAttribute('data-ms'))
+    await sleep(Math.max(0, 450 - held))
+    touch(button, 'pointerup', x, y)
+    await waitFor(() => expect(canvas.getByTestId('chat.voiceAnnounce')).toHaveTextContent('too short'))
+    await waitFor(() => expect(field).toBeVisible())
+    await expect(field).toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(true)
+    await expect(args.onVoice).not.toHaveBeenCalled()
+  },
+}
+
+/** The ✕ is the one end that closes the keyboard: the field is blurred, and it comes back empty-handed and unfocused. */
+export const KeyboardClosesOnTheCross: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement, args }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = await typing(canvas, keyboard)
+    await userEvent.click(canvas.getByTestId('chat.record'))
+    await waitFor(() => expect(canvas.getByTestId('chat.voiceCancel')).toBeVisible(), { timeout: 5000 })
+    await expect(keyboardUp(canvas)).toBe(true)
+    await userEvent.click(canvas.getByTestId('chat.voiceCancel'))
+    await waitFor(() => expect(canvas.queryByTestId('chat.recorder')).toBeNull())
+    await expect(field).not.toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(false)
+    await waitFor(() => expect(field).toBeVisible())
+    await expect(field).not.toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(false)
+    await expect(args.onVoice).not.toHaveBeenCalled()
+  },
+}
+
+/** And so is a slide away: thrown away, the trash flashes where the field comes back, and the keyboard goes. */
+export const KeyboardClosesOnASlideAway: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = await typing(canvas, keyboard)
+    const { button, x, y } = await hold(canvas)
+    touch(button, 'pointermove', x - 60, y)
+    touch(button, 'pointermove', x - 110, y - 5)
+    touch(button, 'pointerup', x - 110, y - 5)
+    await waitFor(() => expect(canvas.getByTestId('chat.holdTrash')).toBeVisible())
+    await expect(field).not.toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(false)
+    await waitFor(() => expect(field).toBeVisible(), { timeout: 3000 })
+    await expect(field).not.toHaveFocus()
+  },
+}
+
+/**
+ * A composer at rest: no focus to keep, so recording neither takes the keyboard nor brings one up — the field is not
+ * focused while the panel records, and the panel's send leaves it as it was.
+ */
+export const KeyboardNeverOpensForARecording: Story = {
+  args: { voiceMaxMs: 120_000 },
+  play: async ({ canvasElement }) => {
+    const keyboard = fakeKeyboard()
+    fakeMicrophone()
+    const canvas = within(canvasElement)
+    const field = canvas.getByRole('textbox')
+    await expect(keyboardUp(canvas)).toBe(false)
+    await userEvent.click(canvas.getByTestId('chat.record'))
+    await waitFor(() => expect(canvas.getByTestId('chat.voiceSend')).toBeEnabled(), { timeout: 5000 })
+    // A keyboard in the viewport is not this composer's: nothing here has the focus to read it with.
+    keyboard.show()
+    await sleep(300)
+    await expect(field).not.toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(false)
+    await userEvent.click(canvas.getByTestId('chat.voiceSend'))
+    await waitFor(() => expect(canvas.queryByTestId('chat.recorder')).toBeNull())
+    await expect(field).not.toHaveFocus()
+    await expect(keyboardUp(canvas)).toBe(false)
+  },
+}
+
 // ------------------------------------------------------------------ words
 
 export const German: Story = { args: { modelValue: '' }, globals: { locale: 'de' } }
@@ -591,13 +762,13 @@ export const Night: Story = { args: { modelValue: 'On my way, save me a seat!' }
 export const NightEmpty: Story = { globals: { theme: 'night' } }
 export const NightAnswering: Story = { ...Answering, globals: { theme: 'night' } }
 
-// ------------------------------------------------------------------ the split send button ("Send as")
+// ------------------------------------------------------------------ the split send button ("Send to")
 
-// `sendOptions`: a small tab at the left of the send button opens a menu of the ways of sending (here an audience:
+// `sendOptions`: a small tab at the left of the send button opens a menu of where the message goes (here an audience:
 // Only me, Friends, Everyone), the send button sends in the selected one, and the selected one is shown by the
 // button itself: its icon, its tone (`neutral` the usual ink button, `quiet` a raised one, `accent` the deep
 // amber), and its words on the tab when the option is marked. The stories stand the app in: it holds `sendAs`, and
-// says what was sent ("Sent as …") so a play function can see it. `voiceMaxMs` follows the option in the
+// says where it went ("all: …") so a play function can see it. `voiceMaxMs` follows the option in the
 // "private voice" stories, as BetterReads' notes will have it: the microphone for Only me alone.
 
 const AUDIENCE: SendOption[] = [
@@ -691,14 +862,14 @@ export const SplitCompact: Story = {
   args: { ...split.args, compact: true, placeholder: 'Add a note', label: 'Note', modelValue: 'A note' },
 }
 
-/** The tab opened: Send as, three choices with their hints, the chosen one ticked, the focus on it. */
+/** The tab opened: Send to, three choices with their hints, the chosen one ticked, the focus on it. */
 export const SplitMenuOpen: Story = {
   ...split,
   args: { ...split.args, sendAs: 'all', modelValue: 'Chapter 12 is the best one so far.' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await userEvent.click(sendAsTab(canvas))
-    const menu = canvas.getByRole('menu', { name: 'Send as' })
+    const menu = canvas.getByRole('menu', { name: 'Send to' })
     await waitFor(() => expect(menu).toBeVisible())
     await expect(within(menu).getAllByRole('menuitemradio')).toHaveLength(3)
     await expect(within(menu).getByRole('menuitemradio', { name: /Everyone/ })).toHaveFocus()
@@ -731,7 +902,7 @@ export const SplitMenuKeyboard: Story = {
     await expect(tab).toHaveAttribute('aria-expanded', 'false')
     tab.focus()
     await userEvent.keyboard('{Enter}')
-    const menu = canvas.getByRole('menu', { name: 'Send as' })
+    const menu = canvas.getByRole('menu', { name: 'Send to' })
     const [me, friends, everyone] = within(menu).getAllByRole('menuitemradio')
     await expect(tab).toHaveAttribute('aria-expanded', 'true')
     await expect(friends).toHaveFocus()
@@ -752,7 +923,7 @@ export const SplitMenuKeyboard: Story = {
     await expect(tab).toHaveFocus()
     await expect(tab).toHaveAttribute('aria-expanded', 'false')
     await expect(tab).toHaveTextContent('Everyone')
-    await expect(tab).toHaveAccessibleName('Send as: Everyone')
+    await expect(tab).toHaveAccessibleName('Send to: Everyone')
   },
 }
 
@@ -1140,16 +1311,16 @@ export const SplitRtl: Story = {
   },
 }
 
-/** The German sample: "Senden als", the options in German, "Alle" on the tab. */
+/** The German sample: "Senden an", the options in German, "Alle" on the tab. */
 export const SplitGerman: Story = {
   ...split,
   args: { ...split.args, sendOptions: AUDIENCE_DE, sendAs: 'all', modelValue: 'Das Ende hat mich umgehauen.', placeholder: undefined },
   globals: { locale: 'de' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(sendAsTab(canvas)).toHaveAccessibleName('Senden als: Alle')
+    await expect(sendAsTab(canvas)).toHaveAccessibleName('Senden an: Alle')
     await userEvent.click(sendAsTab(canvas))
-    await waitFor(() => expect(canvas.getByRole('menu', { name: 'Senden als' })).toBeVisible())
+    await waitFor(() => expect(canvas.getByRole('menu', { name: 'Senden an' })).toBeVisible())
   },
 }
 

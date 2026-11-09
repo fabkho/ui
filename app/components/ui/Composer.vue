@@ -39,7 +39,7 @@ import { actionsFold, isMarked, menuHints, menuMaxHeight, menuTarget, selectedOp
 // message at once.
 //
 // SEND AS (`sendOptions`, `v-model:sendAs`, `sendAsLabel`; added in 0.13): the send button becomes a split button.
-// A small TAB at its start side opens a compact menu of the ways of sending (an audience, say: Only me, Friends,
+// A small TAB at its start side opens a compact menu of where the message goes (an audience, say: Only me, Friends,
 // Everyone: `{ value, label, hint?, icon?, tone?, disabled? }`, icons from UiIcon); the button itself still sends,
 // in the option that is selected. Absent or empty `sendOptions`: nothing of this is drawn and the button is as
 // it was (Trappist, BetterReads' buddy room). The options live IN the button, so nothing about them ever folds with
@@ -49,7 +49,8 @@ import { actionsFold, isMarked, menuHints, menuMaxHeight, menuTarget, selectedOp
 //    `neutral` (default) the usual ink button, `accent` the deep amber (`--color-accent-ink`), `quiet` a raised,
 //    calmer one. A MARKED option (any tone but neutral, or one without an icon) also says its `label` on the tab, so
 //    the audience is read, not only seen; the neutral one is the icon alone. The send button's name says it too
-//    ("Send · Everyone"), the tab's is "`sendAsLabel`: label" (words: `ui.text.chat.composer.sendAs`). With nothing
+//    ("Send · Everyone"), the tab's is "`sendAsLabel`: label" (words: `ui.text.chat.composer.sendAs`, which says whom
+//    the message goes to, not the manner of sending it: "Send to", an app's own "Senden an"). With nothing
 //    to send the pill is a quiet fill whatever the tone. An app restyles a tone with `--composer-tone-<tone>-bg` and
 //    `-fg` (optional variables, set on the composer or above it); the slot `sendMenu` (scoped `close`) adds the app's
 //    own rows to the menu (role="menuitem", "menuitemcheckbox" or "menuitemradio", tabindex="-1", they join the arrows).
@@ -97,6 +98,15 @@ import { actionsFold, isMarked, menuHints, menuMaxHeight, menuTarget, selectedOp
 //  gets only a short pulse at the start. iOS: the switch tick on start and lock where WebKit allows it.
 //  In the locked panel nothing changes at `voiceMaxMs`: it stops by itself and waits for ✕ or send. The
 //  floating pills give way to one line, "Recording".
+//
+// THE KEYBOARD STAYS UP WHILE A MESSAGE IS RECORDED (on Android it used to close the moment the recording started):
+// the field is never unmounted for a recording, or for the trash that flashes after one, so it keeps the focus it had
+// and nothing blurs it. It leaves the LAYOUT instead — absolute, one drawn pixel, transparent, no pointer, out of the
+// tab order — and stays in the page and in the accessibility tree: the real field, with its name and its text, so a
+// screen reader has not lost it either. A recording that was sent, too short or failed gives the field the focus back;
+// a cancel (✕, a slide away) is the one end that blurs it and closes the keyboard, and a composer at rest stays at
+// rest: recording never brings a keyboard up. The permission sheet may take the focus once, on the first use; it is
+// given back afterwards. The capsule carries `data-keyboard` (the soft keyboard, as the fold reads it).
 // The words (`ui.text.chat.voice`, English defaults in app.config.ts, the app supplies its own):
 //  `record` the microphone's name; `recordHint` its description, read after the name (aria-describedby:
 //  the gesture and the way without one; say which side "cancel" slides to in the language's direction);
@@ -210,8 +220,35 @@ const voiceOffered = computed(() => props.voiceMaxMs !== undefined && recorder.s
 /** The live bars as a fixed row: the newest on the right, older ones scrolling off to the left. */
 const liveBars = computed(() => liveRow(recorder.bars.value))
 
+/**
+ * The field had the focus when a recording started: the soft keyboard is up, and it stays up (the field leaves the
+ * layout while it records, never the page, so nothing blurs it). Reset at the start of each recording.
+ */
+let keepKeyboard = false
+
+/**
+ * The field keeps the focus it had when the recording started, and with it the keyboard. A press that took the focus
+ * anyway (a mouse, the permission sheet on the first use) gives it back — once more after the press's own click, which
+ * some browsers still spend on the button. A composer at rest is left at rest: this never opens a closed keyboard.
+ */
+function backToField() {
+  if (!keepKeyboard) return
+  field.value?.focus({ preventScroll: true })
+  void nextTick(() => {
+    if (keepKeyboard && document.activeElement !== field.value) field.value?.focus({ preventScroll: true })
+  })
+}
+
+/** A cancel: the field is blurred and the keyboard goes with it (the one end of a recording that closes it). */
+function closeKeyboard() {
+  keepKeyboard = false
+  if (document.activeElement === field.value) field.value?.blur()
+}
+
 async function startVoice() {
+  keepKeyboard = document.activeElement === field.value
   const problem = await recorder.start()
+  backToField()
   if (problem) {
     hold.value = initialHold()
     emit('voiceError', chat.value.voice.problems[problem])
@@ -222,11 +259,16 @@ async function sendVoice() {
   const voice = await recorder.finish()
   if (voice) emit('voice', voice)
   else emit('voiceError', chat.value.voice.problems.failed)
+  backToField()
+}
+/** The ✕ of the panel: thrown away, and the keyboard with it (a cancel). */
+function cancelVoice() {
+  closeKeyboard()
+  recorder.cancel()
 }
 watch(recording, (now) => {
-  // The field leaves while recording, and an element that is removed sends no blur.
-  if (now) focused.value = false
-  else {
+  // The field never leaves the page for a recording (the keyboard would go with it): it is in the layout again, and grows.
+  if (!now) {
     hold.value = initialHold()
     void nextTick(grow)
   }
@@ -291,6 +333,9 @@ async function begin() {
 
 function discarded(why: DiscardWhy) {
   announcement.value = why === 'short' ? chat.value.voice.tooShort : chat.value.voice.discarded
+  // Too short is no cancel: the field comes back as it was, with the keyboard. A cancel is the one end that closes it.
+  if (why === 'short') backToField()
+  else if (why !== 'hidden') closeKeyboard()
   if (why === 'hidden') return
   discarding.value = true
   clearTimeout(discardTimer)
@@ -451,6 +496,10 @@ const menuOpen = ref(false)
  * has the focus, and while the menu is open (its room above the keyboard).
  */
 const keyboard = useKeyboardViewport(() => focused.value || menuOpen.value)
+/** The same reading for the DOM (`data-keyboard`): the stories stand a keyboard in and watch it stay through a recording. */
+const keyboardUp = computed(() => keyboard.shown.value)
+/** The field is out of the layout (a recording, or the trash after a thrown-away one) but keeps its place in the page. */
+const fieldAway = computed(() => recording.value || discarding.value)
 /** The chips fold away only while the field has the focus AND the keyboard is up: not for the focus alone. */
 const folded = computed(() => actionsFold({ focused: focused.value, keyboard: keyboard.shown.value }))
 const canSend = computed(() => text.value.trim().length > 0)
@@ -459,10 +508,10 @@ const labelText = computed(() => props.label ?? chat.value.composer.label)
 
 const MAX_LINES = 5
 
-/** The field as tall as its text, at most five lines. */
+/** The field as tall as its text, at most five lines. Not while it is out of the layout (it grows when it is back). */
 function grow() {
   const el = field.value
-  if (!el) return
+  if (!el || fieldAway.value) return
   const style = getComputedStyle(el)
   const line = Number.parseFloat(style.lineHeight) || 24
   const chrome =
@@ -623,7 +672,7 @@ watch(
 
 /**
  * Closes the keyboard, as a drag on the thread does (iMessage): not while a voice message is being
- * recorded or waits to be sent (the field is not there, and nothing may close under the thumb).
+ * recorded or waits to be sent (nothing may close under the thumb; a cancel is the one thing that does).
  */
 function blur() {
   if (recording.value) return
@@ -707,7 +756,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       </button>
     </div>
 
-    <form class="capsule glass edge relative flex items-end gap-xs pl-md shadow-palette" :data-tone="splitOn ? tone : undefined" :data-testid="`${testid}.composer`" @submit.prevent="submit">
+    <form class="capsule glass edge relative flex items-end gap-xs pl-md shadow-palette" :data-tone="splitOn ? tone : undefined" :data-keyboard="keyboardUp || undefined" :data-testid="`${testid}.composer`" @submit.prevent="submit">
       <input
         v-if="photoAccept"
         ref="picker"
@@ -718,6 +767,26 @@ defineExpose({ focus: () => field.value?.focus(), blur })
         aria-hidden="true"
         :data-testid="`${testid}.photoInput`"
         @change="picked"
+      />
+      <!-- The field is never unmounted (an element that is removed sends no blur, and a blur closes the soft keyboard): a
+           recording, and the trash that flashes after a thrown-away one, only take its place in the layout. -->
+      <label :for="`${testid}-input`" class="sr-only">{{ labelText }}</label>
+      <textarea
+        :id="`${testid}-input`"
+        ref="field"
+        v-model="text"
+        rows="1"
+        :maxlength="max"
+        :placeholder="placeholderText"
+        enterkeyhint="send"
+        autocomplete="off"
+        class="field min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-body text-ink caret-accent outline-none placeholder:text-ink-faint"
+        :class="fieldAway ? 'field-away' : undefined"
+        :tabindex="fieldAway ? -1 : undefined"
+        :data-testid="`${testid}.input`"
+        @keydown="onKey"
+        @focus="focused = true"
+        @blur="focused = false"
       />
       <!-- Recording. Held: the timer with its dot, the live bars, "Slide to cancel". Locked, or by a tap: ✕, the live bars, the timer, send. -->
       <div
@@ -735,7 +804,8 @@ defineExpose({ focus: () => field.value?.focus(), blur })
           class="send -ml-sm flex size-(--size-button-md) shrink-0 items-center justify-center rounded-pill text-ink-muted"
           :aria-label="chat.voice.cancel"
           :data-testid="`${testid}.voiceCancel`"
-          @click="recorder.cancel()"
+          @pointerdown.prevent
+          @click="cancelVoice"
         >
           <UiIcon name="close" :size="20" />
         </button>
@@ -772,6 +842,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
           :aria-label="chat.voice.send"
           :disabled="recorder.state.value === 'starting' || undefined"
           :data-testid="`${testid}.voiceSend`"
+          @pointerdown.prevent
           @click="sendVoice"
         >
           <UiIcon name="send" :size="18" class="send-icon" />
@@ -781,23 +852,6 @@ defineExpose({ focus: () => field.value?.focus(), blur })
       <div v-if="discarding && !recording" class="trash flex h-(--size-button-md) min-w-0 flex-1 items-center text-error" aria-hidden="true" :data-testid="`${testid}.holdTrash`">
         <UiIcon name="trash" :size="20" />
       </div>
-      <label v-if="!recording && !discarding" :for="`${testid}-input`" class="sr-only">{{ labelText }}</label>
-      <textarea
-        v-if="!recording && !discarding"
-        :id="`${testid}-input`"
-        ref="field"
-        v-model="text"
-        rows="1"
-        :maxlength="max"
-        :placeholder="placeholderText"
-        enterkeyhint="send"
-        autocomplete="off"
-        class="field min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-body text-ink caret-accent outline-none placeholder:text-ink-faint"
-        :data-testid="`${testid}.input`"
-        @keydown="onKey"
-        @focus="focused = true"
-        @blur="focused = false"
-      />
       <!-- The send button, split when the app gives `sendOptions`: the tab opens the menu, the button sends (or records) in the option that is selected. One wrapper either way; it is only drawn as the pill with the tab. -->
       <div ref="splitEl" :class="splitOn && !recording ? 'split' : 'contents'" :data-live="(splitOn && canSend) || undefined" :data-testid="splitOn ? `${testid}.split` : undefined">
         <button
@@ -882,7 +936,7 @@ defineExpose({ focus: () => field.value?.focus(), blur })
             :aria-label="chat.voice.record"
             :aria-describedby="voiceHold ? `${testid}-recordHint` : undefined"
             :data-testid="`${testid}.record`"
-            @pointerdown="onPointerDown"
+            @pointerdown.prevent="onPointerDown"
             @pointermove="onPointerMove"
             @pointerup="onPointerUp"
             @pointercancel="onPointerCancel"
@@ -1113,6 +1167,22 @@ defineExpose({ focus: () => field.value?.focus(), blur })
 .field {
   padding-block: calc((var(--size-button-md) - var(--text-body--line-height)) / 2);
   line-height: var(--text-body--line-height);
+}
+
+/* The field while a voice message is recorded (and while the trash flashes after a thrown-away one): out of the layout,
+   not out of the page. It keeps the focus, and with it the soft keyboard — an element that is removed sends no blur,
+   and a blur closes the keyboard — so no `display: none` and no `visibility: hidden` here (on iOS those cost the focus
+   as well). One drawn pixel, transparent, no pointer, out of the tab order (`tabindex="-1"`): nothing to see, nothing
+   to tap, and the capsule's row is the recording panel's alone. */
+.field-away {
+  position: absolute;
+  inline-size: 1px;
+  /* The field's height is its own inline style (grow): only `!important` takes it. */
+  block-size: 1px !important;
+  padding-block: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* ------------------------------------------------------------------ the split send button

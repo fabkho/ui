@@ -47,7 +47,7 @@ export const GERMAN = {
       label: 'Nachricht',
       placeholder: 'Nachricht',
       send: 'Senden',
-      sendAs: 'Senden als',
+      sendAs: 'Senden an',
       actions: 'Nachrichtenaktionen',
       photo: 'Foto',
       photoLabel: 'Foto aus der Galerie senden',
