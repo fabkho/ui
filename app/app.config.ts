@@ -111,8 +111,11 @@ export default defineAppConfig({
           label: 'Message',
           placeholder: 'Message',
           send: 'Send',
-          /** The split send button (`sendOptions`): the tab's name ("Send as: Everyone") and the menu's title. */
-          sendAs: 'Send as',
+          /**
+           * The split send button (`sendOptions`): the tab's name ("Send to: Everyone") and the menu's title. The audience
+           * is a recipient, not a manner of sending: where the message goes, not how.
+           */
+          sendAs: 'Send to',
           /** The chips over the field are a toolbar; this is its name for assistive tech. */
           actions: 'Message actions',
           /** The chips over the field. */
